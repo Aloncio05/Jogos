@@ -9,7 +9,23 @@ Site simples de jogos criado com **HTML**, **CSS** e **JavaScript puro**, pronto
 - **Adivinhe o Número:** tente descobrir o número secreto entre 1 e 100.
 - **Jogo da Minhoca:** controle a minhoca, coma pontos e evite colisões.
 - **Jogo do Detetive:** leia pistas e escolha o suspeito correto.
-- **Cartas do Aloncinho:** jogo inspirado em Uno, com nomes, BOTs, código de convite e limite de 8 jogadores.
+- **Cartas do Aloncinho:** jogo inspirado em Uno, com nomes, BOTs, código de convite, sala online e limite de 8 jogadores.
+
+## Regras do Cartas do Aloncinho
+
+- Baralho com cartas numeradas por cor: um `0` e duas cartas de `1` a `9`.
+- Cartas de ação por cor: `+2`, `Inverter` e `Pular`.
+- Curingas: `Curinga` e `+4`.
+- Cada jogador começa com 7 cartas.
+- O jogo começa em sentido horário.
+- A jogada deve combinar cor, número/símbolo ou usar curinga.
+- `+2`: próximo jogador compra duas cartas e perde a vez.
+- `Inverter`: muda o sentido da rodada. Com dois jogadores funciona como pular.
+- `Pular`: próximo jogador perde a vez.
+- `Curinga`: permite escolher a próxima cor.
+- `+4`: permite escolher a cor, próximo jogador compra quatro cartas e perde a vez.
+- `UNO!`: ao ficar com uma carta, o jogador deve apertar o botão `UNO!` antes de jogar.
+- Pontuação: numéricas valem o número, ações valem 20 e curingas valem 50.
 
 ## Multiplayer Online
 

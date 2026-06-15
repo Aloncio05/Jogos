@@ -202,11 +202,24 @@
         <button id="add-card-bot" class="secondary-button" type="button">Adicionar BOT</button>
         <button id="draw-card" class="secondary-button" type="button">Comprar carta</button>
         <button id="pass-turn" class="secondary-button" type="button">Passar vez</button>
+        <button id="call-uno" class="secondary-button" type="button">UNO!</button>
+        <button id="challenge-plus-four" class="secondary-button" type="button">Desafiar +4</button>
+      </div>
+
+      <div class="color-picker" aria-label="Escolha de cor para curinga">
+        <span>Cor escolhida:</span>
+        <button class="color-choice uno-red" type="button" data-card-color="red">Vermelho</button>
+        <button class="color-choice uno-blue" type="button" data-card-color="blue">Azul</button>
+        <button class="color-choice uno-green" type="button" data-card-color="green">Verde</button>
+        <button class="color-choice uno-yellow" type="button" data-card-color="yellow">Amarelo</button>
       </div>
 
       <p id="card-game-status" class="status">Adicione pelo menos 2 jogadores para iniciar.</p>
       <div id="players-list" class="players-list" aria-label="Jogadores da sala"></div>
-      <div id="card-table" class="card-table" aria-label="Mesa do jogo de cartas"></div>
+      <div id="card-arena" class="card-arena" aria-label="Arena do jogo de cartas">
+        <div id="card-avatars" class="card-avatars"></div>
+        <div id="card-table" class="card-table" aria-label="Mesa do jogo de cartas"></div>
+      </div>
       <div id="player-hand" class="player-hand" aria-label="Cartas do jogador atual"></div>
     </section>
   </main>

@@ -36,11 +36,15 @@ const passTurnButton = document.querySelector('#pass-turn');
 const cardGameStatusElement = document.querySelector('#card-game-status');
 const playersListElement = document.querySelector('#players-list');
 const cardTableElement = document.querySelector('#card-table');
+const cardAvatarsElement = document.querySelector('#card-avatars');
 const playerHandElement = document.querySelector('#player-hand');
 const onlineStatusElement = document.querySelector('#online-status');
 const createOnlineRoomButton = document.querySelector('#create-online-room');
 const joinRoomForm = document.querySelector('#join-room-form');
 const joinRoomCodeInput = document.querySelector('#join-room-code');
+const callUnoButton = document.querySelector('#call-uno');
+const challengePlusFourButton = document.querySelector('#challenge-plus-four');
+const colorChoiceButtons = document.querySelectorAll('[data-card-color]');
 
 const winningLines = [
   [0, 1, 2],
@@ -497,7 +501,7 @@ function chooseSuspect(name) {
 }
 
 const cardColors = ['red', 'blue', 'green', 'yellow'];
-const cardValues = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Bloqueio', 'Reverso', '+2'];
+const actionCardValues = ['+2', 'Inverter', 'Pular'];
 const colorLabels = {
   red: 'Vermelho',
   blue: 'Azul',
@@ -513,6 +517,9 @@ let currentCardPlayer = 0;
 let cardDirection = 1;
 let cardGameStarted = false;
 let botCount = 0;
+let currentDeclaredColor = '';
+let pendingWildColorCardIndex = null;
+let lastPlusFour = null;
 let firebaseDb = null;
 let onlineRoomRef = null;
 let onlineRoomCode = '';
@@ -530,6 +537,9 @@ function resetCardRoom(options = {}) {
   cardDirection = 1;
   cardGameStarted = false;
   botCount = 0;
+  currentDeclaredColor = '';
+  pendingWildColorCardIndex = null;
+  lastPlusFour = null;
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
   playerHandElement.innerHTML = '';
@@ -560,8 +570,10 @@ function addCardPlayer(name, isBot = false) {
   }
 
   cardPlayers.push({
+    id: isBot ? `bot_${Date.now()}_${botCount}` : onlinePlayerId,
     name: cleanName,
     isBot,
+    saidUno: false,
     hand: [],
   });
   cardGameStatusElement.textContent = `${cleanName} entrou na sala.`;
@@ -586,10 +598,13 @@ function startCardGame() {
   cardDirection = 1;
   cardGameStarted = true;
   cardPlayers.forEach((player) => {
-    player.hand = drawCards(5);
+    player.hand = drawCards(7);
+    player.saidUno = false;
   });
 
   discardPile.push(drawFirstDiscard());
+  currentDeclaredColor = discardPile[discardPile.length - 1].color;
+  lastPlusFour = null;
   cardGameStatusElement.textContent = `Partida iniciada. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -599,17 +614,30 @@ function startCardGame() {
 function createCardDeck() {
   const deck = [];
   cardColors.forEach((color) => {
-    cardValues.forEach((value) => {
-      deck.push({ color, value });
-      if (value !== '0') deck.push({ color, value });
+    deck.push({ color, value: '0', type: 'number' });
+
+    for (let value = 1; value <= 9; value += 1) {
+      deck.push({ color, value: String(value), type: 'number' });
+      deck.push({ color, value: String(value), type: 'number' });
+    }
+
+    actionCardValues.forEach((value) => {
+      deck.push({ color, value, type: 'action' });
+      deck.push({ color, value, type: 'action' });
     });
   });
+
+  for (let index = 0; index < 4; index += 1) {
+    deck.push({ color: 'wild', value: 'Curinga', type: 'wild' });
+    deck.push({ color: 'wild', value: '+4', type: 'wild4' });
+  }
+
   return deck;
 }
 
 function drawFirstDiscard() {
   let card = cardDeck.pop();
-  while (['Bloqueio', 'Reverso', '+2'].includes(card.value)) {
+  while (card.type !== 'number') {
     cardDeck.unshift(card);
     cardDeck = shuffle(cardDeck);
     card = cardDeck.pop();
@@ -635,8 +663,31 @@ function reshuffleDiscardIntoDeck() {
 
 function renderCardGame() {
   renderCardPlayers();
+  renderCardAvatars();
   renderCardTable();
   renderPlayerHand();
+}
+
+function renderCardAvatars() {
+  cardAvatarsElement.innerHTML = '';
+
+  cardPlayers.forEach((player, index) => {
+    const avatar = document.createElement('div');
+    avatar.className = `avatar-card ${cardGameStarted && index === currentCardPlayer ? 'active' : ''}`.trim();
+
+    const face = document.createElement('div');
+    face.className = 'avatar-face';
+    face.textContent = player.name.slice(0, 2).toUpperCase();
+
+    const name = document.createElement('strong');
+    name.textContent = player.name;
+
+    const detail = document.createElement('span');
+    detail.textContent = `${player.isBot ? 'BOT' : 'Jogador'} · ${player.hand.length} cartas${player.saidUno ? ' · UNO!' : ''}`;
+
+    avatar.append(face, name, detail);
+    cardAvatarsElement.appendChild(avatar);
+  });
 }
 
 function renderCardPlayers() {
@@ -673,6 +724,10 @@ function renderCardTable() {
       <span>Descarte</span>
       <strong>${topCard ? formatCard(topCard) : 'Vazio'}</strong>
     </div>
+    <div class="table-card">
+      <span>Cor vigente</span>
+      <strong>${currentDeclaredColor ? colorLabels[currentDeclaredColor] : 'Sem cor'}</strong>
+    </div>
   `;
 }
 
@@ -683,6 +738,11 @@ function renderPlayerHand() {
   const player = cardPlayers[currentCardPlayer];
   if (player.isBot) {
     playerHandElement.innerHTML = '<p class="status">O BOT está analisando a jogada...</p>';
+    return;
+  }
+
+  if (!canControlCurrentCardPlayer()) {
+    playerHandElement.innerHTML = '<p class="status">Aguarde sua vez. Cada amigo vê e joga apenas as próprias cartas.</p>';
     return;
   }
 
@@ -698,32 +758,57 @@ function renderPlayerHand() {
 }
 
 function formatCard(card) {
-  return `${colorLabels[card.color]} ${card.value}`;
+  return card.color === 'wild' ? card.value : `${colorLabels[card.color]} ${card.value}`;
 }
 
 function isCardPlayable(card) {
   const topCard = discardPile[discardPile.length - 1];
-  return !topCard || card.color === topCard.color || card.value === topCard.value;
+  if (!topCard) return true;
+  if (card.type === 'wild') return true;
+  if (card.type === 'wild4') return !cardPlayers[currentCardPlayer].hand.some((item) => item.color === currentDeclaredColor);
+  if (card.value === '+2') return card.color === currentDeclaredColor || topCard.value === '+2';
+  return card.color === currentDeclaredColor || card.value === topCard.value;
 }
 
 function playCard(cardIndex) {
   if (!cardGameStarted) return;
+  if (!canControlCurrentCardPlayer()) return;
   const player = cardPlayers[currentCardPlayer];
   const card = player.hand[cardIndex];
   if (!card || !isCardPlayable(card)) return;
 
+  if (card.type === 'wild' || card.type === 'wild4') {
+    pendingWildColorCardIndex = cardIndex;
+    cardGameStatusElement.textContent = `${player.name}, escolha a próxima cor antes de jogar ${card.value}.`;
+    renderCardGame();
+    return;
+  }
+
+  playCardWithColor(cardIndex, card.color);
+}
+
+function playCardWithColor(cardIndex, chosenColor) {
+  const player = cardPlayers[currentCardPlayer];
+  const card = player.hand[cardIndex];
+  const previousColor = currentDeclaredColor;
+
   player.hand.splice(cardIndex, 1);
   discardPile.push(card);
+  currentDeclaredColor = chosenColor || card.color;
+  pendingWildColorCardIndex = null;
 
   if (!player.hand.length) {
     cardGameStarted = false;
-    cardGameStatusElement.textContent = `${player.name} venceu a partida!`;
+    const score = calculateRoundScore();
+    cardGameStatusElement.textContent = `${player.name} venceu a partida! Pontuação da rodada: ${score} pontos.`;
     renderCardGame();
     syncOnlineCardState();
     return;
   }
 
-  const steps = applyCardEffect(card);
+  applyUnoPenaltyIfNeeded(player);
+
+  const steps = applyCardEffect(card, previousColor);
   currentCardPlayer = getNextCardPlayerIndex(steps);
   cardGameStatusElement.textContent = `${player.name} jogou ${formatCard(card)}. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
@@ -731,19 +816,32 @@ function playCard(cardIndex) {
   scheduleBotTurn();
 }
 
-function applyCardEffect(card) {
-  if (card.value === 'Reverso') {
+function applyCardEffect(card, previousColor) {
+  lastPlusFour = null;
+
+  if (card.value === 'Inverter') {
     cardDirection *= -1;
     return cardPlayers.length === 2 ? 2 : 1;
   }
 
-  if (card.value === 'Bloqueio') {
+  if (card.value === 'Pular') {
     return 2;
   }
 
   if (card.value === '+2') {
     const targetIndex = getNextCardPlayerIndex(1);
     cardPlayers[targetIndex].hand.push(...drawCards(2));
+    return 2;
+  }
+
+  if (card.value === '+4') {
+    const targetIndex = getNextCardPlayerIndex(1);
+    cardPlayers[targetIndex].hand.push(...drawCards(4));
+    lastPlusFour = {
+      challengerIndex: targetIndex,
+      challengedIndex: currentCardPlayer,
+      previousColor,
+    };
     return 2;
   }
 
@@ -757,6 +855,7 @@ function getNextCardPlayerIndex(steps) {
 
 function drawForCurrentPlayer() {
   if (!cardGameStarted) return;
+  if (!canControlCurrentCardPlayer()) return;
   const player = cardPlayers[currentCardPlayer];
   if (player.isBot) return;
 
@@ -768,6 +867,7 @@ function drawForCurrentPlayer() {
 
 function passCardTurn() {
   if (!cardGameStarted) return;
+  if (!canControlCurrentCardPlayer()) return;
   const player = cardPlayers[currentCardPlayer];
   if (player.isBot) return;
 
@@ -776,6 +876,77 @@ function passCardTurn() {
   renderCardGame();
   syncOnlineCardState();
   scheduleBotTurn();
+}
+
+function canControlCurrentCardPlayer() {
+  return canControlPlayerIndex(currentCardPlayer);
+}
+
+function canControlPlayerIndex(playerIndex) {
+  if (!onlineRoomRef) return true;
+  const player = cardPlayers[playerIndex];
+  return player && player.id === onlinePlayerId;
+}
+
+function chooseWildColor(color) {
+  if (pendingWildColorCardIndex === null || !canControlCurrentCardPlayer()) return;
+  playCardWithColor(pendingWildColorCardIndex, color);
+}
+
+function callUno() {
+  if (!cardGameStarted || !canControlCurrentCardPlayer()) return;
+  const player = cardPlayers[currentCardPlayer];
+  player.saidUno = true;
+  cardGameStatusElement.textContent = `${player.name} gritou UNO!`;
+  renderCardGame();
+  syncOnlineCardState();
+}
+
+function applyUnoPenaltyIfNeeded(player) {
+  if (player.hand.length === 1 && !player.saidUno) {
+    player.hand.push(...drawCards(2));
+    cardGameStatusElement.textContent = `${player.name} esqueceu de gritar UNO e comprou 2 cartas.`;
+  }
+
+  if (player.hand.length !== 1) {
+    player.saidUno = false;
+  }
+}
+
+function challengePlusFour() {
+  if (!lastPlusFour || !cardGameStarted || !canControlPlayerIndex(lastPlusFour.challengerIndex)) return;
+  if (!cardPlayers[lastPlusFour.challengerIndex]) {
+    cardGameStatusElement.textContent = 'Somente o jogador afetado pelo +4 pode desafiar.';
+    return;
+  }
+
+  const challenger = cardPlayers[lastPlusFour.challengerIndex];
+  const challenged = cardPlayers[lastPlusFour.challengedIndex];
+  const wasBluffing = challenged.hand.some((card) => card.color === lastPlusFour.previousColor);
+
+  if (wasBluffing) {
+    challenged.hand.push(...drawCards(4));
+    cardGameStatusElement.textContent = `${challenger.name} desafiou corretamente. ${challenged.name} comprou 4 cartas.`;
+  } else {
+    challenger.hand.push(...drawCards(2));
+    cardGameStatusElement.textContent = `${challenger.name} errou o desafio e comprou 2 cartas de multa.`;
+  }
+
+  lastPlusFour = null;
+  renderCardGame();
+  syncOnlineCardState();
+}
+
+function calculateRoundScore() {
+  return cardPlayers.reduce((total, player) => {
+    return total + player.hand.reduce((subtotal, card) => subtotal + getCardScore(card), 0);
+  }, 0);
+}
+
+function getCardScore(card) {
+  if (card.type === 'number') return Number(card.value);
+  if (card.type === 'action') return 20;
+  return 50;
 }
 
 function scheduleBotTurn() {
@@ -793,14 +964,18 @@ function playBotCardTurn() {
   const playableIndex = player.hand.findIndex((card) => isCardPlayable(card));
 
   if (playableIndex >= 0) {
-    playCard(playableIndex);
+    const card = player.hand[playableIndex];
+    const chosenColor = card.color === 'wild' ? chooseBestBotColor(player) : card.color;
+    playCardWithColor(playableIndex, chosenColor);
     return;
   }
 
   player.hand.push(...drawCards(1));
   const newPlayableIndex = player.hand.findIndex((card) => isCardPlayable(card));
   if (newPlayableIndex >= 0) {
-    playCard(newPlayableIndex);
+    const card = player.hand[newPlayableIndex];
+    const chosenColor = card.color === 'wild' ? chooseBestBotColor(player) : card.color;
+    playCardWithColor(newPlayableIndex, chosenColor);
     return;
   }
 
@@ -809,6 +984,14 @@ function playBotCardTurn() {
   renderCardGame();
   syncOnlineCardState();
   scheduleBotTurn();
+}
+
+function chooseBestBotColor(player) {
+  const counts = cardColors.map((color) => ({
+    color,
+    total: player.hand.filter((card) => card.color === color).length,
+  }));
+  return counts.sort((a, b) => b.total - a.total)[0]?.color || 'red';
 }
 
 function copyRoomInvite() {
@@ -892,6 +1075,8 @@ function getCardGameState() {
     cardDirection,
     cardGameStarted,
     botCount,
+    currentDeclaredColor,
+    lastPlusFour,
     status: cardGameStatusElement.textContent,
     updatedAt: Date.now(),
     updatedBy: onlinePlayerId,
@@ -911,6 +1096,8 @@ function applyOnlineCardState(state) {
   cardDirection = state.cardDirection || 1;
   cardGameStarted = Boolean(state.cardGameStarted);
   botCount = state.botCount || 0;
+  currentDeclaredColor = state.currentDeclaredColor || '';
+  lastPlusFour = state.lastPlusFour || null;
   onlineHostId = state.hostId || '';
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = state.status || 'Sala sincronizada.';
@@ -952,6 +1139,11 @@ drawCardButton.addEventListener('click', drawForCurrentPlayer);
 passTurnButton.addEventListener('click', passCardTurn);
 copyRoomLinkButton.addEventListener('click', copyRoomInvite);
 createOnlineRoomButton.addEventListener('click', createOnlineRoom);
+callUnoButton.addEventListener('click', callUno);
+challengePlusFourButton.addEventListener('click', challengePlusFour);
+colorChoiceButtons.forEach((button) => {
+  button.addEventListener('click', () => chooseWildColor(button.dataset.cardColor));
+});
 joinRoomForm.addEventListener('submit', (event) => {
   event.preventDefault();
   joinOnlineRoom(joinRoomCodeInput.value);

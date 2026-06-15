@@ -473,6 +473,28 @@ h2 {
   margin: 16px 0;
 }
 
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0 18px;
+}
+
+.color-picker span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.color-choice {
+  min-height: 38px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
 .players-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -504,6 +526,56 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin: 18px 0;
+}
+
+.card-arena {
+  position: relative;
+  overflow: hidden;
+  margin: 18px 0;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at center, rgba(34, 211, 238, 0.18), transparent 18rem),
+    rgba(0, 0, 0, 0.16);
+}
+
+.card-avatars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.avatar-card {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 20px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.avatar-card.active {
+  color: var(--text);
+  border-color: rgba(34, 211, 238, 0.75);
+  background: rgba(34, 211, 238, 0.16);
+}
+
+.avatar-face {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  color: white;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  font-weight: 950;
+}
+
+.avatar-card strong,
+.avatar-card span {
+  display: block;
 }
 
 .table-card {
@@ -560,6 +632,12 @@ h2 {
   filter: grayscale(0.9) brightness(0.7);
 }
 
+.uno-wild {
+  background:
+    linear-gradient(135deg, #111827 0 45%, transparent 45%),
+    linear-gradient(45deg, #ef4444 0 25%, #3b82f6 25% 50%, #22c55e 50% 75%, #facc15 75%);
+}
+
 .uno-red {
   background: linear-gradient(135deg, #ef4444, #991b1b);
 }
@@ -611,7 +689,8 @@ h2 {
   }
 
   .players-list,
-  .card-table {
+  .card-table,
+  .card-avatars {
     grid-template-columns: 1fr;
   }
 
@@ -643,7 +722,8 @@ h2 {
   }
 
   .players-list,
-  .card-table {
+  .card-table,
+  .card-avatars {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
