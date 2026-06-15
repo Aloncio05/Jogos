@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Site com jogos básicos: jogo da velha, memória e adivinhe o número.">
+  <title>Arcade Básico</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav class="topbar" aria-label="Navegação principal">
+      <strong class="brand">Arcade Básico</strong>
+      <div class="nav-links">
+        <a href="#velha">Velha</a>
+        <a href="#memoria">Memória</a>
+        <a href="#numero">Número</a>
+      </div>
+    </nav>
+
+    <section class="hero-content">
+      <p class="eyebrow">HTML, CSS e JavaScript</p>
+      <h1>Três jogos simples para jogar direto no navegador.</h1>
+      <p>
+        Um mini arcade responsivo com Jogo da Velha, Jogo da Memória e Adivinhe o Número.
+        Projeto pronto para GitHub e Vercel.
+      </p>
+      <a class="hero-button" href="#velha">Começar a jogar</a>
+    </section>
+  </header>
+
+  <main>
+    <section class="section intro" aria-labelledby="games-title">
+      <p class="eyebrow">Escolha um jogo</p>
+      <h2 id="games-title">Jogos disponíveis</h2>
+      <div class="cards">
+        <article class="card">
+          <span>01</span>
+          <h3>Jogo da Velha</h3>
+          <p>Dois jogadores locais alternam entre X e O até alguém vencer ou empatar.</p>
+        </article>
+        <article class="card">
+          <span>02</span>
+          <h3>Jogo da Memória</h3>
+          <p>Encontre todos os pares e acompanhe seus movimentos durante a partida.</p>
+        </article>
+        <article class="card">
+          <span>03</span>
+          <h3>Adivinhe o Número</h3>
+          <p>Digite palpites até descobrir o número secreto entre 1 e 100.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="velha" class="game-panel" aria-labelledby="tic-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 01</p>
+          <h2 id="tic-title">Jogo da Velha</h2>
+        </div>
+        <button id="reset-tic-tac-toe" class="secondary-button">Reiniciar</button>
+      </div>
+      <p id="tic-tac-toe-status" class="status">Vez do jogador X</p>
+      <div id="tic-tac-toe-board" class="tic-board" aria-label="Tabuleiro do jogo da velha"></div>
+    </section>
+
+    <section id="memoria" class="game-panel" aria-labelledby="memory-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 02</p>
+          <h2 id="memory-title">Jogo da Memória</h2>
+        </div>
+        <button id="reset-memory" class="secondary-button">Embaralhar</button>
+      </div>
+      <p id="memory-status" class="status">Movimentos: 0</p>
+      <div id="memory-board" class="memory-board" aria-label="Cartas do jogo da memória"></div>
+    </section>
+
+    <section id="numero" class="game-panel" aria-labelledby="guess-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 03</p>
+          <h2 id="guess-title">Adivinhe o Número</h2>
+        </div>
+        <button id="reset-guess" class="secondary-button">Novo número</button>
+      </div>
+      <p class="status">Tente acertar o número secreto entre 1 e 100.</p>
+      <form id="guess-form" class="guess-form">
+        <label for="guess-input">Seu palpite</label>
+        <div class="guess-row">
+          <input id="guess-input" type="number" min="1" max="100" placeholder="Ex: 42" required>
+          <button type="submit">Enviar</button>
+        </div>
+      </form>
+      <p id="guess-feedback" class="feedback">Digite um número para começar.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Arcade Básico. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

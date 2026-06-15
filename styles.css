@@ -1,0 +1,339 @@
+:root {
+  --bg: #0b1020;
+  --surface: rgba(255, 255, 255, 0.08);
+  --surface-strong: rgba(255, 255, 255, 0.14);
+  --text: #f7f8ff;
+  --muted: #aeb6d3;
+  --primary: #7c3aed;
+  --primary-strong: #a78bfa;
+  --accent: #22d3ee;
+  --success: #34d399;
+  --danger: #fb7185;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(124, 58, 237, 0.42), transparent 32rem),
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.28), transparent 28rem),
+    var(--bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.hero {
+  min-height: 76vh;
+  padding: 28px clamp(18px, 5vw, 72px) 80px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.brand {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nav-links a {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-links a:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.hero-content {
+  max-width: 850px;
+  margin: 110px auto 0;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 22px;
+  font-size: clamp(2.4rem, 8vw, 5.8rem);
+  line-height: 0.95;
+  letter-spacing: -0.07em;
+}
+
+h2 {
+  margin-bottom: 14px;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: -0.05em;
+}
+
+.hero-content p:not(.eyebrow) {
+  max-width: 690px;
+  margin: 0 auto 30px;
+  color: var(--muted);
+  font-size: 1.12rem;
+  line-height: 1.7;
+}
+
+.hero-button,
+.secondary-button,
+.guess-row button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 16px;
+  color: white;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 18px 36px rgba(34, 211, 238, 0.18);
+}
+
+.hero-button {
+  padding: 15px 22px;
+}
+
+.section,
+.game-panel {
+  width: min(1120px, calc(100% - 36px));
+  margin: 0 auto 28px;
+}
+
+.intro {
+  padding: 54px 0 20px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.card,
+.game-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  background: linear-gradient(180deg, var(--surface-strong), var(--surface));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.card {
+  padding: 24px;
+}
+
+.card span {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  color: #dbeafe;
+  background: rgba(124, 58, 237, 0.35);
+  font-weight: 900;
+}
+
+.card p,
+.status,
+.feedback,
+.footer p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.game-panel {
+  padding: clamp(20px, 4vw, 36px);
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.secondary-button {
+  min-height: 44px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+.secondary-button:hover,
+.tic-cell:hover,
+.memory-card:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.tic-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(76px, 126px));
+  gap: 12px;
+}
+
+.tic-cell {
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  color: var(--text);
+  font-size: clamp(2rem, 9vw, 4rem);
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.tic-cell.winner {
+  color: #052e2b;
+  background: var(--success);
+}
+
+.memory-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(58px, 92px));
+  gap: 12px;
+}
+
+.memory-card {
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  color: var(--text);
+  font-size: 1.7rem;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.memory-card.matched {
+  color: #052e2b;
+  background: var(--success);
+}
+
+.guess-form {
+  max-width: 460px;
+}
+
+.guess-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.guess-row {
+  display: flex;
+  gap: 10px;
+}
+
+.guess-row input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.guess-row input:focus {
+  border-color: var(--accent);
+}
+
+.guess-row button {
+  min-width: 110px;
+  padding: 0 16px;
+}
+
+.feedback.success {
+  color: var(--success);
+}
+
+.feedback.error {
+  color: var(--danger);
+}
+
+.footer {
+  padding: 38px 18px 56px;
+  text-align: center;
+}
+
+@media (max-width: 780px) {
+  .topbar,
+  .game-header,
+  .guess-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero-content {
+    margin-top: 72px;
+    text-align: left;
+  }
+
+  .hero-content p:not(.eyebrow) {
+    margin-left: 0;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .tic-board,
+  .memory-board {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .memory-board {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

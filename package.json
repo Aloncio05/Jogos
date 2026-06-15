@@ -1,0 +1,19 @@
+{
+  "name": "site-jogos-basicos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site estático com jogos básicos em HTML, CSS e JavaScript.",
+  "scripts": {
+    "dev": "bunx serve .",
+    "start": "bunx serve ."
+  },
+  "keywords": [
+    "html",
+    "css",
+    "javascript",
+    "games",
+    "vercel"
+  ],
+  "author": "Aloncio Junior",
+  "license": "MIT"
+}
