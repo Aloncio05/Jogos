@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Jogos do Aloncinho: jogo da velha, memória, minhoca, detetive e adivinhe o número.">
+  <meta name="description" content="Jogos do Aloncinho: jogo da velha, memória, minhoca, detetive, cartas e adivinhe o número.">
   <title>Jogos do Aloncinho</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -16,6 +16,7 @@
         <a href="#memoria">Memória</a>
         <a href="#minhoca">Minhoca</a>
         <a href="#detetive">Detetive</a>
+        <a href="#cartas">Cartas</a>
         <a href="#numero">Número</a>
       </div>
     </nav>
@@ -60,6 +61,11 @@
           <span>05</span>
           <h3>Jogo do Detetive</h3>
           <p>Use pistas para descobrir quem é o culpado antes de acabar as tentativas.</p>
+        </article>
+        <article class="card">
+          <span>06</span>
+          <h3>Cartas do Aloncinho</h3>
+          <p>Um jogo estilo Uno com nomes, BOTs, código de convite e até 8 jogadores.</p>
         </article>
       </div>
     </section>
@@ -143,6 +149,50 @@
       <div id="detective-clues" class="clue-list" aria-label="Pistas do caso"></div>
       <div id="detective-suspects" class="suspect-grid" aria-label="Suspeitos"></div>
       <p id="detective-feedback" class="feedback">Escolha um suspeito para resolver o caso.</p>
+    </section>
+
+    <section id="cartas" class="game-panel" aria-labelledby="cards-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 06</p>
+          <h2 id="cards-title">Cartas do Aloncinho</h2>
+        </div>
+        <div class="actions">
+          <button id="start-card-game" class="secondary-button" type="button">Iniciar partida</button>
+          <button id="reset-card-game" class="secondary-button" type="button">Nova sala</button>
+        </div>
+      </div>
+
+      <p class="status">
+        Jogo inspirado em Uno. Adicione amigos pelo nome, complete com BOTs e jogue com no máximo 8 jogadores.
+      </p>
+
+      <div class="invite-box">
+        <div>
+          <span>Código da sala</span>
+          <strong id="room-code">ALON-0000</strong>
+        </div>
+        <button id="copy-room-link" class="secondary-button" type="button">Copiar convite</button>
+      </div>
+
+      <form id="player-form" class="player-form">
+        <label for="player-name">Nome do jogador</label>
+        <div class="guess-row">
+          <input id="player-name" type="text" maxlength="18" placeholder="Ex: Aloncinho" required>
+          <button type="submit">Adicionar</button>
+        </div>
+      </form>
+
+      <div class="actions card-actions">
+        <button id="add-card-bot" class="secondary-button" type="button">Adicionar BOT</button>
+        <button id="draw-card" class="secondary-button" type="button">Comprar carta</button>
+        <button id="pass-turn" class="secondary-button" type="button">Passar vez</button>
+      </div>
+
+      <p id="card-game-status" class="status">Adicione pelo menos 2 jogadores para iniciar.</p>
+      <div id="players-list" class="players-list" aria-label="Jogadores da sala"></div>
+      <div id="card-table" class="card-table" aria-label="Mesa do jogo de cartas"></div>
+      <div id="player-hand" class="player-hand" aria-label="Cartas do jogador atual"></div>
     </section>
   </main>
 

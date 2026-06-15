@@ -9,6 +9,13 @@ Site simples de jogos criado com **HTML**, **CSS** e **JavaScript puro**, pronto
 - **Adivinhe o Número:** tente descobrir o número secreto entre 1 e 100.
 - **Jogo da Minhoca:** controle a minhoca, coma pontos e evite colisões.
 - **Jogo do Detetive:** leia pistas e escolha o suspeito correto.
+- **Cartas do Aloncinho:** jogo inspirado em Uno, com nomes, BOTs, código de convite e limite de 8 jogadores.
+
+## Observação Sobre Convite
+
+O jogo de cartas possui código/link de convite visual para organizar a sala e identificar os jogadores pelo nome. Como o projeto é estático, publicado apenas com HTML, CSS e JavaScript, ele ainda não sincroniza partidas em tempo real entre dispositivos diferentes.
+
+Para transformar o convite em multiplayer online real, a próxima etapa seria adicionar um backend com WebSocket, Supabase, Firebase ou serviço equivalente.
 
 ## Como Rodar Localmente
 

@@ -303,6 +303,18 @@ h2 {
   padding: 0 16px;
 }
 
+.player-form {
+  max-width: 560px;
+  margin: 18px 0;
+}
+
+.player-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .feedback.success {
   color: var(--success);
 }
@@ -382,6 +394,143 @@ h2 {
   line-height: 1.45;
 }
 
+.invite-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 680px;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.invite-box span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.invite-box strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+}
+
+.card-actions {
+  justify-content: flex-start;
+  margin: 16px 0;
+}
+
+.players-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.player-chip {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.player-chip.active {
+  color: var(--text);
+  border-color: rgba(34, 211, 238, 0.7);
+  background: rgba(34, 211, 238, 0.14);
+}
+
+.player-chip strong {
+  display: block;
+  color: var(--text);
+}
+
+.card-table {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.table-card {
+  min-height: 138px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.table-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.table-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.7rem;
+}
+
+.player-hand {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.uno-card {
+  width: 92px;
+  min-height: 132px;
+  padding: 12px;
+  border: 3px solid rgba(255, 255, 255, 0.82);
+  border-radius: 18px;
+  color: white;
+  font-weight: 950;
+  text-align: left;
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.24);
+}
+
+.uno-card strong {
+  display: block;
+  margin-top: 34px;
+  font-size: 1.35rem;
+  text-align: center;
+}
+
+.uno-card:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.9) brightness(0.7);
+}
+
+.uno-red {
+  background: linear-gradient(135deg, #ef4444, #991b1b);
+}
+
+.uno-blue {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.uno-green {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+}
+
+.uno-yellow {
+  color: #1f2937;
+  background: linear-gradient(135deg, #facc15, #eab308);
+}
+
 .footer {
   padding: 38px 18px 56px;
   text-align: center;
@@ -391,6 +540,7 @@ h2 {
   .topbar,
   .game-header,
   .actions,
+  .invite-box,
   .guess-row {
     align-items: stretch;
     flex-direction: column;
@@ -410,6 +560,11 @@ h2 {
   }
 
   .suspect-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .players-list,
+  .card-table {
     grid-template-columns: 1fr;
   }
 
@@ -433,6 +588,11 @@ h2 {
   }
 
   .suspect-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .players-list,
+  .card-table {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -24,6 +24,20 @@ const detectiveSuspectsElement = document.querySelector('#detective-suspects');
 const detectiveFeedbackElement = document.querySelector('#detective-feedback');
 const resetDetectiveButton = document.querySelector('#reset-detective');
 
+const roomCodeElement = document.querySelector('#room-code');
+const copyRoomLinkButton = document.querySelector('#copy-room-link');
+const playerForm = document.querySelector('#player-form');
+const playerNameInput = document.querySelector('#player-name');
+const addCardBotButton = document.querySelector('#add-card-bot');
+const startCardGameButton = document.querySelector('#start-card-game');
+const resetCardGameButton = document.querySelector('#reset-card-game');
+const drawCardButton = document.querySelector('#draw-card');
+const passTurnButton = document.querySelector('#pass-turn');
+const cardGameStatusElement = document.querySelector('#card-game-status');
+const playersListElement = document.querySelector('#players-list');
+const cardTableElement = document.querySelector('#card-table');
+const playerHandElement = document.querySelector('#player-hand');
+
 const winningLines = [
   [0, 1, 2],
   [3, 4, 5],
@@ -478,6 +492,313 @@ function chooseSuspect(name) {
   detectiveFeedbackElement.className = 'feedback error';
 }
 
+const cardColors = ['red', 'blue', 'green', 'yellow'];
+const cardValues = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Bloqueio', 'Reverso', '+2'];
+const colorLabels = {
+  red: 'Vermelho',
+  blue: 'Azul',
+  green: 'Verde',
+  yellow: 'Amarelo',
+};
+
+let roomCode = '';
+let cardPlayers = [];
+let cardDeck = [];
+let discardPile = [];
+let currentCardPlayer = 0;
+let cardDirection = 1;
+let cardGameStarted = false;
+let botCount = 0;
+
+function resetCardRoom() {
+  roomCode = createRoomCode();
+  cardPlayers = [];
+  cardDeck = [];
+  discardPile = [];
+  currentCardPlayer = 0;
+  cardDirection = 1;
+  cardGameStarted = false;
+  botCount = 0;
+  roomCodeElement.textContent = roomCode;
+  cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
+  playerHandElement.innerHTML = '';
+  renderCardPlayers();
+  renderCardTable();
+}
+
+function createRoomCode() {
+  return `ALON-${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+function addCardPlayer(name, isBot = false) {
+  const cleanName = name.trim();
+  if (!cleanName) {
+    cardGameStatusElement.textContent = 'Informe um nome para adicionar o jogador.';
+    return;
+  }
+
+  if (cardPlayers.length >= 8) {
+    cardGameStatusElement.textContent = 'A sala já chegou ao limite máximo de 8 jogadores.';
+    return;
+  }
+
+  if (cardPlayers.some((player) => player.name.toLowerCase() === cleanName.toLowerCase())) {
+    cardGameStatusElement.textContent = 'Esse nome já está na sala. Use outro nome para identificar o amigo.';
+    return;
+  }
+
+  cardPlayers.push({
+    name: cleanName,
+    isBot,
+    hand: [],
+  });
+  cardGameStatusElement.textContent = `${cleanName} entrou na sala.`;
+  renderCardPlayers();
+}
+
+function addCardBot() {
+  botCount += 1;
+  addCardPlayer(`BOT ${botCount}`, true);
+}
+
+function startCardGame() {
+  if (cardPlayers.length < 2) {
+    cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
+    return;
+  }
+
+  cardDeck = shuffle(createCardDeck());
+  discardPile = [];
+  currentCardPlayer = 0;
+  cardDirection = 1;
+  cardGameStarted = true;
+  cardPlayers.forEach((player) => {
+    player.hand = drawCards(5);
+  });
+
+  discardPile.push(drawFirstDiscard());
+  cardGameStatusElement.textContent = `Partida iniciada. Vez de ${cardPlayers[currentCardPlayer].name}.`;
+  renderCardGame();
+  scheduleBotTurn();
+}
+
+function createCardDeck() {
+  const deck = [];
+  cardColors.forEach((color) => {
+    cardValues.forEach((value) => {
+      deck.push({ color, value });
+      if (value !== '0') deck.push({ color, value });
+    });
+  });
+  return deck;
+}
+
+function drawFirstDiscard() {
+  let card = cardDeck.pop();
+  while (['Bloqueio', 'Reverso', '+2'].includes(card.value)) {
+    cardDeck.unshift(card);
+    cardDeck = shuffle(cardDeck);
+    card = cardDeck.pop();
+  }
+  return card;
+}
+
+function drawCards(amount) {
+  const cards = [];
+  for (let index = 0; index < amount; index += 1) {
+    if (!cardDeck.length) reshuffleDiscardIntoDeck();
+    const card = cardDeck.pop();
+    if (card) cards.push(card);
+  }
+  return cards;
+}
+
+function reshuffleDiscardIntoDeck() {
+  const topCard = discardPile.pop();
+  cardDeck = shuffle(discardPile);
+  discardPile = topCard ? [topCard] : [];
+}
+
+function renderCardGame() {
+  renderCardPlayers();
+  renderCardTable();
+  renderPlayerHand();
+}
+
+function renderCardPlayers() {
+  playersListElement.innerHTML = '';
+
+  if (!cardPlayers.length) {
+    playersListElement.innerHTML = '<div class="player-chip">Nenhum jogador na sala ainda.</div>';
+    return;
+  }
+
+  cardPlayers.forEach((player, index) => {
+    const chip = document.createElement('div');
+    chip.className = `player-chip ${cardGameStarted && index === currentCardPlayer ? 'active' : ''}`.trim();
+    const name = document.createElement('strong');
+    name.textContent = player.name;
+    const details = document.createTextNode(`${player.isBot ? 'BOT' : 'Amigo'} · ${player.hand.length} cartas`);
+    chip.append(name, details);
+    playersListElement.appendChild(chip);
+  });
+}
+
+function renderCardTable() {
+  const topCard = discardPile[discardPile.length - 1];
+  cardTableElement.innerHTML = `
+    <div class="table-card">
+      <span>Sala</span>
+      <strong>${roomCode || 'Sem sala'}</strong>
+    </div>
+    <div class="table-card">
+      <span>Monte</span>
+      <strong>${cardDeck.length} cartas</strong>
+    </div>
+    <div class="table-card">
+      <span>Descarte</span>
+      <strong>${topCard ? formatCard(topCard) : 'Vazio'}</strong>
+    </div>
+  `;
+}
+
+function renderPlayerHand() {
+  playerHandElement.innerHTML = '';
+  if (!cardGameStarted) return;
+
+  const player = cardPlayers[currentCardPlayer];
+  if (player.isBot) {
+    playerHandElement.innerHTML = '<p class="status">O BOT está analisando a jogada...</p>';
+    return;
+  }
+
+  player.hand.forEach((card, index) => {
+    const button = document.createElement('button');
+    button.className = `uno-card uno-${card.color}`;
+    button.type = 'button';
+    button.disabled = !isCardPlayable(card);
+    button.innerHTML = `${colorLabels[card.color]}<strong>${card.value}</strong>`;
+    button.addEventListener('click', () => playCard(index));
+    playerHandElement.appendChild(button);
+  });
+}
+
+function formatCard(card) {
+  return `${colorLabels[card.color]} ${card.value}`;
+}
+
+function isCardPlayable(card) {
+  const topCard = discardPile[discardPile.length - 1];
+  return !topCard || card.color === topCard.color || card.value === topCard.value;
+}
+
+function playCard(cardIndex) {
+  if (!cardGameStarted) return;
+  const player = cardPlayers[currentCardPlayer];
+  const card = player.hand[cardIndex];
+  if (!card || !isCardPlayable(card)) return;
+
+  player.hand.splice(cardIndex, 1);
+  discardPile.push(card);
+
+  if (!player.hand.length) {
+    cardGameStarted = false;
+    cardGameStatusElement.textContent = `${player.name} venceu a partida!`;
+    renderCardGame();
+    return;
+  }
+
+  const steps = applyCardEffect(card);
+  currentCardPlayer = getNextCardPlayerIndex(steps);
+  cardGameStatusElement.textContent = `${player.name} jogou ${formatCard(card)}. Vez de ${cardPlayers[currentCardPlayer].name}.`;
+  renderCardGame();
+  scheduleBotTurn();
+}
+
+function applyCardEffect(card) {
+  if (card.value === 'Reverso') {
+    cardDirection *= -1;
+    return cardPlayers.length === 2 ? 2 : 1;
+  }
+
+  if (card.value === 'Bloqueio') {
+    return 2;
+  }
+
+  if (card.value === '+2') {
+    const targetIndex = getNextCardPlayerIndex(1);
+    cardPlayers[targetIndex].hand.push(...drawCards(2));
+    return 2;
+  }
+
+  return 1;
+}
+
+function getNextCardPlayerIndex(steps) {
+  const total = cardPlayers.length;
+  return (currentCardPlayer + cardDirection * steps + total * 4) % total;
+}
+
+function drawForCurrentPlayer() {
+  if (!cardGameStarted) return;
+  const player = cardPlayers[currentCardPlayer];
+  if (player.isBot) return;
+
+  player.hand.push(...drawCards(1));
+  cardGameStatusElement.textContent = `${player.name} comprou uma carta.`;
+  renderCardGame();
+}
+
+function passCardTurn() {
+  if (!cardGameStarted) return;
+  const player = cardPlayers[currentCardPlayer];
+  if (player.isBot) return;
+
+  currentCardPlayer = getNextCardPlayerIndex(1);
+  cardGameStatusElement.textContent = `${player.name} passou a vez. Vez de ${cardPlayers[currentCardPlayer].name}.`;
+  renderCardGame();
+  scheduleBotTurn();
+}
+
+function scheduleBotTurn() {
+  if (!cardGameStarted) return;
+  const player = cardPlayers[currentCardPlayer];
+  if (!player.isBot) return;
+
+  setTimeout(() => playBotCardTurn(), 800);
+}
+
+function playBotCardTurn() {
+  if (!cardGameStarted) return;
+  const player = cardPlayers[currentCardPlayer];
+  const playableIndex = player.hand.findIndex((card) => isCardPlayable(card));
+
+  if (playableIndex >= 0) {
+    playCard(playableIndex);
+    return;
+  }
+
+  player.hand.push(...drawCards(1));
+  const newPlayableIndex = player.hand.findIndex((card) => isCardPlayable(card));
+  if (newPlayableIndex >= 0) {
+    playCard(newPlayableIndex);
+    return;
+  }
+
+  currentCardPlayer = getNextCardPlayerIndex(1);
+  cardGameStatusElement.textContent = `${player.name} comprou e passou. Vez de ${cardPlayers[currentCardPlayer].name}.`;
+  renderCardGame();
+  scheduleBotTurn();
+}
+
+function copyRoomInvite() {
+  const invite = `${window.location.origin}${window.location.pathname}#cartas?room=${roomCode}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(invite);
+  }
+  cardGameStatusElement.textContent = `Convite copiado: ${roomCode}. Compartilhe o link e peça para o amigo informar o nome na sala.`;
+}
+
 resetTicButton.addEventListener('click', resetTicTacToe);
 toggleBotButton.addEventListener('click', toggleBotMode);
 resetMemoryButton.addEventListener('click', createMemoryCards);
@@ -486,6 +807,18 @@ resetGuessButton.addEventListener('click', resetGuessGame);
 startSnakeButton.addEventListener('click', startSnakeGame);
 resetSnakeButton.addEventListener('click', resetSnakeGame);
 resetDetectiveButton.addEventListener('click', createDetectiveCase);
+playerForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  addCardPlayer(playerNameInput.value);
+  playerNameInput.value = '';
+  playerNameInput.focus();
+});
+addCardBotButton.addEventListener('click', addCardBot);
+startCardGameButton.addEventListener('click', startCardGame);
+resetCardGameButton.addEventListener('click', resetCardRoom);
+drawCardButton.addEventListener('click', drawForCurrentPlayer);
+passTurnButton.addEventListener('click', passCardTurn);
+copyRoomLinkButton.addEventListener('click', copyRoomInvite);
 directionButtons.forEach((button) => {
   button.addEventListener('click', () => changeSnakeDirection(button.dataset.direction));
 });
@@ -508,3 +841,4 @@ resetTicTacToe();
 createMemoryCards();
 resetSnakeGame();
 createDetectiveCase();
+resetCardRoom();
