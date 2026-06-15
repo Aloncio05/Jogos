@@ -749,6 +749,22 @@ h2 {
   flex-direction: column;
 }
 
+.start-match-button {
+  min-height: 58px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  color: #0f172a;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, #facc15, #22c55e, #22d3ee);
+  box-shadow: 0 20px 46px rgba(34, 211, 238, 0.24);
+}
+
+.start-match-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
 .sidebar-players {
   grid-template-columns: 1fr;
 }

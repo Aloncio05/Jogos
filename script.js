@@ -528,6 +528,7 @@ let onlineRoomCode = '';
 let onlineHostId = '';
 let applyingRemoteCardState = false;
 const onlinePlayerId = getOnlinePlayerId();
+let selectedCardPlayerId = localStorage.getItem('aloncinho_selected_card_player_id') || '';
 
 function resetCardRoom(options = {}) {
   const { sync = false } = options;
@@ -585,6 +586,10 @@ function addCardPlayer(name, isBot = false) {
     hand: [],
   });
   cardGameStatusElement.textContent = `${cleanName} entrou na sala.`;
+  if (!isBot) {
+    selectedCardPlayerId = onlinePlayerId;
+    localStorage.setItem('aloncinho_selected_card_player_id', selectedCardPlayerId);
+  }
   showPlayerFeedback(`${cleanName} entrou na mesa com sucesso.`, 'success');
   renderCardPlayers();
   syncOnlineCardState();
@@ -767,12 +772,23 @@ function renderPlayerHand() {
   }
 
   const isPlayerTurn = visiblePlayerIndex === currentCardPlayer;
+  const canControlVisiblePlayer = !onlineRoomRef || player.id === onlinePlayerId;
+
+  if (!player.hand.length) {
+    const message = document.createElement('p');
+    message.className = 'status full-line';
+    message.textContent = cardGameStarted
+      ? `${player.name} ainda não tem cartas visíveis nesta rodada.`
+      : 'Inicie a partida para receber as cartas.';
+    playerHandElement.appendChild(message);
+    return;
+  }
 
   player.hand.forEach((card, index) => {
     const button = document.createElement('button');
     button.className = `uno-card uno-${card.color}`;
     button.type = 'button';
-    button.disabled = !isPlayerTurn || !canControlCurrentCardPlayer() || !isCardPlayable(card);
+    button.disabled = !isPlayerTurn || !canControlVisiblePlayer || !isCardPlayable(card);
     button.innerHTML = `${colorLabels[card.color]}<strong>${card.value}</strong>`;
     button.addEventListener('click', () => playCard(index));
     playerHandElement.appendChild(button);
@@ -787,9 +803,16 @@ function renderPlayerHand() {
 }
 
 function getVisibleHandPlayerIndex() {
-  if (!onlineRoomRef) return currentCardPlayer;
+  const selectedIndex = cardPlayers.findIndex((player) => player.id === selectedCardPlayerId && !player.isBot);
+  if (selectedIndex >= 0) return selectedIndex;
+
   const localIndex = cardPlayers.findIndex((player) => player.id === onlinePlayerId && !player.isBot);
-  return localIndex >= 0 ? localIndex : currentCardPlayer;
+  if (localIndex >= 0) return localIndex;
+
+  const firstHumanIndex = cardPlayers.findIndex((player) => !player.isBot);
+  if (firstHumanIndex >= 0) return firstHumanIndex;
+
+  return currentCardPlayer;
 }
 
 function formatCard(card) {
