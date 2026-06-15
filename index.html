@@ -157,70 +157,13 @@
           <p class="eyebrow">Jogo 06</p>
           <h2 id="cards-title">Cartas do Aloncinho</h2>
         </div>
-        <div class="actions">
-          <button id="start-card-game" class="secondary-button" type="button">Iniciar partida</button>
-          <button id="reset-card-game" class="secondary-button" type="button">Nova sala</button>
-        </div>
       </div>
 
       <p class="status">
-        Jogo inspirado em Uno. Adicione amigos pelo nome, complete com BOTs e jogue com no máximo 8 jogadores.
+        O jogo de cartas agora abre em uma mesa própria, mais parecida com uma partida de Uno.
+        Entre na sala, convide amigos, adicione BOTs e jogue com até 8 participantes.
       </p>
-
-      <div class="invite-box">
-        <div>
-          <span>Código da sala</span>
-          <strong id="room-code">ALON-0000</strong>
-        </div>
-        <button id="copy-room-link" class="secondary-button" type="button">Copiar convite</button>
-      </div>
-
-      <div class="online-box">
-        <div>
-          <p class="eyebrow">Multiplayer online</p>
-          <h3>Sala online</h3>
-          <p id="online-status" class="status">Configure o Firebase para jogar online com amigos.</p>
-        </div>
-        <div class="online-controls">
-          <button id="create-online-room" class="secondary-button" type="button">Criar sala online</button>
-          <form id="join-room-form" class="join-room-form">
-            <input id="join-room-code" type="text" maxlength="9" placeholder="Código da sala">
-            <button type="submit">Entrar</button>
-          </form>
-        </div>
-      </div>
-
-      <form id="player-form" class="player-form">
-        <label for="player-name">Nome do jogador</label>
-        <div class="guess-row">
-          <input id="player-name" type="text" maxlength="18" placeholder="Ex: Aloncinho" required>
-          <button type="submit">Adicionar</button>
-        </div>
-      </form>
-
-      <div class="actions card-actions">
-        <button id="add-card-bot" class="secondary-button" type="button">Adicionar BOT</button>
-        <button id="draw-card" class="secondary-button" type="button">Comprar carta</button>
-        <button id="pass-turn" class="secondary-button" type="button">Passar vez</button>
-        <button id="call-uno" class="secondary-button" type="button">UNO!</button>
-        <button id="challenge-plus-four" class="secondary-button" type="button">Desafiar +4</button>
-      </div>
-
-      <div class="color-picker" aria-label="Escolha de cor para curinga">
-        <span>Cor escolhida:</span>
-        <button class="color-choice uno-red" type="button" data-card-color="red">Vermelho</button>
-        <button class="color-choice uno-blue" type="button" data-card-color="blue">Azul</button>
-        <button class="color-choice uno-green" type="button" data-card-color="green">Verde</button>
-        <button class="color-choice uno-yellow" type="button" data-card-color="yellow">Amarelo</button>
-      </div>
-
-      <p id="card-game-status" class="status">Adicione pelo menos 2 jogadores para iniciar.</p>
-      <div id="players-list" class="players-list" aria-label="Jogadores da sala"></div>
-      <div id="card-arena" class="card-arena" aria-label="Arena do jogo de cartas">
-        <div id="card-avatars" class="card-avatars"></div>
-        <div id="card-table" class="card-table" aria-label="Mesa do jogo de cartas"></div>
-      </div>
-      <div id="player-hand" class="player-hand" aria-label="Cartas do jogador atual"></div>
+      <a class="hero-button" href="cartas.html" target="_blank" rel="noopener noreferrer">Abrir mesa de cartas</a>
     </section>
   </main>
 

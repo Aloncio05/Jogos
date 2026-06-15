@@ -305,7 +305,7 @@ function resetGuessGame() {
   guessInput.focus();
 }
 
-const snakeContext = snakeCanvas.getContext('2d');
+const snakeContext = snakeCanvas ? snakeCanvas.getContext('2d') : null;
 const snakeGridSize = 18;
 const snakeTileCount = snakeCanvas.width / snakeGridSize;
 let snake = [];
@@ -377,6 +377,7 @@ function moveSnake() {
 }
 
 function drawSnake() {
+  if (!snakeContext) return;
   snakeContext.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
   snakeContext.fillStyle = 'rgba(255, 255, 255, 0.05)';
   snakeContext.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
@@ -669,6 +670,7 @@ function renderCardGame() {
 }
 
 function renderCardAvatars() {
+  if (!cardAvatarsElement) return;
   cardAvatarsElement.innerHTML = '';
 
   cardPlayers.forEach((player, index) => {
@@ -691,6 +693,7 @@ function renderCardAvatars() {
 }
 
 function renderCardPlayers() {
+  if (!playersListElement) return;
   playersListElement.innerHTML = '';
 
   if (!cardPlayers.length) {
@@ -710,7 +713,10 @@ function renderCardPlayers() {
 }
 
 function renderCardTable() {
+  if (!cardTableElement) return;
   const topCard = discardPile[discardPile.length - 1];
+  if (deckCountLabel) deckCountLabel.textContent = `${cardDeck.length}`;
+  if (discardLabel) discardLabel.textContent = topCard ? formatCard(topCard) : 'Vazio';
   cardTableElement.innerHTML = `
     <div class="table-card">
       <span>Sala</span>
@@ -732,6 +738,7 @@ function renderCardTable() {
 }
 
 function renderPlayerHand() {
+  if (!playerHandElement) return;
   playerHandElement.innerHTML = '';
   if (!cardGameStarted) return;
 
@@ -996,7 +1003,8 @@ function chooseBestBotColor(player) {
 
 function copyRoomInvite() {
   const code = onlineRoomCode || roomCode;
-  const invite = `${window.location.origin}${window.location.pathname}#cartas?room=${code}`;
+  const basePath = window.location.pathname.replace(/[^/]*$/, 'cartas.html');
+  const invite = `${window.location.origin}${basePath}#cartas?room=${code}`;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(invite);
   }
@@ -1112,35 +1120,39 @@ function syncOnlineCardState(force = false) {
   onlineRoomRef.set(getCardGameState());
 }
 
-resetTicButton.addEventListener('click', resetTicTacToe);
-toggleBotButton.addEventListener('click', toggleBotMode);
-resetMemoryButton.addEventListener('click', createMemoryCards);
-guessForm.addEventListener('submit', submitGuess);
-resetGuessButton.addEventListener('click', resetGuessGame);
-startSnakeButton.addEventListener('click', startSnakeGame);
-resetSnakeButton.addEventListener('click', resetSnakeGame);
-resetDetectiveButton.addEventListener('click', createDetectiveCase);
-playerForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  addCardPlayer(playerNameInput.value);
-  playerNameInput.value = '';
-  playerNameInput.focus();
-});
-addCardBotButton.addEventListener('click', addCardBot);
-startCardGameButton.addEventListener('click', startCardGame);
-resetCardGameButton.addEventListener('click', () => {
-  if (onlineRoomRef) {
-    createOnlineRoom();
-    return;
-  }
-  resetCardRoom();
-});
-drawCardButton.addEventListener('click', drawForCurrentPlayer);
-passTurnButton.addEventListener('click', passCardTurn);
-copyRoomLinkButton.addEventListener('click', copyRoomInvite);
-createOnlineRoomButton.addEventListener('click', createOnlineRoom);
-callUnoButton.addEventListener('click', callUno);
-challengePlusFourButton.addEventListener('click', challengePlusFour);
+if (resetTicButton) resetTicButton.addEventListener('click', resetTicTacToe);
+if (toggleBotButton) toggleBotButton.addEventListener('click', toggleBotMode);
+if (resetMemoryButton) resetMemoryButton.addEventListener('click', createMemoryCards);
+if (guessForm) guessForm.addEventListener('submit', submitGuess);
+if (resetGuessButton) resetGuessButton.addEventListener('click', resetGuessGame);
+if (startSnakeButton) startSnakeButton.addEventListener('click', startSnakeGame);
+if (resetSnakeButton) resetSnakeButton.addEventListener('click', resetSnakeGame);
+if (resetDetectiveButton) resetDetectiveButton.addEventListener('click', createDetectiveCase);
+if (playerForm) {
+  playerForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    addCardPlayer(playerNameInput.value);
+    playerNameInput.value = '';
+    playerNameInput.focus();
+  });
+}
+if (addCardBotButton) addCardBotButton.addEventListener('click', addCardBot);
+if (startCardGameButton) startCardGameButton.addEventListener('click', startCardGame);
+if (resetCardGameButton) {
+  resetCardGameButton.addEventListener('click', () => {
+    if (onlineRoomRef) {
+      createOnlineRoom();
+      return;
+    }
+    resetCardRoom();
+  });
+}
+if (drawCardButton) drawCardButton.addEventListener('click', drawForCurrentPlayer);
+if (passTurnButton) passTurnButton.addEventListener('click', passCardTurn);
+if (copyRoomLinkButton) copyRoomLinkButton.addEventListener('click', copyRoomInvite);
+if (createOnlineRoomButton) createOnlineRoomButton.addEventListener('click', createOnlineRoom);
+if (callUnoButton) callUnoButton.addEventListener('click', callUno);
+if (challengePlusFourButton) challengePlusFourButton.addEventListener('click', challengePlusFour);
 colorChoiceButtons.forEach((button) => {
   button.addEventListener('click', () => chooseWildColor(button.dataset.cardColor));
 });
@@ -1166,15 +1178,17 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-resetTicTacToe();
-createMemoryCards();
-resetSnakeGame();
-createDetectiveCase();
-resetCardRoom();
-initFirebase();
+if (ticBoardElement) resetTicTacToe();
+if (memoryBoardElement) createMemoryCards();
+if (snakeCanvas) resetSnakeGame();
+if (detectiveStoryElement) createDetectiveCase();
+if (roomCodeElement) {
+  resetCardRoom();
+  initFirebase();
+}
 
 const roomFromUrl = new URLSearchParams(window.location.hash.split('?')[1] || '').get('room');
-if (roomFromUrl) {
+if (roomFromUrl && joinRoomCodeInput) {
   joinRoomCodeInput.value = roomFromUrl.toUpperCase();
   joinOnlineRoom(roomFromUrl);
 }

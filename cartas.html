@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Mesa online do Cartas do Aloncinho, jogo inspirado em Uno.">
+  <title>Cartas do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="cards-page">
+  <header class="cards-topbar">
+    <a class="brand" href="index.html">Jogos do Aloncinho</a>
+    <div class="actions">
+      <button id="create-online-room" class="secondary-button" type="button">Criar sala online</button>
+      <button id="reset-card-game" class="secondary-button" type="button">Nova sala</button>
+    </div>
+  </header>
+
+  <main class="uno-layout">
+    <aside class="uno-sidebar">
+      <p class="eyebrow">Cartas online</p>
+      <h1>Cartas do Aloncinho</h1>
+      <p id="online-status" class="status">Configure o Firebase para jogar online com amigos.</p>
+
+      <div class="invite-box compact-invite">
+        <div>
+          <span>Código da sala</span>
+          <strong id="room-code">ALON-0000</strong>
+        </div>
+        <button id="copy-room-link" class="secondary-button" type="button">Copiar</button>
+      </div>
+
+      <form id="join-room-form" class="join-room-form stacked-form">
+        <label for="join-room-code">Entrar em uma sala</label>
+        <input id="join-room-code" type="text" maxlength="9" placeholder="ALON-0000">
+        <button type="submit">Entrar</button>
+      </form>
+
+      <form id="player-form" class="player-form">
+        <label for="player-name">Seu nome na mesa</label>
+        <div class="guess-row">
+          <input id="player-name" type="text" maxlength="18" placeholder="Ex: Aloncinho" required>
+          <button type="submit">Adicionar</button>
+        </div>
+      </form>
+
+      <div class="actions card-actions stacked-actions">
+        <button id="add-card-bot" class="secondary-button" type="button">Adicionar BOT</button>
+        <button id="start-card-game" class="secondary-button" type="button">Iniciar partida</button>
+      </div>
+
+      <div id="players-list" class="players-list sidebar-players" aria-label="Jogadores da sala"></div>
+    </aside>
+
+    <section class="uno-game-table" aria-labelledby="cards-title">
+      <div class="game-header table-header">
+        <div>
+          <p class="eyebrow">Mesa da partida</p>
+          <h2 id="cards-title">Partida estilo Uno</h2>
+        </div>
+        <p id="card-game-status" class="status">Adicione pelo menos 2 jogadores para iniciar.</p>
+      </div>
+
+      <div id="card-avatars" class="uno-opponents" aria-label="Jogadores na mesa"></div>
+
+      <div id="card-arena" class="uno-center" aria-label="Centro da mesa">
+        <div class="deck-card">
+          <span>Monte</span>
+          <strong id="deck-count-label">0</strong>
+        </div>
+        <div id="card-table" class="card-table uno-table-state" aria-label="Estado da mesa"></div>
+        <div class="discard-focus">
+          <span>Descarte</span>
+          <strong id="discard-label">Vazio</strong>
+        </div>
+      </div>
+
+      <div class="color-picker" aria-label="Escolha de cor para curinga">
+        <span>Escolha a cor do curinga:</span>
+        <button class="color-choice uno-red" type="button" data-card-color="red">Vermelho</button>
+        <button class="color-choice uno-blue" type="button" data-card-color="blue">Azul</button>
+        <button class="color-choice uno-green" type="button" data-card-color="green">Verde</button>
+        <button class="color-choice uno-yellow" type="button" data-card-color="yellow">Amarelo</button>
+      </div>
+
+      <div class="actions card-actions table-actions">
+        <button id="draw-card" class="secondary-button" type="button">Comprar carta</button>
+        <button id="pass-turn" class="secondary-button" type="button">Passar vez</button>
+        <button id="call-uno" class="secondary-button" type="button">UNO!</button>
+        <button id="challenge-plus-four" class="secondary-button" type="button">Desafiar +4</button>
+      </div>
+
+      <div class="hand-area">
+        <h3>Sua mão</h3>
+        <div id="player-hand" class="player-hand uno-hand" aria-label="Cartas do jogador atual"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -9,7 +9,7 @@ Site simples de jogos criado com **HTML**, **CSS** e **JavaScript puro**, pronto
 - **Adivinhe o Número:** tente descobrir o número secreto entre 1 e 100.
 - **Jogo da Minhoca:** controle a minhoca, coma pontos e evite colisões.
 - **Jogo do Detetive:** leia pistas e escolha o suspeito correto.
-- **Cartas do Aloncinho:** jogo inspirado em Uno, com nomes, BOTs, código de convite, sala online e limite de 8 jogadores.
+- **Cartas do Aloncinho:** jogo inspirado em Uno, em página própria, com nomes, BOTs, código de convite, sala online e limite de 8 jogadores.
 
 ## Regras do Cartas do Aloncinho
 
@@ -78,12 +78,13 @@ Essas regras são abertas e servem apenas para protótipo. Para produção, adic
 ## Como Jogar Online
 
 1. Abra o jogo **Cartas do Aloncinho**.
-2. Clique em **Criar sala online**.
-3. Informe seu nome em **Nome do jogador** e clique em **Adicionar**.
-4. Clique em **Copiar convite** e envie para seus amigos.
-5. Cada amigo abre o link, informa o nome e entra na sala.
-6. Use **Adicionar BOT** se quiser completar a mesa com robôs.
-7. Clique em **Iniciar partida**.
+2. Clique em **Abrir mesa de cartas** para abrir `cartas.html`.
+3. Clique em **Criar sala online**.
+4. Informe seu nome em **Seu nome na mesa** e clique em **Adicionar**.
+5. Clique em **Copiar convite** e envie para seus amigos.
+6. Cada amigo abre o link, informa o nome e entra na sala.
+7. Use **Adicionar BOT** se quiser completar a mesa com robôs.
+8. Clique em **Iniciar partida**.
 
 Limite: até **8 jogadores** por sala.
 
@@ -102,6 +103,7 @@ bunx serve .
 ```text
 site-jogos-basicos/
   index.html
+  cartas.html
   styles.css
   script.js
   firebase-config.js
