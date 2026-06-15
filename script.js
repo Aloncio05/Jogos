@@ -307,7 +307,7 @@ function resetGuessGame() {
 
 const snakeContext = snakeCanvas ? snakeCanvas.getContext('2d') : null;
 const snakeGridSize = 18;
-const snakeTileCount = snakeCanvas.width / snakeGridSize;
+const snakeTileCount = snakeCanvas ? snakeCanvas.width / snakeGridSize : 0;
 let snake = [];
 let snakeFood = { x: 8, y: 8 };
 let snakeDirection = { x: 1, y: 0 };
