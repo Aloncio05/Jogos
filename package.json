@@ -4,6 +4,7 @@
   "private": true,
   "description": "Site estático com jogos básicos em HTML, CSS e JavaScript.",
   "scripts": {
+    "build": "node scripts/generate-firebase-config.js",
     "dev": "bunx serve .",
     "start": "bunx serve ."
   },

@@ -21,8 +21,26 @@ Para ativar:
 2. Crie um app Web no Firebase.
 3. Ative **Realtime Database**.
 4. Copie a configuração do app Web.
-5. Substitua os valores em `firebase-config.js`.
-6. Publique novamente no GitHub/Vercel.
+5. Configure as variáveis de ambiente na Vercel.
+6. Faça um novo deploy.
+
+Variáveis necessárias na Vercel:
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_DATABASE_URL
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
+
+Para este projeto, a URL do Realtime Database é:
+
+```text
+https://jogos-aloncinho-default-rtdb.firebaseio.com
+```
 
 Regras simples para teste no Realtime Database:
 
@@ -70,6 +88,9 @@ site-jogos-basicos/
   index.html
   styles.css
   script.js
+  firebase-config.js
+  scripts/
+    generate-firebase-config.js
   vercel.json
   README.md
 ```
@@ -80,7 +101,7 @@ site-jogos-basicos/
 2. Acesse a Vercel.
 3. Clique em **Add New Project**.
 4. Importe o repositório.
-5. Use as configurações padrão.
-6. Clique em **Deploy**.
-
-Como é um site estático, não precisa configurar build command.
+5. Em **Environment Variables**, cadastre as variáveis `VITE_FIREBASE_*`.
+6. Em **Build Command**, use `bun run build`.
+7. Em **Output Directory**, deixe vazio ou `./`.
+8. Clique em **Deploy**.

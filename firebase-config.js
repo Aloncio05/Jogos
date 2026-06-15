@@ -1,10 +1,9 @@
-// Configuracao publica do Firebase Web App.
-// Para ativar o multiplayer online, substitua os valores abaixo pelos dados do seu projeto Firebase.
-// No Firebase: Project settings > General > Your apps > Web app > Firebase SDK config.
+// Arquivo placeholder para desenvolvimento local.
+// Na Vercel, este arquivo e gerado pelo script `bun run build` usando variaveis de ambiente.
 window.FIREBASE_CONFIG = {
   apiKey: "COLE_SUA_API_KEY_AQUI",
   authDomain: "COLE_SEU_AUTH_DOMAIN_AQUI",
-  databaseURL: "COLE_SEU_DATABASE_URL_AQUI",
+  databaseURL: "https://jogos-aloncinho-default-rtdb.firebaseio.com",
   projectId: "COLE_SEU_PROJECT_ID_AQUI",
   storageBucket: "COLE_SEU_STORAGE_BUCKET_AQUI",
   messagingSenderId: "COLE_SEU_MESSAGING_SENDER_ID_AQUI",
