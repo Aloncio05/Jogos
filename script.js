@@ -41,6 +41,7 @@ const cardAvatarsElement = document.querySelector('#card-avatars');
 const playerHandElement = document.querySelector('#player-hand');
 const deckCountLabel = document.querySelector('#deck-count-label');
 const discardLabel = document.querySelector('#discard-label');
+const lastCardVisualElement = document.querySelector('#last-card-visual');
 const onlineStatusElement = document.querySelector('#online-status');
 const createOnlineRoomButton = document.querySelector('#create-online-room');
 const joinRoomForm = document.querySelector('#join-room-form');
@@ -338,6 +339,7 @@ function startSnakeGame() {
   if (snakeRunning) return;
   snakeRunning = true;
   snakeStatusElement.textContent = `Pontuação: ${snakeScore}`;
+  if (startSnakeButton) startSnakeButton.textContent = 'Jogando...';
   snakeTimer = setInterval(moveSnake, 130);
 }
 
@@ -347,6 +349,7 @@ function stopSnake() {
     clearInterval(snakeTimer);
     snakeTimer = null;
   }
+  if (startSnakeButton) startSnakeButton.textContent = 'Começar';
 }
 
 function moveSnake() {
@@ -423,9 +426,13 @@ function changeSnakeDirection(direction) {
   const next = directions[direction];
   if (!next) return;
 
-  const isOpposite = next.x + snakeDirection.x === 0 && next.y + snakeDirection.y === 0;
+  const isOpposite = next.x + nextSnakeDirection.x === 0 && next.y + nextSnakeDirection.y === 0;
   if (!isOpposite) {
     nextSnakeDirection = next;
+  }
+
+  if (!snakeRunning && snakeCanvas) {
+    startSnakeGame();
   }
 }
 
@@ -739,6 +746,7 @@ function renderCardTable() {
   const topCard = discardPile[discardPile.length - 1];
   if (deckCountLabel) deckCountLabel.textContent = `${cardDeck.length}`;
   if (discardLabel) discardLabel.textContent = topCard ? formatCard(topCard) : 'Vazio';
+  renderLastCardVisual(topCard);
   cardTableElement.innerHTML = `
     <div class="table-card">
       <span>Sala</span>
@@ -757,6 +765,19 @@ function renderCardTable() {
       <strong>${currentDeclaredColor ? colorLabels[currentDeclaredColor] : 'Sem cor'}</strong>
     </div>
   `;
+}
+
+function renderLastCardVisual(card) {
+  if (!lastCardVisualElement) return;
+
+  if (!card) {
+    lastCardVisualElement.className = 'last-card-visual';
+    lastCardVisualElement.innerHTML = '<span>Última carta</span><strong>Aguardando</strong>';
+    return;
+  }
+
+  lastCardVisualElement.className = `last-card-visual uno-card ${getCardClass(card)} table-last-card`;
+  lastCardVisualElement.innerHTML = getCardFace(card, 'Última carta');
 }
 
 function renderPlayerHand() {
@@ -788,10 +809,10 @@ function renderPlayerHand() {
 
   player.hand.forEach((card, index) => {
     const button = document.createElement('button');
-    button.className = `uno-card uno-${card.color}`;
+    button.className = `uno-card ${getCardClass(card)}`;
     button.type = 'button';
     button.disabled = !isPlayerTurn || !canControlVisiblePlayer || !isCardPlayable(card);
-    button.innerHTML = `${colorLabels[card.color]}<strong>${card.value}</strong>`;
+    button.innerHTML = getCardFace(card);
     button.addEventListener('click', () => playCard(index));
     playerHandElement.appendChild(button);
   });
@@ -819,6 +840,15 @@ function getVisibleHandPlayerIndex() {
 
 function formatCard(card) {
   return card.color === 'wild' ? card.value : `${colorLabels[card.color]} ${card.value}`;
+}
+
+function getCardClass(card) {
+  return card.color === 'wild' ? 'uno-wild' : `uno-${card.color}`;
+}
+
+function getCardFace(card, label = '') {
+  const colorName = card.color === 'wild' ? 'Especial' : colorLabels[card.color];
+  return `<span>${label || colorName}</span><strong>${card.value}</strong><small>${colorName}</small>`;
 }
 
 function isCardPlayable(card) {
@@ -1292,11 +1322,20 @@ directionButtons.forEach((button) => {
 });
 
 window.addEventListener('keydown', (event) => {
+  if (!snakeCanvas) return;
   const keyDirections = {
     ArrowUp: 'up',
     ArrowDown: 'down',
     ArrowLeft: 'left',
     ArrowRight: 'right',
+    w: 'up',
+    W: 'up',
+    s: 'down',
+    S: 'down',
+    a: 'left',
+    A: 'left',
+    d: 'right',
+    D: 'right',
   };
 
   if (keyDirections[event.key]) {
