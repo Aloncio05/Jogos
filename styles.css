@@ -686,9 +686,9 @@ h2 {
 .cards-page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 50% 25%, rgba(34, 211, 238, 0.18), transparent 34rem),
-    radial-gradient(circle at 15% 80%, rgba(124, 58, 237, 0.22), transparent 24rem),
-    #111827;
+    radial-gradient(circle at 18% 18%, rgba(251, 191, 36, 0.28), transparent 18rem),
+    radial-gradient(circle at 82% 22%, rgba(236, 72, 153, 0.22), transparent 22rem),
+    linear-gradient(135deg, #2e1065, #172554 48%, #064e3b);
 }
 
 .cards-topbar {
@@ -704,9 +704,9 @@ h2 {
 
 .uno-layout {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: 330px minmax(0, 1fr);
   gap: 20px;
-  width: min(1500px, calc(100% - 32px));
+  width: min(1580px, calc(100% - 32px));
   margin: 20px auto 42px;
 }
 
@@ -755,44 +755,95 @@ h2 {
 
 .uno-game-table {
   min-height: calc(100vh - 112px);
-  padding: clamp(18px, 3vw, 32px);
+  padding: 0;
+  overflow: hidden;
 }
 
-.table-header {
+.table-header,
+.table-hud {
   align-items: flex-start;
 }
 
+.table-hud {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 28px 0;
+  position: relative;
+  z-index: 4;
+}
+
 .uno-opponents {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin: 12px 0 22px;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .uno-center {
-  display: grid;
-  grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) minmax(130px, 180px);
-  gap: 18px;
-  align-items: center;
-  min-height: 310px;
+  position: relative;
+  min-height: 560px;
+  margin: 20px 28px 0;
   padding: clamp(18px, 4vw, 38px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 34px;
+  border-radius: 42px;
   background:
-    radial-gradient(circle at center, rgba(34, 211, 238, 0.22), transparent 18rem),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.84));
+    radial-gradient(circle at 50% 45%, rgba(250, 204, 21, 0.26), transparent 9rem),
+    radial-gradient(circle at center, #36c26f 0 30%, #22a55f 31% 45%, #16804e 46% 62%, transparent 63%),
+    linear-gradient(135deg, rgba(14, 165, 233, 0.55), rgba(59, 130, 246, 0.22));
+  box-shadow: inset 0 0 80px rgba(255, 255, 255, 0.13), 0 28px 70px rgba(0, 0, 0, 0.32);
+}
+
+.game-board::before {
+  content: "";
+  position: absolute;
+  inset: 12% 16%;
+  border-radius: 50%;
+  border: 28px solid rgba(255, 255, 255, 0.12);
+  transform: rotate(-12deg);
+}
+
+.game-board::after {
+  content: "ALONCINHO";
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  transform: translate(-50%, -50%) rotate(-9deg);
+  color: rgba(255, 255, 255, 0.16);
+  font-size: clamp(2.4rem, 8vw, 7rem);
+  font-weight: 1000;
+  letter-spacing: -0.08em;
 }
 
 .deck-card,
 .discard-focus {
   display: grid;
-  min-height: 190px;
+  min-height: 156px;
   place-items: center;
-  padding: 18px;
+  padding: 18px 14px;
   border: 3px solid rgba(255, 255, 255, 0.72);
   border-radius: 24px;
   text-align: center;
   box-shadow: 0 20px 36px rgba(0, 0, 0, 0.28);
+}
+
+.floating-deck,
+.floating-discard {
+  position: absolute;
+  top: 43%;
+  z-index: 2;
+  width: 132px;
+  transform: translateY(-50%) rotate(-8deg);
+}
+
+.floating-deck {
+  left: 32%;
+}
+
+.floating-discard {
+  right: 32%;
+  transform: translateY(-50%) rotate(8deg);
 }
 
 .deck-card {
@@ -820,21 +871,39 @@ h2 {
 }
 
 .uno-table-state {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 3;
+  display: flex;
+  gap: 10px;
+  width: min(520px, calc(100% - 36px));
   margin: 0;
+  transform: translateX(-50%);
+}
+
+.uno-table-state .table-card {
+  flex: 1;
+  min-height: auto;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.72);
 }
 
 .hand-area {
-  margin-top: 22px;
-  padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 26px;
-  background: rgba(0, 0, 0, 0.16);
+  margin: 0;
+  padding: 14px 18px 28px;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.25), rgba(15, 23, 42, 0.76));
 }
 
 .uno-hand {
   align-items: flex-end;
-  min-height: 160px;
+  justify-content: center;
+  min-height: 190px;
+  gap: 0;
+  padding-top: 12px;
 }
 
 .full-line {
@@ -842,12 +911,56 @@ h2 {
 }
 
 .uno-hand .uno-card {
+  margin-left: -18px;
   transition: transform 160ms ease, filter 160ms ease;
 }
 
+.uno-hand .uno-card:first-child {
+  margin-left: 0;
+}
+
 .uno-hand .uno-card:not(:disabled):hover {
-  transform: translateY(-14px) rotate(-2deg);
+  transform: translateY(-20px) scale(1.04);
   filter: brightness(1.08);
+}
+
+.avatar-card {
+  position: absolute;
+  width: 150px;
+  min-height: 118px;
+  padding: 12px;
+  pointer-events: auto;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
+}
+
+.uno-opponents .avatar-card:nth-child(1) {
+  left: 6%;
+  top: 38%;
+}
+
+.uno-opponents .avatar-card:nth-child(2) {
+  left: 39%;
+  top: 5%;
+}
+
+.uno-opponents .avatar-card:nth-child(3) {
+  right: 7%;
+  top: 38%;
+}
+
+.uno-opponents .avatar-card:nth-child(4) {
+  left: 18%;
+  bottom: 13%;
+}
+
+.uno-opponents .avatar-card:nth-child(5) {
+  right: 18%;
+  bottom: 13%;
+}
+
+.uno-opponents .avatar-card:nth-child(n+6) {
+  right: 4%;
+  bottom: 8%;
 }
 
 .uno-red {
@@ -924,8 +1037,7 @@ h2 {
   }
 
   .cards-topbar,
-  .uno-layout,
-  .uno-center {
+  .uno-layout {
     grid-template-columns: 1fr;
   }
 
@@ -937,9 +1049,41 @@ h2 {
     position: static;
   }
 
-  .uno-opponents,
+  .uno-center {
+    min-height: 620px;
+    margin: 16px 12px 0;
+  }
+
+  .floating-deck {
+    left: 18%;
+  }
+
+  .floating-discard {
+    right: 18%;
+  }
+
+  .avatar-card {
+    width: 122px;
+    min-height: 104px;
+  }
+
+  .uno-opponents .avatar-card:nth-child(1) {
+    left: 4%;
+    top: 34%;
+  }
+
+  .uno-opponents .avatar-card:nth-child(2) {
+    left: 34%;
+    top: 4%;
+  }
+
+  .uno-opponents .avatar-card:nth-child(3) {
+    right: 4%;
+    top: 34%;
+  }
+
   .uno-table-state {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 
@@ -962,7 +1106,6 @@ h2 {
     grid-template-columns: 300px minmax(0, 1fr);
   }
 
-  .uno-opponents,
   .uno-center {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

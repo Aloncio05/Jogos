@@ -53,8 +53,8 @@
       <div id="players-list" class="players-list sidebar-players" aria-label="Jogadores da sala"></div>
     </aside>
 
-    <section class="uno-game-table" aria-labelledby="cards-title">
-      <div class="game-header table-header">
+    <section class="uno-game-table mobile-table" aria-labelledby="cards-title">
+      <div class="table-hud">
         <div>
           <p class="eyebrow">Mesa da partida</p>
           <h2 id="cards-title">Partida estilo Uno</h2>
@@ -62,18 +62,20 @@
         <p id="card-game-status" class="status">Adicione pelo menos 2 jogadores para iniciar.</p>
       </div>
 
-      <div id="card-avatars" class="uno-opponents" aria-label="Jogadores na mesa"></div>
+      <div id="card-arena" class="uno-center game-board" aria-label="Centro da mesa">
+        <div id="card-avatars" class="uno-opponents" aria-label="Jogadores na mesa"></div>
 
-      <div id="card-arena" class="uno-center" aria-label="Centro da mesa">
-        <div class="deck-card">
+        <div class="deck-card floating-deck">
           <span>Monte</span>
           <strong id="deck-count-label">0</strong>
         </div>
-        <div id="card-table" class="card-table uno-table-state" aria-label="Estado da mesa"></div>
-        <div class="discard-focus">
+
+        <div class="discard-focus floating-discard">
           <span>Descarte</span>
           <strong id="discard-label">Vazio</strong>
         </div>
+
+        <div id="card-table" class="card-table uno-table-state" aria-label="Estado da mesa"></div>
       </div>
 
       <div class="color-picker" aria-label="Escolha de cor para curinga">
