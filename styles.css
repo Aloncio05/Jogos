@@ -792,6 +792,10 @@ h2 {
   min-height: 160px;
 }
 
+.full-line {
+  flex-basis: 100%;
+}
+
 .uno-hand .uno-card {
   transition: transform 160ms ease, filter 160ms ease;
 }

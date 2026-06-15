@@ -742,26 +742,39 @@ function renderPlayerHand() {
   playerHandElement.innerHTML = '';
   if (!cardGameStarted) return;
 
-  const player = cardPlayers[currentCardPlayer];
+  const visiblePlayerIndex = getVisibleHandPlayerIndex();
+  const player = cardPlayers[visiblePlayerIndex];
+  if (!player) return;
+
   if (player.isBot) {
     playerHandElement.innerHTML = '<p class="status">O BOT está analisando a jogada...</p>';
     return;
   }
 
-  if (!canControlCurrentCardPlayer()) {
-    playerHandElement.innerHTML = '<p class="status">Aguarde sua vez. Cada amigo vê e joga apenas as próprias cartas.</p>';
-    return;
-  }
+  const isPlayerTurn = visiblePlayerIndex === currentCardPlayer;
 
   player.hand.forEach((card, index) => {
     const button = document.createElement('button');
     button.className = `uno-card uno-${card.color}`;
     button.type = 'button';
-    button.disabled = !isCardPlayable(card);
+    button.disabled = !isPlayerTurn || !canControlCurrentCardPlayer() || !isCardPlayable(card);
     button.innerHTML = `${colorLabels[card.color]}<strong>${card.value}</strong>`;
     button.addEventListener('click', () => playCard(index));
     playerHandElement.appendChild(button);
   });
+
+  if (!isPlayerTurn) {
+    const message = document.createElement('p');
+    message.className = 'status full-line';
+    message.textContent = `Sua mão está visível. Aguarde a vez de ${cardPlayers[currentCardPlayer].name}.`;
+    playerHandElement.appendChild(message);
+  }
+}
+
+function getVisibleHandPlayerIndex() {
+  if (!onlineRoomRef) return currentCardPlayer;
+  const localIndex = cardPlayers.findIndex((player) => player.id === onlinePlayerId && !player.isBot);
+  return localIndex >= 0 ? localIndex : currentCardPlayer;
 }
 
 function formatCard(card) {
@@ -778,11 +791,20 @@ function isCardPlayable(card) {
 }
 
 function playCard(cardIndex) {
-  if (!cardGameStarted) return;
-  if (!canControlCurrentCardPlayer()) return;
+  if (!cardGameStarted) {
+    setCardStatus('Inicie a partida antes de jogar uma carta.');
+    return;
+  }
+  if (!canControlCurrentCardPlayer()) {
+    setCardStatus(`Ainda não é sua vez. Agora é a vez de ${cardPlayers[currentCardPlayer].name}.`);
+    return;
+  }
   const player = cardPlayers[currentCardPlayer];
   const card = player.hand[cardIndex];
-  if (!card || !isCardPlayable(card)) return;
+  if (!card || !isCardPlayable(card)) {
+    setCardStatus('Essa carta não pode ser jogada agora. Use a mesma cor, mesmo número/símbolo ou um curinga válido.');
+    return;
+  }
 
   if (card.type === 'wild' || card.type === 'wild4') {
     pendingWildColorCardIndex = cardIndex;
@@ -861,10 +883,19 @@ function getNextCardPlayerIndex(steps) {
 }
 
 function drawForCurrentPlayer() {
-  if (!cardGameStarted) return;
-  if (!canControlCurrentCardPlayer()) return;
+  if (!cardGameStarted) {
+    setCardStatus('Inicie a partida antes de comprar carta.');
+    return;
+  }
+  if (!canControlCurrentCardPlayer()) {
+    setCardStatus(`Você só pode comprar carta na sua vez. Agora é a vez de ${cardPlayers[currentCardPlayer].name}.`);
+    return;
+  }
   const player = cardPlayers[currentCardPlayer];
-  if (player.isBot) return;
+  if (player.isBot) {
+    setCardStatus('Aguarde o BOT jogar automaticamente.');
+    return;
+  }
 
   player.hand.push(...drawCards(1));
   cardGameStatusElement.textContent = `${player.name} comprou uma carta.`;
@@ -873,10 +904,19 @@ function drawForCurrentPlayer() {
 }
 
 function passCardTurn() {
-  if (!cardGameStarted) return;
-  if (!canControlCurrentCardPlayer()) return;
+  if (!cardGameStarted) {
+    setCardStatus('Inicie a partida antes de passar a vez.');
+    return;
+  }
+  if (!canControlCurrentCardPlayer()) {
+    setCardStatus(`Você só pode passar na sua vez. Agora é a vez de ${cardPlayers[currentCardPlayer].name}.`);
+    return;
+  }
   const player = cardPlayers[currentCardPlayer];
-  if (player.isBot) return;
+  if (player.isBot) {
+    setCardStatus('Aguarde o BOT jogar automaticamente.');
+    return;
+  }
 
   currentCardPlayer = getNextCardPlayerIndex(1);
   cardGameStatusElement.textContent = `${player.name} passou a vez. Vez de ${cardPlayers[currentCardPlayer].name}.`;
@@ -896,12 +936,26 @@ function canControlPlayerIndex(playerIndex) {
 }
 
 function chooseWildColor(color) {
-  if (pendingWildColorCardIndex === null || !canControlCurrentCardPlayer()) return;
+  if (pendingWildColorCardIndex === null) {
+    setCardStatus('Escolha uma cor apenas depois de selecionar um Curinga ou +4.');
+    return;
+  }
+  if (!canControlCurrentCardPlayer()) {
+    setCardStatus('A escolha de cor só vale na sua vez.');
+    return;
+  }
   playCardWithColor(pendingWildColorCardIndex, color);
 }
 
 function callUno() {
-  if (!cardGameStarted || !canControlCurrentCardPlayer()) return;
+  if (!cardGameStarted) {
+    setCardStatus('Inicie a partida antes de gritar UNO.');
+    return;
+  }
+  if (!canControlCurrentCardPlayer()) {
+    setCardStatus('Você só pode gritar UNO na sua vez.');
+    return;
+  }
   const player = cardPlayers[currentCardPlayer];
   player.saidUno = true;
   cardGameStatusElement.textContent = `${player.name} gritou UNO!`;
@@ -921,7 +975,18 @@ function applyUnoPenaltyIfNeeded(player) {
 }
 
 function challengePlusFour() {
-  if (!lastPlusFour || !cardGameStarted || !canControlPlayerIndex(lastPlusFour.challengerIndex)) return;
+  if (!lastPlusFour) {
+    setCardStatus('Não existe +4 ativo para desafiar agora.');
+    return;
+  }
+  if (!cardGameStarted) {
+    setCardStatus('A partida ainda não começou.');
+    return;
+  }
+  if (!canControlPlayerIndex(lastPlusFour.challengerIndex)) {
+    setCardStatus('Somente o jogador afetado pelo +4 pode desafiar.');
+    return;
+  }
   if (!cardPlayers[lastPlusFour.challengerIndex]) {
     cardGameStatusElement.textContent = 'Somente o jogador afetado pelo +4 pode desafiar.';
     return;
@@ -942,6 +1007,10 @@ function challengePlusFour() {
   lastPlusFour = null;
   renderCardGame();
   syncOnlineCardState();
+}
+
+function setCardStatus(message) {
+  if (cardGameStatusElement) cardGameStatusElement.textContent = message;
 }
 
 function calculateRoundScore() {
@@ -1024,14 +1093,26 @@ function initFirebase() {
   const config = window.FIREBASE_CONFIG;
   const configured = config && config.apiKey && !config.apiKey.includes('COLE_') && config.databaseURL && !config.databaseURL.includes('COLE_');
 
-  if (!window.firebase || !configured) {
-    onlineStatusElement.textContent = 'Firebase ainda não configurado. Preencha firebase-config.js para habilitar o online.';
+  if (!onlineStatusElement) return false;
+
+  if (!window.firebase) {
+    onlineStatusElement.textContent = 'Firebase SDK não carregou. Verifique sua conexão ou bloqueador do navegador.';
     return false;
   }
 
-  if (!firebaseDb) {
-    if (!window.firebase.apps.length) window.firebase.initializeApp(config);
-    firebaseDb = window.firebase.database();
+  if (!configured) {
+    onlineStatusElement.textContent = 'Firebase ainda não configurado. Confira as variáveis de ambiente na Vercel e faça Redeploy.';
+    return false;
+  }
+
+  try {
+    if (!firebaseDb) {
+      if (!window.firebase.apps.length) window.firebase.initializeApp(config);
+      firebaseDb = window.firebase.database();
+    }
+  } catch (error) {
+    onlineStatusElement.textContent = `Erro ao conectar no Firebase: ${error.message}`;
+    return false;
   }
 
   onlineStatusElement.textContent = 'Firebase conectado. Você pode criar ou entrar em uma sala online.';
@@ -1070,6 +1151,8 @@ function connectOnlineRoom(code) {
   onlineRoomRef.on('value', (snapshot) => {
     const state = snapshot.val();
     if (state) applyOnlineCardState(state);
+  }, (error) => {
+    onlineStatusElement.textContent = `Erro ao acessar sala online: ${error.message}`;
   });
 }
 
