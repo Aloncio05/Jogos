@@ -1,12 +1,14 @@
-# Arcade Básico
+# Jogos do Aloncinho
 
 Site simples de jogos criado com **HTML**, **CSS** e **JavaScript puro**, pronto para publicar no GitHub e fazer deploy na Vercel.
 
 ## Jogos Disponíveis
 
-- **Jogo da Velha:** partida local para dois jogadores.
+- **Jogo da Velha:** partida local para dois jogadores ou contra BOT.
 - **Jogo da Memória:** encontre todos os pares no menor número de movimentos.
 - **Adivinhe o Número:** tente descobrir o número secreto entre 1 e 100.
+- **Jogo da Minhoca:** controle a minhoca, coma pontos e evite colisões.
+- **Jogo do Detetive:** leia pistas e escolha o suspeito correto.
 
 ## Como Rodar Localmente
 

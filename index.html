@@ -3,27 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Site com jogos básicos: jogo da velha, memória e adivinhe o número.">
-  <title>Arcade Básico</title>
+  <meta name="description" content="Jogos do Aloncinho: jogo da velha, memória, minhoca, detetive e adivinhe o número.">
+  <title>Jogos do Aloncinho</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="hero">
     <nav class="topbar" aria-label="Navegação principal">
-      <strong class="brand">Arcade Básico</strong>
+      <strong class="brand">Jogos do Aloncinho</strong>
       <div class="nav-links">
         <a href="#velha">Velha</a>
         <a href="#memoria">Memória</a>
+        <a href="#minhoca">Minhoca</a>
+        <a href="#detetive">Detetive</a>
         <a href="#numero">Número</a>
       </div>
     </nav>
 
     <section class="hero-content">
-      <p class="eyebrow">HTML, CSS e JavaScript</p>
-      <h1>Três jogos simples para jogar direto no navegador.</h1>
+      <p class="eyebrow">Arcade online</p>
+      <h1>Jogos do Aloncinho</h1>
       <p>
-        Um mini arcade responsivo com Jogo da Velha, Jogo da Memória e Adivinhe o Número.
-        Projeto pronto para GitHub e Vercel.
+        Um cantinho de jogos rápidos para abrir no navegador, passar o tempo e desafiar a mente.
+        Escolha um jogo, aperte começar e divirta-se.
       </p>
       <a class="hero-button" href="#velha">Começar a jogar</a>
     </section>
@@ -37,7 +39,7 @@
         <article class="card">
           <span>01</span>
           <h3>Jogo da Velha</h3>
-          <p>Dois jogadores locais alternam entre X e O até alguém vencer ou empatar.</p>
+          <p>Jogue contra outra pessoa ou desafie o BOT em uma partida rápida.</p>
         </article>
         <article class="card">
           <span>02</span>
@@ -49,6 +51,16 @@
           <h3>Adivinhe o Número</h3>
           <p>Digite palpites até descobrir o número secreto entre 1 e 100.</p>
         </article>
+        <article class="card">
+          <span>04</span>
+          <h3>Jogo da Minhoca</h3>
+          <p>Controle a minhoca, coma pontos e tente crescer sem bater nas paredes.</p>
+        </article>
+        <article class="card">
+          <span>05</span>
+          <h3>Jogo do Detetive</h3>
+          <p>Use pistas para descobrir quem é o culpado antes de acabar as tentativas.</p>
+        </article>
       </div>
     </section>
 
@@ -58,7 +70,10 @@
           <p class="eyebrow">Jogo 01</p>
           <h2 id="tic-title">Jogo da Velha</h2>
         </div>
-        <button id="reset-tic-tac-toe" class="secondary-button">Reiniciar</button>
+        <div class="actions">
+          <button id="toggle-bot" class="secondary-button" type="button">Modo BOT: desligado</button>
+          <button id="reset-tic-tac-toe" class="secondary-button" type="button">Reiniciar</button>
+        </div>
       </div>
       <p id="tic-tac-toe-status" class="status">Vez do jogador X</p>
       <div id="tic-tac-toe-board" class="tic-board" aria-label="Tabuleiro do jogo da velha"></div>
@@ -94,10 +109,45 @@
       </form>
       <p id="guess-feedback" class="feedback">Digite um número para começar.</p>
     </section>
+
+    <section id="minhoca" class="game-panel" aria-labelledby="snake-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 04</p>
+          <h2 id="snake-title">Jogo da Minhoca</h2>
+        </div>
+        <div class="actions">
+          <button id="start-snake" class="secondary-button" type="button">Começar</button>
+          <button id="reset-snake" class="secondary-button" type="button">Reiniciar</button>
+        </div>
+      </div>
+      <p id="snake-status" class="status">Use as setas do teclado ou os botões para jogar.</p>
+      <canvas id="snake-canvas" class="snake-canvas" width="360" height="360" aria-label="Tabuleiro do jogo da minhoca"></canvas>
+      <div class="direction-pad" aria-label="Controles da minhoca">
+        <button type="button" data-direction="up">↑</button>
+        <button type="button" data-direction="left">←</button>
+        <button type="button" data-direction="down">↓</button>
+        <button type="button" data-direction="right">→</button>
+      </div>
+    </section>
+
+    <section id="detetive" class="game-panel" aria-labelledby="detective-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 05</p>
+          <h2 id="detective-title">Jogo do Detetive</h2>
+        </div>
+        <button id="reset-detective" class="secondary-button" type="button">Novo caso</button>
+      </div>
+      <p id="detective-story" class="status"></p>
+      <div id="detective-clues" class="clue-list" aria-label="Pistas do caso"></div>
+      <div id="detective-suspects" class="suspect-grid" aria-label="Suspeitos"></div>
+      <p id="detective-feedback" class="feedback">Escolha um suspeito para resolver o caso.</p>
+    </section>
   </main>
 
   <footer class="footer">
-    <p>Arcade Básico. Projeto estático para portfólio, GitHub e Vercel.</p>
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
   </footer>
 
   <script src="script.js"></script>
