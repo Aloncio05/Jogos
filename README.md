@@ -11,11 +11,47 @@ Site simples de jogos criado com **HTML**, **CSS** e **JavaScript puro**, pronto
 - **Jogo do Detetive:** leia pistas e escolha o suspeito correto.
 - **Cartas do Aloncinho:** jogo inspirado em Uno, com nomes, BOTs, código de convite e limite de 8 jogadores.
 
-## Observação Sobre Convite
+## Multiplayer Online
 
-O jogo de cartas possui código/link de convite visual para organizar a sala e identificar os jogadores pelo nome. Como o projeto é estático, publicado apenas com HTML, CSS e JavaScript, ele ainda não sincroniza partidas em tempo real entre dispositivos diferentes.
+O jogo **Cartas do Aloncinho** possui modo online usando **Firebase Realtime Database**.
 
-Para transformar o convite em multiplayer online real, a próxima etapa seria adicionar um backend com WebSocket, Supabase, Firebase ou serviço equivalente.
+Para ativar:
+
+1. Crie um projeto em `https://console.firebase.google.com`.
+2. Crie um app Web no Firebase.
+3. Ative **Realtime Database**.
+4. Copie a configuração do app Web.
+5. Substitua os valores em `firebase-config.js`.
+6. Publique novamente no GitHub/Vercel.
+
+Regras simples para teste no Realtime Database:
+
+```json
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}
+```
+
+Essas regras são abertas e servem apenas para protótipo. Para produção, adicione autenticação e regras mais restritivas.
+
+## Como Jogar Online
+
+1. Abra o jogo **Cartas do Aloncinho**.
+2. Clique em **Criar sala online**.
+3. Informe seu nome em **Nome do jogador** e clique em **Adicionar**.
+4. Clique em **Copiar convite** e envie para seus amigos.
+5. Cada amigo abre o link, informa o nome e entra na sala.
+6. Use **Adicionar BOT** se quiser completar a mesa com robôs.
+7. Clique em **Iniciar partida**.
+
+Limite: até **8 jogadores** por sala.
 
 ## Como Rodar Localmente
 

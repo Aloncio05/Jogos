@@ -37,6 +37,10 @@ const cardGameStatusElement = document.querySelector('#card-game-status');
 const playersListElement = document.querySelector('#players-list');
 const cardTableElement = document.querySelector('#card-table');
 const playerHandElement = document.querySelector('#player-hand');
+const onlineStatusElement = document.querySelector('#online-status');
+const createOnlineRoomButton = document.querySelector('#create-online-room');
+const joinRoomForm = document.querySelector('#join-room-form');
+const joinRoomCodeInput = document.querySelector('#join-room-code');
 
 const winningLines = [
   [0, 1, 2],
@@ -509,8 +513,15 @@ let currentCardPlayer = 0;
 let cardDirection = 1;
 let cardGameStarted = false;
 let botCount = 0;
+let firebaseDb = null;
+let onlineRoomRef = null;
+let onlineRoomCode = '';
+let onlineHostId = '';
+let applyingRemoteCardState = false;
+const onlinePlayerId = getOnlinePlayerId();
 
-function resetCardRoom() {
+function resetCardRoom(options = {}) {
+  const { sync = false } = options;
   roomCode = createRoomCode();
   cardPlayers = [];
   cardDeck = [];
@@ -524,6 +535,7 @@ function resetCardRoom() {
   playerHandElement.innerHTML = '';
   renderCardPlayers();
   renderCardTable();
+  if (sync) syncOnlineCardState();
 }
 
 function createRoomCode() {
@@ -554,6 +566,7 @@ function addCardPlayer(name, isBot = false) {
   });
   cardGameStatusElement.textContent = `${cleanName} entrou na sala.`;
   renderCardPlayers();
+  syncOnlineCardState();
 }
 
 function addCardBot() {
@@ -579,6 +592,7 @@ function startCardGame() {
   discardPile.push(drawFirstDiscard());
   cardGameStatusElement.textContent = `Partida iniciada. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
+  syncOnlineCardState();
   scheduleBotTurn();
 }
 
@@ -705,6 +719,7 @@ function playCard(cardIndex) {
     cardGameStarted = false;
     cardGameStatusElement.textContent = `${player.name} venceu a partida!`;
     renderCardGame();
+    syncOnlineCardState();
     return;
   }
 
@@ -712,6 +727,7 @@ function playCard(cardIndex) {
   currentCardPlayer = getNextCardPlayerIndex(steps);
   cardGameStatusElement.textContent = `${player.name} jogou ${formatCard(card)}. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
+  syncOnlineCardState();
   scheduleBotTurn();
 }
 
@@ -747,6 +763,7 @@ function drawForCurrentPlayer() {
   player.hand.push(...drawCards(1));
   cardGameStatusElement.textContent = `${player.name} comprou uma carta.`;
   renderCardGame();
+  syncOnlineCardState();
 }
 
 function passCardTurn() {
@@ -757,6 +774,7 @@ function passCardTurn() {
   currentCardPlayer = getNextCardPlayerIndex(1);
   cardGameStatusElement.textContent = `${player.name} passou a vez. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
+  syncOnlineCardState();
   scheduleBotTurn();
 }
 
@@ -764,6 +782,7 @@ function scheduleBotTurn() {
   if (!cardGameStarted) return;
   const player = cardPlayers[currentCardPlayer];
   if (!player.isBot) return;
+  if (onlineRoomRef && onlineHostId !== onlinePlayerId) return;
 
   setTimeout(() => playBotCardTurn(), 800);
 }
@@ -788,15 +807,122 @@ function playBotCardTurn() {
   currentCardPlayer = getNextCardPlayerIndex(1);
   cardGameStatusElement.textContent = `${player.name} comprou e passou. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
+  syncOnlineCardState();
   scheduleBotTurn();
 }
 
 function copyRoomInvite() {
-  const invite = `${window.location.origin}${window.location.pathname}#cartas?room=${roomCode}`;
+  const code = onlineRoomCode || roomCode;
+  const invite = `${window.location.origin}${window.location.pathname}#cartas?room=${code}`;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(invite);
   }
-  cardGameStatusElement.textContent = `Convite copiado: ${roomCode}. Compartilhe o link e peça para o amigo informar o nome na sala.`;
+  cardGameStatusElement.textContent = `Convite copiado: ${code}. Compartilhe o link e peça para o amigo informar o nome na sala.`;
+}
+
+function getOnlinePlayerId() {
+  const savedId = localStorage.getItem('aloncinho_online_player_id');
+  if (savedId) return savedId;
+
+  const newId = `player_${Math.random().toString(36).slice(2, 10)}`;
+  localStorage.setItem('aloncinho_online_player_id', newId);
+  return newId;
+}
+
+function initFirebase() {
+  const config = window.FIREBASE_CONFIG;
+  const configured = config && config.apiKey && !config.apiKey.includes('COLE_') && config.databaseURL && !config.databaseURL.includes('COLE_');
+
+  if (!window.firebase || !configured) {
+    onlineStatusElement.textContent = 'Firebase ainda não configurado. Preencha firebase-config.js para habilitar o online.';
+    return false;
+  }
+
+  if (!firebaseDb) {
+    if (!window.firebase.apps.length) window.firebase.initializeApp(config);
+    firebaseDb = window.firebase.database();
+  }
+
+  onlineStatusElement.textContent = 'Firebase conectado. Você pode criar ou entrar em uma sala online.';
+  return true;
+}
+
+function createOnlineRoom() {
+  if (!initFirebase()) return;
+  roomCode = createRoomCode();
+  onlineHostId = onlinePlayerId;
+  roomCodeElement.textContent = roomCode;
+  connectOnlineRoom(roomCode);
+  syncOnlineCardState(true);
+  onlineStatusElement.textContent = `Sala online criada: ${roomCode}. Compartilhe o convite com seus amigos.`;
+}
+
+function joinOnlineRoom(code) {
+  const normalizedCode = code.trim().toUpperCase();
+  if (!normalizedCode) {
+    onlineStatusElement.textContent = 'Digite o código da sala para entrar.';
+    return;
+  }
+
+  if (!initFirebase()) return;
+  connectOnlineRoom(normalizedCode);
+  onlineStatusElement.textContent = `Conectado na sala ${normalizedCode}. Informe seu nome para entrar no jogo.`;
+}
+
+function connectOnlineRoom(code) {
+  if (onlineRoomRef) onlineRoomRef.off();
+
+  onlineRoomCode = code;
+  roomCode = code;
+  roomCodeElement.textContent = code;
+  onlineRoomRef = firebaseDb.ref(`rooms/${code}`);
+  onlineRoomRef.on('value', (snapshot) => {
+    const state = snapshot.val();
+    if (state) applyOnlineCardState(state);
+  });
+}
+
+function getCardGameState() {
+  return {
+    roomCode,
+    cardPlayers,
+    cardDeck,
+    discardPile,
+    currentCardPlayer,
+    cardDirection,
+    cardGameStarted,
+    botCount,
+    status: cardGameStatusElement.textContent,
+    updatedAt: Date.now(),
+    updatedBy: onlinePlayerId,
+    hostId: onlineHostId || onlinePlayerId,
+  };
+}
+
+function applyOnlineCardState(state) {
+  if (state.updatedBy === onlinePlayerId) return;
+
+  applyingRemoteCardState = true;
+  roomCode = state.roomCode || onlineRoomCode;
+  cardPlayers = state.cardPlayers || [];
+  cardDeck = state.cardDeck || [];
+  discardPile = state.discardPile || [];
+  currentCardPlayer = state.currentCardPlayer || 0;
+  cardDirection = state.cardDirection || 1;
+  cardGameStarted = Boolean(state.cardGameStarted);
+  botCount = state.botCount || 0;
+  onlineHostId = state.hostId || '';
+  roomCodeElement.textContent = roomCode;
+  cardGameStatusElement.textContent = state.status || 'Sala sincronizada.';
+  renderCardGame();
+  applyingRemoteCardState = false;
+  scheduleBotTurn();
+}
+
+function syncOnlineCardState(force = false) {
+  if (applyingRemoteCardState || !onlineRoomRef) return;
+  if (!force && !onlineRoomCode) return;
+  onlineRoomRef.set(getCardGameState());
 }
 
 resetTicButton.addEventListener('click', resetTicTacToe);
@@ -815,10 +941,21 @@ playerForm.addEventListener('submit', (event) => {
 });
 addCardBotButton.addEventListener('click', addCardBot);
 startCardGameButton.addEventListener('click', startCardGame);
-resetCardGameButton.addEventListener('click', resetCardRoom);
+resetCardGameButton.addEventListener('click', () => {
+  if (onlineRoomRef) {
+    createOnlineRoom();
+    return;
+  }
+  resetCardRoom();
+});
 drawCardButton.addEventListener('click', drawForCurrentPlayer);
 passTurnButton.addEventListener('click', passCardTurn);
 copyRoomLinkButton.addEventListener('click', copyRoomInvite);
+createOnlineRoomButton.addEventListener('click', createOnlineRoom);
+joinRoomForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  joinOnlineRoom(joinRoomCodeInput.value);
+});
 directionButtons.forEach((button) => {
   button.addEventListener('click', () => changeSnakeDirection(button.dataset.direction));
 });
@@ -842,3 +979,10 @@ createMemoryCards();
 resetSnakeGame();
 createDetectiveCase();
 resetCardRoom();
+initFirebase();
+
+const roomFromUrl = new URLSearchParams(window.location.hash.split('?')[1] || '').get('room');
+if (roomFromUrl) {
+  joinRoomCodeInput.value = roomFromUrl.toUpperCase();
+  joinOnlineRoom(roomFromUrl);
+}

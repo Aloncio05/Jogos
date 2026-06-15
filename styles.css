@@ -407,6 +407,52 @@ h2 {
   background: rgba(255, 255, 255, 0.07);
 }
 
+.online-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 18px;
+  align-items: center;
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 22px;
+  background: rgba(34, 211, 238, 0.07);
+}
+
+.online-box h3 {
+  margin-bottom: 8px;
+}
+
+.online-controls,
+.join-room-form {
+  display: grid;
+  gap: 10px;
+}
+
+.join-room-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.join-room-form input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 12px 14px;
+  color: var(--text);
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.join-room-form button {
+  border: 0;
+  border-radius: 16px;
+  padding: 0 16px;
+  color: white;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+
 .invite-box span {
   display: block;
   margin-bottom: 4px;
@@ -541,6 +587,7 @@ h2 {
   .game-header,
   .actions,
   .invite-box,
+  .online-box,
   .guess-row {
     align-items: stretch;
     flex-direction: column;
@@ -565,6 +612,10 @@ h2 {
 
   .players-list,
   .card-table {
+    grid-template-columns: 1fr;
+  }
+
+  .join-room-form {
     grid-template-columns: 1fr;
   }
 
