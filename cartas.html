@@ -37,16 +37,17 @@
       </form>
 
       <form id="player-form" class="player-form">
-        <label for="player-name">Seu nome na mesa</label>
-        <div class="guess-row">
-          <input id="player-name" type="text" maxlength="18" placeholder="Ex: Aloncinho" required>
-          <button type="submit">Adicionar</button>
+        <label for="player-name">1. Digite seu nome para entrar</label>
+        <div class="join-player-row">
+          <input id="player-name" type="text" maxlength="18" placeholder="Seu nome na partida" autocomplete="nickname" required>
+          <button type="submit">Entrar na mesa</button>
         </div>
+        <p id="player-feedback" class="form-hint">Seu nome vai aparecer para os amigos na mesa.</p>
       </form>
 
       <div class="actions card-actions stacked-actions">
-        <button id="add-card-bot" class="secondary-button" type="button">Adicionar BOT</button>
-        <button id="start-card-game" class="secondary-button" type="button">Iniciar partida</button>
+        <button id="add-card-bot" class="secondary-button" type="button">2. Adicionar BOT</button>
+        <button id="start-card-game" class="secondary-button" type="button">3. Iniciar partida</button>
       </div>
 
       <div id="players-list" class="players-list sidebar-players" aria-label="Jogadores da sala"></div>

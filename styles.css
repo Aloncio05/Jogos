@@ -315,6 +315,51 @@ h2 {
   font-weight: 700;
 }
 
+.join-player-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.join-player-row input {
+  width: 100%;
+  border: 2px solid rgba(34, 211, 238, 0.32);
+  border-radius: 18px;
+  padding: 15px 16px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.join-player-row input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.14);
+}
+
+.join-player-row button {
+  min-height: 50px;
+  border: 0;
+  border-radius: 18px;
+  color: white;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 18px 36px rgba(34, 211, 238, 0.18);
+}
+
+.form-hint {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.form-hint.success {
+  color: var(--success);
+}
+
+.form-hint.error {
+  color: var(--danger);
+}
+
 .feedback.success {
   color: var(--success);
 }

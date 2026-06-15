@@ -28,6 +28,7 @@ const roomCodeElement = document.querySelector('#room-code');
 const copyRoomLinkButton = document.querySelector('#copy-room-link');
 const playerForm = document.querySelector('#player-form');
 const playerNameInput = document.querySelector('#player-name');
+const playerFeedbackElement = document.querySelector('#player-feedback');
 const addCardBotButton = document.querySelector('#add-card-bot');
 const startCardGameButton = document.querySelector('#start-card-game');
 const resetCardGameButton = document.querySelector('#reset-card-game');
@@ -556,17 +557,23 @@ function createRoomCode() {
 function addCardPlayer(name, isBot = false) {
   const cleanName = name.trim();
   if (!cleanName) {
-    cardGameStatusElement.textContent = 'Informe um nome para adicionar o jogador.';
+    showPlayerFeedback('Digite seu nome antes de entrar na mesa.', 'error');
+    playerNameInput?.focus();
     return;
   }
 
   if (cardPlayers.length >= 8) {
-    cardGameStatusElement.textContent = 'A sala já chegou ao limite máximo de 8 jogadores.';
+    showPlayerFeedback('A sala já chegou ao limite máximo de 8 jogadores.', 'error');
     return;
   }
 
   if (cardPlayers.some((player) => player.name.toLowerCase() === cleanName.toLowerCase())) {
-    cardGameStatusElement.textContent = 'Esse nome já está na sala. Use outro nome para identificar o amigo.';
+    showPlayerFeedback('Esse nome já está na sala. Use outro nome para identificar o amigo.', 'error');
+    return;
+  }
+
+  if (!isBot && cardPlayers.some((player) => player.id === onlinePlayerId && !player.isBot)) {
+    showPlayerFeedback('Você já entrou nessa sala. Para trocar o nome, crie ou entre em outra sala.', 'error');
     return;
   }
 
@@ -578,8 +585,15 @@ function addCardPlayer(name, isBot = false) {
     hand: [],
   });
   cardGameStatusElement.textContent = `${cleanName} entrou na sala.`;
+  showPlayerFeedback(`${cleanName} entrou na mesa com sucesso.`, 'success');
   renderCardPlayers();
   syncOnlineCardState();
+}
+
+function showPlayerFeedback(message, type = '') {
+  if (!playerFeedbackElement) return;
+  playerFeedbackElement.textContent = message;
+  playerFeedbackElement.className = `form-hint ${type}`.trim();
 }
 
 function addCardBot() {
@@ -589,7 +603,8 @@ function addCardBot() {
 
 function startCardGame() {
   if (cardPlayers.length < 2) {
-    cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
+    cardGameStatusElement.textContent = 'Adicione seu nome e pelo menos mais 1 jogador ou BOT para iniciar.';
+    showPlayerFeedback('Entre na mesa e adicione um amigo ou BOT antes de iniciar.', 'error');
     return;
   }
 
@@ -1127,6 +1142,8 @@ function createOnlineRoom() {
   connectOnlineRoom(roomCode);
   syncOnlineCardState(true);
   onlineStatusElement.textContent = `Sala online criada: ${roomCode}. Compartilhe o convite com seus amigos.`;
+  showPlayerFeedback('Agora digite seu nome e clique em Entrar na mesa.', '');
+  playerNameInput?.focus();
 }
 
 function joinOnlineRoom(code) {
@@ -1139,6 +1156,8 @@ function joinOnlineRoom(code) {
   if (!initFirebase()) return;
   connectOnlineRoom(normalizedCode);
   onlineStatusElement.textContent = `Conectado na sala ${normalizedCode}. Informe seu nome para entrar no jogo.`;
+  showPlayerFeedback('Sala encontrada. Digite seu nome para aparecer para os amigos.', '');
+  playerNameInput?.focus();
 }
 
 function connectOnlineRoom(code) {
