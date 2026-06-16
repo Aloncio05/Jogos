@@ -91,10 +91,34 @@
           <p class="eyebrow">Jogo 02</p>
           <h2 id="memory-title">Jogo da Memória</h2>
         </div>
-        <button id="reset-memory" class="secondary-button">Embaralhar</button>
+        <div class="actions">
+          <button id="reset-memory" class="secondary-button" type="button">Reiniciar fase</button>
+          <button id="memory-next-phase" class="secondary-button memory-next-btn" type="button" hidden>Próxima fase →</button>
+        </div>
       </div>
-      <p id="memory-status" class="status">Movimentos: 0</p>
+
+      <div class="memory-hud">
+        <div class="memory-hud-item">
+          <span>Fase</span>
+          <strong id="memory-phase-display">1 / 15</strong>
+        </div>
+        <div class="memory-hud-item" id="memory-timer-item" hidden>
+          <span>Tempo</span>
+          <strong id="memory-timer-display">--</strong>
+        </div>
+        <div class="memory-hud-item">
+          <span>Movimentos</span>
+          <strong id="memory-moves-display">0</strong>
+        </div>
+        <div class="memory-hud-item">
+          <span>Pares</span>
+          <strong id="memory-pairs-display">0 / 0</strong>
+        </div>
+      </div>
+
+      <p id="memory-status" class="status">Encontre todos os pares para avançar de fase!</p>
       <div id="memory-board" class="memory-board" aria-label="Cartas do jogo da memória"></div>
+      <div id="memory-phases-strip" class="memory-phases-strip" aria-label="Progresso das fases"></div>
     </section>
 
     <section id="numero" class="game-panel" aria-labelledby="guess-title">

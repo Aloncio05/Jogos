@@ -184,47 +184,158 @@ function toggleBotMode() {
   resetTicTacToe();
 }
 
-const symbols = ['★', '◆', '●', '▲', '☀', '♣'];
-let memoryCards = [];
-let selectedCards = [];
-let movements = 0;
-let lockMemoryBoard = false;
+// ---- MEMORY GAME — sistema de fases ----
+const ALL_MEMORY_SYMBOLS = [
+  '🌟', '🔥', '🎯', '🎲', '🌈', '🦋',
+  '🎸', '🚀', '🦊', '🎃', '💎', '🐸',
+  '🌙', '⚡', '🦄', '🍀', '🎭', '🏆',
+];
 
-function createMemoryCards() {
+const MEMORY_PHASES = [
+  { pairs: 4,  cols: 4, timer: 0,  flipDelay: 1200, label: 'Aquecimento' },
+  { pairs: 5,  cols: 5, timer: 0,  flipDelay: 1100, label: 'Iniciante'   },
+  { pairs: 6,  cols: 4, timer: 0,  flipDelay: 1000, label: 'Fácil'       },
+  { pairs: 6,  cols: 4, timer: 90, flipDelay: 1000, label: 'Com tempo'   },
+  { pairs: 8,  cols: 4, timer: 90, flipDelay: 900,  label: 'Médio'       },
+  { pairs: 8,  cols: 4, timer: 75, flipDelay: 850,  label: 'Médio+'      },
+  { pairs: 10, cols: 5, timer: 75, flipDelay: 800,  label: 'Difícil'     },
+  { pairs: 10, cols: 5, timer: 65, flipDelay: 750,  label: 'Difícil+'    },
+  { pairs: 12, cols: 6, timer: 60, flipDelay: 700,  label: 'Intenso'     },
+  { pairs: 12, cols: 6, timer: 55, flipDelay: 650,  label: 'Intenso+'    },
+  { pairs: 14, cols: 7, timer: 55, flipDelay: 600,  label: 'Expert'      },
+  { pairs: 14, cols: 7, timer: 50, flipDelay: 550,  label: 'Expert+'     },
+  { pairs: 16, cols: 8, timer: 50, flipDelay: 500,  label: 'Mestre'      },
+  { pairs: 18, cols: 6, timer: 45, flipDelay: 500,  label: 'Mestre+'     },
+  { pairs: 18, cols: 6, timer: 40, flipDelay: 450,  label: 'Lendário'    },
+];
+
+const memoryPhaseDisplay    = document.querySelector('#memory-phase-display');
+const memoryTimerItem       = document.querySelector('#memory-timer-item');
+const memoryTimerDisplay    = document.querySelector('#memory-timer-display');
+const memoryMovesDisplay    = document.querySelector('#memory-moves-display');
+const memoryPairsDisplay    = document.querySelector('#memory-pairs-display');
+const memoryPhasesStrip     = document.querySelector('#memory-phases-strip');
+const memoryNextPhaseButton = document.querySelector('#memory-next-phase');
+
+let currentMemoryPhase = 0;
+let memoryCards        = [];
+let selectedCards      = [];
+let memoryMovements    = 0;
+let lockMemoryBoard    = false;
+let memoryTimerSecs    = 0;
+let memoryTimerInt     = null;
+
+function startMemoryPhase(phaseIndex) {
+  currentMemoryPhase = phaseIndex;
+  const phase = MEMORY_PHASES[phaseIndex];
+  const symbols = ALL_MEMORY_SYMBOLS.slice(0, phase.pairs);
+
   memoryCards = shuffle([...symbols, ...symbols]).map((symbol, index) => ({
-    id: index,
-    symbol,
-    visible: false,
-    matched: false,
+    id: index, symbol, visible: false, matched: false,
   }));
-  selectedCards = [];
-  movements = 0;
+  selectedCards   = [];
+  memoryMovements = 0;
   lockMemoryBoard = false;
-  updateMemoryStatus();
+
+  if (memoryNextPhaseButton) memoryNextPhaseButton.hidden = true;
+  if (resetMemoryButton) resetMemoryButton.textContent = 'Reiniciar fase';
+
+  stopMemoryTimer();
+  if (phase.timer > 0) {
+    memoryTimerSecs = phase.timer;
+    if (memoryTimerItem) memoryTimerItem.hidden = false;
+    startMemoryTimer(phase);
+  } else {
+    memoryTimerSecs = 0;
+    if (memoryTimerItem) memoryTimerItem.hidden = true;
+  }
+
+  if (memoryStatusElement) {
+    memoryStatusElement.textContent = `Fase ${phaseIndex + 1}: ${phase.label} — ${phase.pairs} pares${phase.timer ? ', ' + phase.timer + 's' : ''}`;
+  }
+
+  updateMemoryHud();
   renderMemory();
+  renderMemoryPhaseStrip();
+}
+
+function startMemoryTimer(phase) {
+  updateMemoryTimerDisplay();
+  memoryTimerInt = setInterval(() => {
+    memoryTimerSecs -= 1;
+    updateMemoryTimerDisplay();
+    if (memoryTimerSecs <= 0) {
+      stopMemoryTimer();
+      lockMemoryBoard = true;
+      if (memoryStatusElement) {
+        memoryStatusElement.textContent = 'Tempo esgotado! Clique em "Reiniciar fase" para tentar novamente.';
+      }
+      if (resetMemoryButton) resetMemoryButton.textContent = 'Tentar novamente';
+    }
+  }, 1000);
+}
+
+function stopMemoryTimer() {
+  clearInterval(memoryTimerInt);
+  memoryTimerInt = null;
+  if (memoryTimerItem) {
+    memoryTimerItem.classList.remove('timer-warning', 'timer-danger');
+  }
+}
+
+function updateMemoryTimerDisplay() {
+  const s = memoryTimerSecs;
+  if (memoryTimerDisplay) {
+    memoryTimerDisplay.textContent = s < 10 ? '0' + s : String(s);
+  }
+  if (memoryTimerItem) {
+    memoryTimerItem.classList.toggle('timer-warning', s <= 15 && s > 8);
+    memoryTimerItem.classList.toggle('timer-danger',  s <= 8);
+  }
+}
+
+function updateMemoryHud() {
+  const phase = MEMORY_PHASES[currentMemoryPhase];
+  if (memoryPhaseDisplay) memoryPhaseDisplay.textContent = (currentMemoryPhase + 1) + ' / 15';
+  if (memoryMovesDisplay) memoryMovesDisplay.textContent = memoryMovements;
+  const matched = memoryCards.filter(function(c) { return c.matched; }).length / 2;
+  if (memoryPairsDisplay) memoryPairsDisplay.textContent = matched + ' / ' + phase.pairs;
 }
 
 function renderMemory() {
+  if (!memoryBoardElement) return;
+  const phase = MEMORY_PHASES[currentMemoryPhase];
+  memoryBoardElement.style.setProperty('--memory-cols', phase.cols);
   memoryBoardElement.innerHTML = '';
 
-  memoryCards.forEach((card) => {
-    const cardButton = document.createElement('button');
-    cardButton.className = 'memory-card';
-    cardButton.type = 'button';
-    cardButton.textContent = card.visible || card.matched ? card.symbol : '?';
-    cardButton.setAttribute('aria-label', 'Carta do jogo da memória');
+  memoryCards.forEach(function(card) {
+    var btn = document.createElement('button');
+    btn.className = 'memory-card';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', card.visible || card.matched ? card.symbol : 'Carta virada');
 
-    if (card.matched) {
-      cardButton.classList.add('matched');
-    }
+    if (card.visible) btn.classList.add('visible');
+    if (card.matched) btn.classList.add('matched');
 
-    cardButton.addEventListener('click', () => revealMemoryCard(card.id));
-    memoryBoardElement.appendChild(cardButton);
+    var front = document.createElement('span');
+    front.className = 'mc-front';
+    front.textContent = card.symbol;
+
+    var back = document.createElement('span');
+    back.className = 'mc-back';
+    back.textContent = '?';
+
+    btn.appendChild(front);
+    btn.appendChild(back);
+    btn.addEventListener('click', (function(id) {
+      return function() { revealMemoryCard(id); };
+    })(card.id));
+    memoryBoardElement.appendChild(btn);
   });
 }
 
 function revealMemoryCard(cardId) {
-  const card = memoryCards.find((item) => item.id === cardId);
+  var card = memoryCards.find(function(c) { return c.id === cardId; });
   if (lockMemoryBoard || !card || card.visible || card.matched) return;
 
   card.visible = true;
@@ -232,39 +343,70 @@ function revealMemoryCard(cardId) {
   renderMemory();
 
   if (selectedCards.length === 2) {
-    movements += 1;
-    updateMemoryStatus();
+    memoryMovements += 1;
+    updateMemoryHud();
     checkMemoryPair();
   }
 }
 
 function checkMemoryPair() {
-  const [first, second] = selectedCards;
+  var first  = selectedCards[0];
+  var second = selectedCards[1];
+  var phase  = MEMORY_PHASES[currentMemoryPhase];
 
   if (first.symbol === second.symbol) {
-    first.matched = true;
+    first.matched  = true;
     second.matched = true;
-    selectedCards = [];
+    selectedCards  = [];
     renderMemory();
+    updateMemoryHud();
 
-    if (memoryCards.every((card) => card.matched)) {
-      memoryStatusElement.textContent = `Você venceu em ${movements} movimentos!`;
+    if (memoryCards.every(function(c) { return c.matched; })) {
+      stopMemoryTimer();
+      var isLast = currentMemoryPhase >= MEMORY_PHASES.length - 1;
+      if (memoryStatusElement) {
+        memoryStatusElement.textContent = isLast
+          ? 'Parabéns! Você completou todas as 15 fases em ' + memoryMovements + ' movimentos!'
+          : 'Fase ' + (currentMemoryPhase + 1) + ' concluída em ' + memoryMovements + ' movimentos!';
+      }
+      if (!isLast && memoryNextPhaseButton) {
+        memoryNextPhaseButton.hidden = false;
+      }
+      renderMemoryPhaseStrip();
     }
     return;
   }
 
   lockMemoryBoard = true;
-  setTimeout(() => {
-    first.visible = false;
+  setTimeout(function() {
+    first.visible  = false;
     second.visible = false;
-    selectedCards = [];
+    selectedCards  = [];
     lockMemoryBoard = false;
     renderMemory();
-  }, 750);
+  }, phase.flipDelay);
 }
 
-function updateMemoryStatus() {
-  memoryStatusElement.textContent = `Movimentos: ${movements}`;
+function renderMemoryPhaseStrip() {
+  if (!memoryPhasesStrip) return;
+  memoryPhasesStrip.innerHTML = '';
+  MEMORY_PHASES.forEach(function(p, i) {
+    var dot = document.createElement('button');
+    dot.className = 'memory-phase-dot';
+    dot.type = 'button';
+    dot.title = 'Fase ' + (i + 1) + ': ' + p.label;
+    dot.setAttribute('aria-label', 'Fase ' + (i + 1));
+    if (i < currentMemoryPhase)   dot.classList.add('done');
+    if (i === currentMemoryPhase) dot.classList.add('current');
+    dot.addEventListener('click', (function(idx) {
+      return function() { stopMemoryTimer(); startMemoryPhase(idx); };
+    })(i));
+    memoryPhasesStrip.appendChild(dot);
+  });
+}
+
+function createMemoryCards() {
+  startMemoryPhase(currentMemoryPhase);
 }
 
 function shuffle(items) {
@@ -1616,6 +1758,7 @@ function syncOnlineCardState(force = false) {
 if (resetTicButton) resetTicButton.addEventListener('click', resetTicTacToe);
 if (toggleBotButton) toggleBotButton.addEventListener('click', toggleBotMode);
 if (resetMemoryButton) resetMemoryButton.addEventListener('click', createMemoryCards);
+if (memoryNextPhaseButton) memoryNextPhaseButton.addEventListener('click', function() { startMemoryPhase(currentMemoryPhase + 1); });
 if (guessForm) guessForm.addEventListener('submit', submitGuess);
 if (resetGuessButton) resetGuessButton.addEventListener('click', resetGuessGame);
 if (startSnakeButton) startSnakeButton.addEventListener('click', startSnakeGame);
@@ -1684,7 +1827,7 @@ window.addEventListener('keydown', (event) => {
 });
 
 if (ticBoardElement) resetTicTacToe();
-if (memoryBoardElement) createMemoryCards();
+if (memoryBoardElement) startMemoryPhase(0);
 if (snakeCanvas) resetSnakeGame();
 if (detectiveStoryElement) createDetectiveCase();
 if (roomCodeElement) {
