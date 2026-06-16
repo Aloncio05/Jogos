@@ -91,6 +91,11 @@ bindBtn('runner-jump',   b => { if (b) jump(); });
 bindBtn('runner-crouch', b => { P.crouching = b; });
 
 canvas.addEventListener('click', () => { if (state !== 'play') begin(); });
+canvas.focus();
+document.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
+document.addEventListener('wheel', e => {
+  if (state === 'play') e.preventDefault();
+}, { passive:false });
 
 // Touch swipe on canvas
 let tsX=0, tsY=0;
@@ -288,14 +293,10 @@ function drawRoad() {
     ctx.beginPath(); ctx.moveTo(fx, 21); ctx.lineTo(fx + 14, 23); ctx.lineTo(fx + 5, 37); ctx.closePath(); ctx.fill();
   });
 
-  // Light overhead structure. Sparse lines avoid a harsh grid.
-  ctx.strokeStyle = 'rgba(32,55,78,0.32)'; ctx.lineWidth = 1.2;
-  [108, 180, 252].forEach(x => {
+  // Two subtle overhead wires are enough; more lines make the scene look like a grid.
+  ctx.strokeStyle = 'rgba(32,55,78,0.22)'; ctx.lineWidth = 1.2;
+  [132, 228].forEach(x => {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(projectX(x, 500), 500); ctx.stroke();
-  });
-  [52, 94, 136].forEach(y => {
-    const t = perspectiveT(y + 180);
-    ctx.beginPath(); ctx.moveTo(88 + t * 12, y); ctx.lineTo(272 - t * 12, y + 4); ctx.stroke();
   });
 
   const dirt = ctx.createLinearGradient(0, 154, 0, H);

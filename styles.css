@@ -3596,6 +3596,68 @@ body.card-match-active {
   margin-left: auto;
 }
 
+.runner-page {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.runner-page header,
+.runner-page footer,
+.runner-page .game-header,
+.runner-page .status,
+.runner-page .runner-hint {
+  display: none;
+}
+
+.runner-page .game-page-main {
+  display: grid;
+  height: 100dvh;
+  place-items: center;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.runner-page .runner-game-panel {
+  width: min(100%, 460px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.runner-page .runner-hud {
+  gap: 8px;
+  margin: 0 auto 7px;
+}
+
+.runner-page .runner-hud-item {
+  min-width: 74px;
+  padding: 7px 10px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(10, 16, 32, 0.82);
+}
+
+.runner-page #runner-canvas {
+  width: min(calc((100dvh - 128px) * 0.6), calc(100vw - 20px), 430px);
+  max-height: calc(100dvh - 128px);
+}
+
+.runner-page .runner-mobile-controls {
+  margin-top: 8px;
+  width: min(calc((100dvh - 128px) * 0.6), calc(100vw - 20px), 430px);
+}
+
+.runner-page .runner-btn {
+  min-height: 44px;
+}
+
+.runner-page .runner-btn--crouch {
+  min-height: 42px;
+}
+
 
 @media (max-width: 400px) {
   .runner-btn { flex-basis: 56px; min-height: 50px; font-size: 1.1rem; }
