@@ -254,7 +254,7 @@ function drawRoad() {
   const spd = baseSpeed + (P.turbo>0 ? 2 : 0);
 
   const sky = ctx.createLinearGradient(0, 0, 0, 190);
-  sky.addColorStop(0, '#53c7ff'); sky.addColorStop(0.72, '#b9efff'); sky.addColorStop(1, '#fce06b');
+  sky.addColorStop(0, '#4dc3ff'); sky.addColorStop(0.72, '#baf1ff'); sky.addColorStop(1, '#ffdc62');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 190);
 
   ctx.fillStyle = '#fff6a8'; ctx.beginPath(); ctx.arc(40, 46, 24, 0, Math.PI * 2); ctx.fill();
@@ -264,55 +264,73 @@ function drawRoad() {
 
   // Left greenery and right colorful buildings/yellow wall, matching the reference composition.
   drawPalm(25, 122, 0.55);
-  drawBuilding(226, 42, 30, 108, '#ef4444');
-  drawBuilding(256, 30, 34, 128, '#0ea5e9');
-  drawBuilding(290, 52, 30, 104, '#f97316');
-  drawBuilding(320, 18, 36, 142, '#22c55e');
+  drawBuilding(220, 48, 30, 108, '#ef4444');
+  drawBuilding(250, 30, 36, 132, '#0ea5e9');
+  drawBuilding(286, 70, 34, 92, '#f97316');
+  drawBuilding(320, 22, 36, 140, '#22c55e');
   ctx.fillStyle = '#ffd84d';
-  ctx.beginPath(); ctx.moveTo(224, 138); ctx.lineTo(W, 118); ctx.lineTo(W, 270); ctx.lineTo(240, 228); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(214, 142); ctx.lineTo(W, 120); ctx.lineTo(W, 268); ctx.lineTo(238, 230); ctx.closePath(); ctx.fill();
   ctx.fillStyle = 'rgba(192,117,22,0.2)'; ctx.fillRect(248, 164, 112, 8);
   drawPalm(340, 184, 0.55);
 
-  // Hanging train wires.
-  ctx.strokeStyle = 'rgba(32,55,78,0.5)'; ctx.lineWidth = 1.4;
-  [76, 116, 156, 196, 236].forEach(x => {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(projectX(x, 470), 470); ctx.stroke();
+  // Festive flags near the top, like a subway-runner street.
+  ctx.strokeStyle = 'rgba(28,43,65,0.42)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(70, 18); ctx.quadraticCurveTo(180, 34, 300, 18); ctx.stroke();
+  ['#facc15', '#22c55e', '#ef4444', '#38bdf8', '#f97316'].forEach((color, i) => {
+    const fx = 86 + i * 42;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.moveTo(fx, 21); ctx.lineTo(fx + 14, 23); ctx.lineTo(fx + 5, 37); ctx.closePath(); ctx.fill();
   });
-  for (let y = 28; y < 150; y += 32) {
+
+  // Light overhead structure. Sparse lines avoid the ugly grid look.
+  ctx.strokeStyle = 'rgba(32,55,78,0.32)'; ctx.lineWidth = 1.2;
+  [96, 180, 264].forEach(x => {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(projectX(x, 500), 500); ctx.stroke();
+  });
+  [44, 86, 128].forEach(y => {
     const t = perspectiveT(y + 180);
-    ctx.beginPath(); ctx.moveTo(72 + t * 8, y); ctx.lineTo(290 - t * 8, y + 4); ctx.stroke();
-  }
+    ctx.beginPath(); ctx.moveTo(78 + t * 16, y); ctx.lineTo(282 - t * 16, y + 4); ctx.stroke();
+  });
 
   const dirt = ctx.createLinearGradient(0, 152, 0, H);
-  dirt.addColorStop(0, '#e7a247'); dirt.addColorStop(0.58, '#cf7f30'); dirt.addColorStop(1, '#9f581f');
+  dirt.addColorStop(0, '#efa33e'); dirt.addColorStop(0.62, '#d58631'); dirt.addColorStop(1, '#a96022');
   ctx.fillStyle = dirt; ctx.fillRect(0, 152, W, H - 152);
 
   // Track bed shaped like the screenshot: narrow at horizon, wide at the bottom.
-  ctx.fillStyle = '#d78937';
-  ctx.beginPath(); ctx.moveTo(96, HORIZON_Y); ctx.lineTo(264, HORIZON_Y); ctx.lineTo(W + 70, H); ctx.lineTo(-70, H); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(255,218,107,0.16)';
-  ctx.beginPath(); ctx.moveTo(138, HORIZON_Y); ctx.lineTo(222, HORIZON_Y); ctx.lineTo(284, H); ctx.lineTo(76, H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#d98a35';
+  ctx.beginPath(); ctx.moveTo(104, HORIZON_Y); ctx.lineTo(256, HORIZON_Y); ctx.lineTo(W + 46, H); ctx.lineTo(-46, H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,226,126,0.15)';
+  ctx.beginPath(); ctx.moveTo(142, HORIZON_Y); ctx.lineTo(218, HORIZON_Y); ctx.lineTo(264, H); ctx.lineTo(96, H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(123,66,22,0.12)';
+  ctx.beginPath(); ctx.moveTo(104, HORIZON_Y); ctx.lineTo(132, HORIZON_Y); ctx.lineTo(70, H); ctx.lineTo(12, H); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(228, HORIZON_Y); ctx.lineTo(256, HORIZON_Y); ctx.lineTo(348, H); ctx.lineTo(290, H); ctx.closePath(); ctx.fill();
 
   // Dormentes moving toward the camera.
-  for (let y = ((frame * spd * 1.35) % 38) + HORIZON_Y; y < H + 30; y += 38) {
+  for (let y = ((frame * spd * 1.22) % 42) + HORIZON_Y + 10; y < H + 30; y += 42) {
     const t = perspectiveT(y);
-    const half = 26 + t * 178;
-    ctx.strokeStyle = '#744116'; ctx.lineWidth = 2 + t * 4;
-    ctx.beginPath(); ctx.moveTo(VANISH_X - half, y); ctx.lineTo(VANISH_X + half, y + 4); ctx.stroke();
+    const half = 22 + t * 148;
+    ctx.strokeStyle = '#6e3f18'; ctx.lineWidth = 1.6 + t * 4.2;
+    ctx.beginPath(); ctx.moveTo(VANISH_X - half, y); ctx.lineTo(VANISH_X + half, y + 2); ctx.stroke();
   }
 
-  // Three railway lanes, each with two rails converging to the same vanishing point.
-  const bottomRails = [32, 86, 140, 166, 194, 220, 274, 328];
-  bottomRails.forEach((bottomX, index) => {
-    const horizonX = VANISH_X + (bottomX - VANISH_X) * 0.12;
-    ctx.strokeStyle = '#1f2933'; ctx.lineWidth = index === 3 || index === 4 ? 5 : 6;
-    ctx.beginPath(); ctx.moveTo(horizonX, HORIZON_Y); ctx.lineTo(bottomX, H + 26); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.42)'; ctx.lineWidth = 1.3;
-    ctx.beginPath(); ctx.moveTo(horizonX - 1, HORIZON_Y); ctx.lineTo(bottomX - 2, H + 26); ctx.stroke();
+  // Three clean tracks. Each lane has only two rails, with enough gap to read well.
+  const trackPairs = [
+    [48, 108],
+    [150, 210],
+    [252, 312],
+  ];
+  trackPairs.forEach(pair => {
+    pair.forEach(bottomX => {
+      const horizonX = VANISH_X + (bottomX - VANISH_X) * 0.12;
+      ctx.strokeStyle = '#111827'; ctx.lineWidth = 5.2;
+      ctx.beginPath(); ctx.moveTo(horizonX, HORIZON_Y + 5); ctx.lineTo(bottomX, H + 24); ctx.stroke();
+      ctx.strokeStyle = '#8fa0aa'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(horizonX - 1.2, HORIZON_Y + 5); ctx.lineTo(bottomX - 2, H + 24); ctx.stroke();
+    });
   });
 
-  // Small train parked in the distance like the reference.
-  drawTrainShape(204, 190, 46, 58);
+  // Small train in the distance, not blocking the whole view.
+  drawTrainShape(214, 190, 44, 56);
 
   // Turbo speed lines on sides
   if (P.turbo > 0) {
