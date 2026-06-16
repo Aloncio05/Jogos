@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Jogos do Aloncinho: jogo da velha, memória, minhoca, detetive, cartas e adivinhe o número.">
+  <meta name="description" content="Jogos do Aloncinho: velha, memória, minhoca, pac-man, detetive, cartas e adivinhe o número.">
   <title>Jogos do Aloncinho</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -12,13 +12,13 @@
     <nav class="topbar" aria-label="Navegação principal">
       <strong class="brand">Jogos do Aloncinho</strong>
       <div class="nav-links">
-        <a href="#velha">Velha</a>
-        <a href="#memoria">Memória</a>
-        <a href="#minhoca">Minhoca</a>
-        <a href="#pacman">Pac-Man</a>
-        <a href="#detetive">Detetive</a>
-        <a href="#cartas">Cartas</a>
-        <a href="#numero">Número</a>
+        <a href="velha.html">Velha</a>
+        <a href="memoria.html">Memória</a>
+        <a href="minhoca.html">Minhoca</a>
+        <a href="pacman.html">Pac-Man</a>
+        <a href="detetive.html">Detetive</a>
+        <a href="cartas.html">Cartas</a>
+        <a href="numero.html">Número</a>
       </div>
     </nav>
 
@@ -27,9 +27,9 @@
       <h1>Jogos do Aloncinho</h1>
       <p>
         Um cantinho de jogos rápidos para abrir no navegador, passar o tempo e desafiar a mente.
-        Escolha um jogo, aperte começar e divirta-se.
+        Clique em um jogo para abrir e começar a jogar.
       </p>
-      <a class="hero-button" href="#velha">Começar a jogar</a>
+      <a class="hero-button" href="velha.html">Começar a jogar</a>
     </section>
   </header>
 
@@ -38,229 +38,47 @@
       <p class="eyebrow">Escolha um jogo</p>
       <h2 id="games-title">Jogos disponíveis</h2>
       <div class="cards">
-        <a class="card" href="#velha">
+        <a class="card" href="velha.html">
           <span>01</span>
-          <h3>Jogo da Velha</h3>
+          <h3>Velha do Aloncinho</h3>
           <p>Jogue contra outra pessoa ou desafie o BOT em uma partida rápida.</p>
         </a>
-        <a class="card" href="#memoria">
+        <a class="card" href="memoria.html">
           <span>02</span>
-          <h3>Jogo da Memória</h3>
+          <h3>Memória do Aloncinho</h3>
           <p>Encontre todos os pares e acompanhe seus movimentos durante a partida.</p>
         </a>
-        <a class="card" href="#numero">
+        <a class="card" href="numero.html">
           <span>03</span>
-          <h3>Adivinhe o Número</h3>
+          <h3>Número do Aloncinho</h3>
           <p>Digite palpites até descobrir o número secreto entre 1 e 100.</p>
         </a>
-        <a class="card" href="#minhoca">
+        <a class="card" href="minhoca.html">
           <span>04</span>
-          <h3>Jogo da Minhoca</h3>
+          <h3>Minhoca do Aloncinho</h3>
           <p>Controle a minhoca, coma pontos e tente crescer sem bater nas paredes.</p>
         </a>
-        <a class="card" href="#pacman">
+        <a class="card" href="pacman.html">
           <span>05</span>
           <h3>Pac-Man do Aloncinho</h3>
           <p>Come bolinhas, fuja dos fantasmas e conquiste as 15 fases do labirinto.</p>
         </a>
-        <a class="card" href="#detetive">
+        <a class="card" href="detetive.html">
           <span>06</span>
-          <h3>Jogo do Detetive</h3>
+          <h3>Detetive Aloncinho</h3>
           <p>Use pistas para descobrir quem é o culpado antes de acabar as tentativas.</p>
         </a>
-        <a class="card" href="#cartas">
+        <a class="card" href="cartas.html">
           <span>07</span>
           <h3>Cartas do Aloncinho</h3>
           <p>Um jogo estilo Uno com nomes, BOTs, código de convite e até 8 jogadores.</p>
         </a>
       </div>
     </section>
-
-    <section id="velha" class="game-panel" aria-labelledby="tic-title">
-      <div class="game-header">
-        <div>
-          <p class="eyebrow">Jogo 01</p>
-          <h2 id="tic-title">Jogo da Velha</h2>
-        </div>
-        <div class="actions">
-          <button id="toggle-bot" class="secondary-button" type="button">Modo BOT: desligado</button>
-          <button id="reset-tic-tac-toe" class="secondary-button" type="button">Reiniciar</button>
-        </div>
-      </div>
-      <p id="tic-tac-toe-status" class="status">Vez do jogador X</p>
-      <div id="tic-tac-toe-board" class="tic-board" aria-label="Tabuleiro do jogo da velha"></div>
-    </section>
-
-    <section id="memoria" class="game-panel" aria-labelledby="memory-title">
-      <div class="game-header">
-        <div>
-          <p class="eyebrow">Jogo 02</p>
-          <h2 id="memory-title">Jogo da Memória</h2>
-        </div>
-        <div class="actions">
-          <button id="reset-memory" class="secondary-button" type="button">Reiniciar fase</button>
-          <button id="memory-next-phase" class="secondary-button memory-next-btn" type="button" hidden>Próxima fase →</button>
-        </div>
-      </div>
-
-      <div class="memory-hud">
-        <div class="memory-hud-item">
-          <span>Fase</span>
-          <strong id="memory-phase-display">1 / 15</strong>
-        </div>
-        <div class="memory-hud-item" id="memory-timer-item" hidden>
-          <span>Tempo</span>
-          <strong id="memory-timer-display">--</strong>
-        </div>
-        <div class="memory-hud-item">
-          <span>Movimentos</span>
-          <strong id="memory-moves-display">0</strong>
-        </div>
-        <div class="memory-hud-item">
-          <span>Pares</span>
-          <strong id="memory-pairs-display">0 / 0</strong>
-        </div>
-      </div>
-
-      <p id="memory-status" class="status">Encontre todos os pares para avançar de fase!</p>
-      <div id="memory-board" class="memory-board" aria-label="Cartas do jogo da memória"></div>
-      <div id="memory-phases-strip" class="memory-phases-strip" aria-label="Progresso das fases"></div>
-    </section>
-
-    <section id="numero" class="game-panel" aria-labelledby="guess-title">
-      <div class="game-header">
-        <div>
-          <p class="eyebrow">Jogo 03</p>
-          <h2 id="guess-title">Adivinhe o Número</h2>
-        </div>
-        <button id="reset-guess" class="secondary-button">Novo número</button>
-      </div>
-      <p class="status">Tente acertar o número secreto entre 1 e 100.</p>
-      <form id="guess-form" class="guess-form">
-        <label for="guess-input">Seu palpite</label>
-        <div class="guess-row">
-          <input id="guess-input" type="number" min="1" max="100" placeholder="Ex: 42" required>
-          <button type="submit">Enviar</button>
-        </div>
-      </form>
-      <p id="guess-feedback" class="feedback">Digite um número para começar.</p>
-    </section>
-
-    <section id="minhoca" class="game-panel" aria-labelledby="snake-title">
-      <div class="game-header">
-        <div>
-          <p class="eyebrow">Jogo 04</p>
-          <h2 id="snake-title">Minhoca do Aloncinho</h2>
-        </div>
-        <div class="actions">
-          <button id="start-snake" class="secondary-button" type="button">Começar</button>
-          <button id="reset-snake" class="secondary-button" type="button">Reiniciar</button>
-        </div>
-      </div>
-      <div class="snake-hud">
-        <div class="snake-hud-item">
-          <span>Fase</span>
-          <strong id="snake-phase-display">1 / 15</strong>
-        </div>
-        <div class="snake-hud-item">
-          <span>Pontos</span>
-          <strong id="snake-score-display">0</strong>
-        </div>
-        <div class="snake-hud-item">
-          <span>Próxima fase</span>
-          <strong id="snake-next-display">3 comidas</strong>
-        </div>
-        <div class="snake-hud-item">
-          <span>Velocidade</span>
-          <strong id="snake-speed-display">Devagar</strong>
-        </div>
-      </div>
-      <p id="snake-status" class="status">Use as setas do teclado ou os botões para jogar.</p>
-      <canvas id="snake-canvas" class="snake-canvas" width="360" height="360" tabindex="0" aria-label="Tabuleiro do jogo da minhoca"></canvas>
-      <div class="direction-pad" aria-label="Controles da minhoca">
-        <button type="button" data-direction="up">↑</button>
-        <button type="button" data-direction="left">←</button>
-        <button type="button" data-direction="down">↓</button>
-        <button type="button" data-direction="right">→</button>
-      </div>
-    </section>
-
-    <section id="pacman" class="game-panel" aria-labelledby="pacman-title">
-      <div class="game-header">
-        <div>
-          <p class="eyebrow">Jogo 05</p>
-          <h2 id="pacman-title">Pac-Man do Aloncinho</h2>
-        </div>
-        <div class="actions">
-          <button id="start-pacman" class="secondary-button" type="button">Começar</button>
-          <button id="reset-pacman" class="secondary-button" type="button">Reiniciar</button>
-        </div>
-      </div>
-      <div class="snake-hud">
-        <div class="snake-hud-item">
-          <span>Fase</span>
-          <strong id="pac-phase-display">1 / 15</strong>
-        </div>
-        <div class="snake-hud-item">
-          <span>Pontos</span>
-          <strong id="pac-score-display">0</strong>
-        </div>
-        <div class="snake-hud-item">
-          <span>Vidas</span>
-          <strong id="pac-lives-display">3</strong>
-        </div>
-        <div class="snake-hud-item">
-          <span>Velocidade</span>
-          <strong id="pac-speed-display">Iniciante</strong>
-        </div>
-      </div>
-      <p id="pac-status" class="status">Use as setas do teclado ou os botões para jogar.</p>
-      <canvas id="pac-canvas" class="snake-canvas" width="380" height="420" tabindex="0" aria-label="Labirinto do Pac-Man"></canvas>
-      <div class="direction-pad" aria-label="Controles do Pac-Man">
-        <button type="button" data-pac-direction="up">↑</button>
-        <button type="button" data-pac-direction="left">←</button>
-        <button type="button" data-pac-direction="down">↓</button>
-        <button type="button" data-pac-direction="right">→</button>
-      </div>
-    </section>
-
-    <section id="detetive" class="game-panel" aria-labelledby="detective-title">
-      <div class="game-header">
-        <div>
-          <p class="eyebrow">Jogo 06</p>
-          <h2 id="detective-title">Jogo do Detetive</h2>
-        </div>
-        <button id="reset-detective" class="secondary-button" type="button">Novo caso</button>
-      </div>
-      <p id="detective-story" class="status"></p>
-      <div id="detective-clues" class="clue-list" aria-label="Pistas do caso"></div>
-      <div id="detective-suspects" class="suspect-grid" aria-label="Suspeitos"></div>
-      <p id="detective-feedback" class="feedback">Escolha um suspeito para resolver o caso.</p>
-    </section>
-
-    <section id="cartas" class="game-panel" aria-labelledby="cards-title">
-      <div class="game-header">
-        <div>
-          <p class="eyebrow">Jogo 07</p>
-          <h2 id="cards-title">Cartas do Aloncinho</h2>
-        </div>
-      </div>
-
-      <p class="status">
-        O jogo de cartas agora abre em uma mesa própria, mais parecida com uma partida de Uno.
-        Entre na sala, convide amigos, adicione BOTs e jogue com até 8 participantes.
-      </p>
-      <a class="hero-button" href="cartas.html" target="_blank" rel="noopener noreferrer">Abrir mesa de cartas</a>
-    </section>
   </main>
 
   <footer class="footer">
     <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
   </footer>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="script.js?v=10"></script>
 </body>
 </html>

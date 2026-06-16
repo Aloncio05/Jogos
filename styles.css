@@ -1658,6 +1658,42 @@ body.card-match-active {
   text-align: center;
 }
 
+/* ─── Páginas individuais de jogo ─────────────────────────────── */
+.game-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.game-topbar {
+  padding: 18px clamp(18px, 5vw, 72px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.game-page-main {
+  flex: 1;
+  padding: 36px clamp(18px, 5vw, 72px) 60px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.back-link:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
 @media (max-width: 780px) {
   .topbar,
   .game-header,

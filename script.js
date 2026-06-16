@@ -1,4 +1,4 @@
-window.GAME_VERSION = '10';
+window.GAME_VERSION = '11';
 const ticBoardElement = document.querySelector('#tic-tac-toe-board');
 const ticStatusElement = document.querySelector('#tic-tac-toe-status');
 const resetTicButton = document.querySelector('#reset-tic-tac-toe');

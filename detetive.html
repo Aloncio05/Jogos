@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detetive Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="game-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel" aria-labelledby="detective-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 06</p>
+          <h2 id="detective-title">Detetive Aloncinho</h2>
+        </div>
+        <button id="reset-detective" class="secondary-button" type="button">Novo caso</button>
+      </div>
+      <p id="detective-story" class="status"></p>
+      <div id="detective-clues" class="clue-list" aria-label="Pistas do caso"></div>
+      <div id="detective-suspects" class="suspect-grid" aria-label="Suspeitos"></div>
+      <p id="detective-feedback" class="feedback">Escolha um suspeito para resolver o caso.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="script.js?v=11"></script>
+</body>
+</html>

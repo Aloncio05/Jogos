@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minhoca do Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="game-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel" aria-labelledby="snake-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 04</p>
+          <h2 id="snake-title">Minhoca do Aloncinho</h2>
+        </div>
+        <div class="actions">
+          <button id="start-snake" class="secondary-button" type="button">Começar</button>
+          <button id="reset-snake" class="secondary-button" type="button">Reiniciar</button>
+        </div>
+      </div>
+      <div class="snake-hud">
+        <div class="snake-hud-item">
+          <span>Fase</span>
+          <strong id="snake-phase-display">1 / 15</strong>
+        </div>
+        <div class="snake-hud-item">
+          <span>Pontos</span>
+          <strong id="snake-score-display">0</strong>
+        </div>
+        <div class="snake-hud-item">
+          <span>Próxima fase</span>
+          <strong id="snake-next-display">3 comidas</strong>
+        </div>
+        <div class="snake-hud-item">
+          <span>Velocidade</span>
+          <strong id="snake-speed-display">Devagar</strong>
+        </div>
+      </div>
+      <p id="snake-status" class="status">Use as setas do teclado ou os botões para jogar.</p>
+      <canvas id="snake-canvas" class="snake-canvas" width="360" height="360" tabindex="0" aria-label="Tabuleiro do jogo da minhoca"></canvas>
+      <div class="direction-pad" aria-label="Controles da minhoca">
+        <button type="button" data-direction="up">↑</button>
+        <button type="button" data-direction="left">←</button>
+        <button type="button" data-direction="down">↓</button>
+        <button type="button" data-direction="right">→</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="script.js?v=11"></script>
+</body>
+</html>

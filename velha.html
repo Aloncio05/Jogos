@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Velha do Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="game-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel" aria-labelledby="tic-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 01</p>
+          <h2 id="tic-title">Velha do Aloncinho</h2>
+        </div>
+        <div class="actions">
+          <button id="toggle-bot" class="secondary-button" type="button">Modo BOT: desligado</button>
+          <button id="reset-tic-tac-toe" class="secondary-button" type="button">Reiniciar</button>
+        </div>
+      </div>
+      <p id="tic-tac-toe-status" class="status">Vez do jogador X</p>
+      <div id="tic-tac-toe-board" class="tic-board" aria-label="Tabuleiro do jogo da velha"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="script.js?v=11"></script>
+</body>
+</html>

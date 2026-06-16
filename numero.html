@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Número do Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="game-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel" aria-labelledby="guess-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 03</p>
+          <h2 id="guess-title">Número do Aloncinho</h2>
+        </div>
+        <button id="reset-guess" class="secondary-button">Novo número</button>
+      </div>
+      <p class="status">Tente acertar o número secreto entre 1 e 100.</p>
+      <form id="guess-form" class="guess-form">
+        <label for="guess-input">Seu palpite</label>
+        <div class="guess-row">
+          <input id="guess-input" type="number" min="1" max="100" placeholder="Ex: 42" required>
+          <button type="submit">Enviar</button>
+        </div>
+      </form>
+      <p id="guess-feedback" class="feedback">Digite um número para começar.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="script.js?v=11"></script>
+</body>
+</html>
