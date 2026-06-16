@@ -3629,6 +3629,11 @@ body.card-match-active {
 }
 
 .runner-page .runner-hud {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
   gap: 8px;
   margin: 0 auto 7px;
 }
@@ -3641,8 +3646,9 @@ body.card-match-active {
 }
 
 .runner-page #runner-canvas {
-  width: min(calc((100dvh - 128px) * 0.6), calc(100vw - 20px), 430px);
-  max-height: calc(100dvh - 128px);
+  width: min(calc((100dvh - 34px) * 0.6), calc(100vw - 20px), 560px);
+  max-height: calc(100dvh - 34px);
+  border-radius: 26px;
 }
 
 .runner-page .runner-mobile-controls {
@@ -3656,6 +3662,16 @@ body.card-match-active {
 
 .runner-page .runner-btn--crouch {
   min-height: 42px;
+}
+
+@media (min-width: 781px) {
+  .runner-page .runner-mobile-controls {
+    display: none;
+  }
+
+  .runner-page #runner-canvas {
+    width: min(calc((100dvh - 34px) * 0.6), calc(100vw - 24px), 620px);
+  }
 }
 
 

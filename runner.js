@@ -13,7 +13,7 @@ const W = 360, H = 600;
 
 const LANES   = [90, 180, 270];     // x centres of the 3 lanes
 const BASE_Y  = H - 130;            // player ground y
-const HORIZON_Y = 150;
+const HORIZON_Y = 132;
 const VANISH_X = W / 2;
 const GRAV    = 0.62;               // gravity per frame
 const JUMP_V  = 13.4;               // initial upward velocity
@@ -306,22 +306,26 @@ function drawTrainShape(x, y, w, h) {
 function drawRoad() {
   const spd = baseSpeed + (P.turbo>0 ? 2 : 0);
 
-  const sky = ctx.createLinearGradient(0, 0, 0, 230);
-  sky.addColorStop(0, '#36bdf5'); sky.addColorStop(0.55, '#9de7ff'); sky.addColorStop(1, '#ffe082');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 230);
-  ctx.fillStyle = '#fff0a6'; ctx.beginPath(); ctx.arc(46, 48, 25, 0, Math.PI * 2); ctx.fill();
-  drawSoftCloud(286, 44, 0.74);
+  const sky = ctx.createLinearGradient(0, 0, 0, 245);
+  sky.addColorStop(0, '#26aef1'); sky.addColorStop(0.54, '#8be4ff'); sky.addColorStop(1, '#ffd76a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 245);
+  ctx.fillStyle = '#fff0a6'; ctx.beginPath(); ctx.arc(45, 48, 27, 0, Math.PI * 2); ctx.fill();
+  drawSoftCloud(286, 42, 0.82);
+  drawSoftCloud(126, 86, 0.38);
 
-  drawPalm(30, 135, 0.55);
-  drawBuilding(214, 56, 31, 108, '#ef4444');
-  drawBuilding(248, 32, 40, 136, '#0ea5e9');
-  drawBuilding(292, 78, 32, 90, '#f97316');
-  drawBuilding(326, 28, 32, 140, '#22c55e');
+  // Big saturated background shapes, closer to a mobile runner art direction.
+  drawBuilding(204, 38, 36, 128, '#ef4444');
+  drawBuilding(244, 18, 45, 154, '#0ea5e9');
+  drawBuilding(294, 70, 34, 104, '#f97316');
+  drawBuilding(330, 20, 36, 156, '#22c55e');
+  drawPalm(30, 138, 0.62);
 
-  // Warm right wall and ground planes create a recognizable street canyon.
-  drawQuad([[206, 145], [W, 122], [W, 280], [234, 226]], '#ffd84d');
-  drawQuad([[244, 174], [W, 160], [W, 175], [244, 190]], 'rgba(190,112,18,0.16)');
-  drawPalm(340, 196, 0.46);
+  // Strong side walls/platforms to create a tunnel-like canyon.
+  drawQuad([[0, 166], [116, 145], [62, H], [0, H]], '#c47027');
+  drawQuad([[210, 142], [W, 118], [W, H], [304, H]], '#ffd84d');
+  drawQuad([[226, 174], [W, 154], [W, 174], [226, 196]], 'rgba(190,112,18,0.18)');
+  drawQuad([[0, 178], [96, 160], [72, 200], [0, 214]], 'rgba(255,235,160,0.16)');
+  drawPalm(340, 205, 0.52);
 
   ctx.strokeStyle = 'rgba(24,44,70,0.34)'; ctx.lineWidth = 1.4;
   ctx.beginPath(); ctx.moveTo(74, 18); ctx.quadraticCurveTo(180, 34, 302, 18); ctx.stroke();
@@ -331,22 +335,22 @@ function drawRoad() {
     ctx.beginPath(); ctx.moveTo(fx, 20); ctx.lineTo(fx + 13, 22); ctx.lineTo(fx + 5, 36); ctx.closePath(); ctx.fill();
   });
 
-  const dirt = ctx.createLinearGradient(0, 154, 0, H);
-  dirt.addColorStop(0, '#efa13c'); dirt.addColorStop(0.62, '#d48431'); dirt.addColorStop(1, '#a75f23');
-  ctx.fillStyle = dirt; ctx.fillRect(0, 154, W, H - 154);
+  const dirt = ctx.createLinearGradient(0, 138, 0, H);
+  dirt.addColorStop(0, '#f2aa45'); dirt.addColorStop(0.6, '#d78331'); dirt.addColorStop(1, '#96501b');
+  ctx.fillStyle = dirt; ctx.fillRect(0, 138, W, H - 138);
 
   // Side shadows and central highlight give the floor a finished game-art look.
-  drawQuad([[112, HORIZON_Y], [248, HORIZON_Y], [340, H], [20, H]], '#d88a35');
-  drawQuad([[148, HORIZON_Y], [212, HORIZON_Y], [248, H], [112, H]], 'rgba(255,226,126,0.2)');
-  drawQuad([[112, HORIZON_Y], [140, HORIZON_Y], [88, H], [24, H]], 'rgba(113,61,20,0.13)');
-  drawQuad([[220, HORIZON_Y], [248, HORIZON_Y], [336, H], [272, H]], 'rgba(113,61,20,0.13)');
+  drawQuad([[96, HORIZON_Y], [264, HORIZON_Y], [356, H], [4, H]], '#d98a35');
+  drawQuad([[146, HORIZON_Y], [214, HORIZON_Y], [250, H], [110, H]], 'rgba(255,232,140,0.22)');
+  drawQuad([[96, HORIZON_Y], [134, HORIZON_Y], [76, H], [0, H]], 'rgba(106,55,18,0.16)');
+  drawQuad([[226, HORIZON_Y], [264, HORIZON_Y], [360, H], [284, H]], 'rgba(106,55,18,0.16)');
 
   // Three lane beds with subtle separation.
   [
-    [[118, HORIZON_Y + 5], [154, HORIZON_Y + 5], [126, H], [42, H]],
-    [[164, HORIZON_Y + 5], [196, HORIZON_Y + 5], [222, H], [138, H]],
-    [[206, HORIZON_Y + 5], [242, HORIZON_Y + 5], [318, H], [234, H]],
-  ].forEach((lane, i) => drawQuad(lane, i === 1 ? 'rgba(255,189,84,0.14)' : 'rgba(112,61,22,0.08)'));
+    [[106, HORIZON_Y + 5], [150, HORIZON_Y + 5], [118, H], [20, H]],
+    [[158, HORIZON_Y + 5], [202, HORIZON_Y + 5], [230, H], [130, H]],
+    [[210, HORIZON_Y + 5], [254, HORIZON_Y + 5], [340, H], [240, H]],
+  ].forEach((lane, i) => drawQuad(lane, i === 1 ? 'rgba(255,203,94,0.16)' : 'rgba(92,48,16,0.1)'));
 
   for (let y = ((frame * spd * 1.1) % 48) + HORIZON_Y + 16; y < H + 36; y += 48) {
     const t = perspectiveT(y);
@@ -356,12 +360,12 @@ function drawRoad() {
   }
 
   // Rails are filled polygons, not raw lines, so they read like actual metal tracks.
-  [[70, 126], [150, 210], [234, 290]].forEach(pair => {
+  [[58, 132], [142, 218], [226, 302]].forEach(pair => {
     pair.forEach(bottomX => drawRail(bottomX, VANISH_X + (bottomX - VANISH_X) * 0.1, HORIZON_Y + 7, H + 22));
   });
 
   // Distant train acts as a focal point.
-  drawTrainShape(214, 190, 44, 56);
+  drawTrainShape(216, 184, 54, 68);
 
   const vignette = ctx.createRadialGradient(W / 2, H * 0.48, 120, W / 2, H * 0.58, 360);
   vignette.addColorStop(0, 'rgba(255,255,255,0)');
