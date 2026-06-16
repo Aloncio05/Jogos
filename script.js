@@ -673,7 +673,7 @@ const colorLabels = {
 
 const maxCardPlayers = 10;
 const gameWinningScore = 500;
-const turnDurationSeconds = 12;
+const turnDurationSeconds = 35;
 
 let roomCode = '';
 let cardPlayers = [];
