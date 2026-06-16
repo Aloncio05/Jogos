@@ -1,9 +1,3 @@
-// DEBUG: exibe erros JS no status da minhoca
-window.onerror = (msg, src, line) => {
-  const el = document.querySelector('#snake-status');
-  if (el) el.textContent = 'ERRO JS linha ' + line + ': ' + msg;
-};
-
 const ticBoardElement = document.querySelector('#tic-tac-toe-board');
 const ticStatusElement = document.querySelector('#tic-tac-toe-status');
 const resetTicButton = document.querySelector('#reset-tic-tac-toe');
@@ -548,11 +542,6 @@ function stopSnake() {
 
 function moveSnake() {
   snakeDirection = nextSnakeDirection;
-  const _dn = {'1,0':'→','-1,0':'←','0,-1':'↑','0,1':'↓'};
-  if (snakeStatusElement) snakeStatusElement.textContent =
-    'Dir: ' + (_dn[snakeDirection.x+','+snakeDirection.y]||'?') +
-    ' | Pos: ' + snake[0].x + ',' + snake[0].y +
-    ' | Pts: ' + snakeScore;
   const head = {
     x: snake[0].x + snakeDirection.x,
     y: snake[0].y + snakeDirection.y,
@@ -1900,14 +1889,13 @@ if (closeOnlineRoomButton) closeOnlineRoomButton.addEventListener('click', close
 colorChoiceButtons.forEach((button) => {
   button.addEventListener('click', () => chooseWildColor(button.dataset.cardColor));
 });
-joinRoomForm.addEventListener('submit', (event) => {
+if (joinRoomForm) joinRoomForm.addEventListener('submit', (event) => {
   event.preventDefault();
   joinOnlineRoom(joinRoomCodeInput.value);
 });
 directionButtons.forEach((button) => {
   const press = (e) => {
     e.preventDefault();
-    if (snakeStatusElement) snakeStatusElement.textContent = 'Botão ' + button.dataset.direction + ' pressionado!';
     changeSnakeDirection(button.dataset.direction);
   };
   button.addEventListener('mousedown', press);
@@ -1952,7 +1940,6 @@ if (snakeCanvas) {
     else if (cy > h * 0.67) dir = 'down';
     else if (cx < w * 0.33) dir = 'left';
     else dir = 'right';
-    if (snakeStatusElement) snakeStatusElement.textContent = 'Clique detectado → ' + dir + (snakeRunning ? ' (jogando)' : ' (parado)');
     changeSnakeDirection(dir);
     if (!snakeRunning) startSnakeGame();
   });
