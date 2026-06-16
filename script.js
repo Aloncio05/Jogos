@@ -1,4 +1,4 @@
-window.GAME_VERSION = '11';
+window.GAME_VERSION = '12';
 const ticBoardElement = document.querySelector('#tic-tac-toe-board');
 const ticStatusElement = document.querySelector('#tic-tac-toe-status');
 const resetTicButton = document.querySelector('#reset-tic-tac-toe');
@@ -2418,6 +2418,26 @@ if (pacCanvas) {
     btn.addEventListener('touchstart', press, { passive: false });
     btn.addEventListener('click', press);
   });
+
+  // Swipe no canvas do Pac-Man
+  let pacSwipeX = 0, pacSwipeY = 0;
+  pacCanvas.addEventListener('touchstart', (e) => {
+    pacSwipeX = e.touches[0].clientX;
+    pacSwipeY = e.touches[0].clientY;
+    e.preventDefault();
+  }, { passive: false });
+  pacCanvas.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - pacSwipeX;
+    const dy = e.changedTouches[0].clientY - pacSwipeY;
+    if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
+    const dirMap = { up: { dr: -1, dc: 0 }, down: { dr: 1, dc: 0 }, left: { dr: 0, dc: -1 }, right: { dr: 0, dc: 1 } };
+    if (Math.abs(dx) > Math.abs(dy)) {
+      pacNextDir = dx > 0 ? dirMap.right : dirMap.left;
+    } else {
+      pacNextDir = dy > 0 ? dirMap.down : dirMap.up;
+    }
+    if (!pacRunning && !pacGameOver) startPacGame();
+  }, { passive: true });
 }
 
 window.addEventListener('keydown', (e) => {

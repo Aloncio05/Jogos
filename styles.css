@@ -72,6 +72,8 @@ button {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-links a {
@@ -249,6 +251,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(76px, 126px));
   gap: 12px;
+  max-width: fit-content;
 }
 
 .tic-cell {
@@ -544,11 +547,18 @@ h2 {
   display: block;
   width: min(100%, 360px);
   height: auto;
+  aspect-ratio: 1;
   margin-top: 16px;
   outline: none;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 24px;
   background: rgba(0, 0, 0, 0.25);
+  touch-action: none;
+}
+
+#pac-canvas {
+  aspect-ratio: 380 / 420;
+  width: min(100%, 380px);
 }
 
 .direction-pad {
@@ -1715,11 +1725,11 @@ body.card-match-active {
   }
 
   .cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .suspect-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .players-list,
@@ -1733,12 +1743,65 @@ body.card-match-active {
   }
 
   .tic-board {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(72px, 110px));
+    gap: 10px;
   }
 
-  .direction-pad {
-    grid-template-columns: repeat(4, 1fr);
+  .tic-cell {
+    font-size: clamp(2rem, 12vw, 3.5rem);
   }
+
+  .memory-board {
+    grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+    gap: 8px;
+  }
+
+  .nav-links {
+    flex-wrap: nowrap;
+  }
+
+  .game-topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px clamp(14px, 4vw, 32px);
+  }
+
+  .game-page-main {
+    padding: 20px 14px 40px;
+  }
+
+  .snake-hud,
+  .memory-hud {
+    gap: 8px;
+  }
+
+  .snake-hud-item,
+  .memory-hud-item {
+    flex: 1;
+    min-width: 72px;
+  }
+
+  .game-panel {
+    padding: 18px 16px;
+  }
+
+  .game-header {
+    gap: 10px;
+  }
+
+  /* D-pad em formato de cruz */
+  .direction-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    grid-template-rows: repeat(3, 60px);
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .direction-pad button:nth-child(1) { grid-column: 2; grid-row: 1; }
+  .direction-pad button:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .direction-pad button:nth-child(3) { grid-column: 2; grid-row: 3; }
+  .direction-pad button:nth-child(4) { grid-column: 3; grid-row: 2; }
 
   .cards-topbar,
   .uno-layout {
@@ -2077,6 +2140,57 @@ body.card-match-active {
 
   .uno-table-state {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .direction-pad {
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 6px;
+  }
+
+  .direction-pad button {
+    min-height: 52px;
+    font-size: 1.1rem;
+  }
+
+  .snake-hud-item,
+  .memory-hud-item {
+    min-width: 60px;
+    padding: 8px 10px;
+  }
+
+  .snake-hud-item strong,
+  .memory-hud-item strong {
+    font-size: 1rem;
+  }
+
+  .back-link {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  .brand {
+    font-size: 0.85rem;
+  }
+
+  .memory-board {
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 6px;
+  }
+
+  .tic-board {
+    grid-template-columns: repeat(3, minmax(62px, 1fr));
+    gap: 8px;
+  }
+
+  .memory-card {
+    border-radius: 10px;
   }
 }
 
