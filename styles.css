@@ -658,6 +658,11 @@ h2 {
 }
 
 .uno-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   font-family: var(--cards-condensed-font);
   width: 92px;
   min-height: 132px;
@@ -671,8 +676,49 @@ h2 {
   box-shadow: 0 14px 26px rgba(0, 0, 0, 0.24), inset 0 0 0 3px rgba(255, 255, 255, 0.16);
 }
 
-.uno-card span,
-.uno-card small {
+.card-corner {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  min-width: 1.4em;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.card-corner-top {
+  top: 9px;
+  left: 9px;
+}
+
+.card-corner-bottom {
+  right: 9px;
+  bottom: 9px;
+  transform: rotate(180deg);
+}
+
+.card-main-value {
+  display: block;
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.card-main-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.uno-card span:not(.card-corner),
+.uno-card small:not(.card-main-label) {
   display: block;
   font-size: 0.76rem;
   font-weight: 950;
@@ -680,13 +726,13 @@ h2 {
   text-transform: uppercase;
 }
 
-.uno-card small {
+.uno-card small:not(.card-main-label) {
   margin-top: 18px;
   text-align: center;
   opacity: 0.86;
 }
 
-.uno-card strong {
+.uno-card strong:not(.card-main-value) {
   display: block;
   margin-top: 34px;
   font-size: 1.7rem;
@@ -886,7 +932,7 @@ body.card-match-active {
   grid-template-rows: auto minmax(220px, 1fr) auto;
   height: calc(100vh - 12px);
   min-height: 0;
-  padding-bottom: 174px;
+  padding-bottom: 132px;
   border-radius: 20px;
 }
 
@@ -932,10 +978,10 @@ body.card-match-active {
   bottom: 0;
   left: 8px;
   z-index: 20;
-  height: 166px;
+  height: 126px;
   min-height: 0;
   overflow: hidden;
-  padding: 8px 14px 12px;
+  padding: 6px 14px 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 22px 22px 0 0;
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.98));
@@ -943,23 +989,32 @@ body.card-match-active {
 }
 
 .card-match-active .hand-area h3 {
-  margin-bottom: 6px;
+  margin-bottom: 2px;
+  font-size: 0.95rem;
 }
 
 .card-match-active .uno-hand {
   min-height: 0;
-  height: calc(100% - 26px);
-  padding-block: 6px;
+  height: calc(100% - 22px);
+  padding-block: 4px 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .card-match-active .uno-hand .uno-card {
-  width: clamp(72px, 7vw, 88px);
-  min-height: clamp(102px, 16vh, 124px);
+  width: clamp(60px, 6vw, 76px);
+  min-height: clamp(84px, 12vh, 104px);
+  margin-left: -42px;
+  padding: 9px;
+}
+
+.card-match-active .uno-hand .uno-card:first-child {
+  margin-left: 0;
 }
 
 .card-match-active .uno-card strong {
-  margin-top: 22px;
-  font-size: 1.35rem;
+  margin: 0;
+  font-size: 1.45rem;
 }
 
 .card-match-active .uno-table-state {
@@ -1788,7 +1843,7 @@ body.card-match-active {
   .card-match-active .uno-hand .uno-card {
     width: 62px;
     min-height: 90px;
-    margin-left: -22px;
+    margin-left: -36px;
     padding: 7px;
     border-width: 3px;
     border-radius: 14px;

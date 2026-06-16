@@ -1052,7 +1052,13 @@ function getCardClass(card) {
 
 function getCardFace(card, label = '') {
   const colorName = card.color === 'wild' ? 'Especial' : colorLabels[card.color];
-  return `<span>${label || colorName}</span><strong>${card.value}</strong><small>${colorName}</small>`;
+  const faceLabel = label || colorName;
+  return `
+    <span class="card-corner card-corner-top">${card.value}</span>
+    <strong class="card-main-value">${card.value}</strong>
+    <small class="card-main-label">${faceLabel}</small>
+    <span class="card-corner card-corner-bottom">${card.value}</span>
+  `;
 }
 
 function isCardPlayable(card) {
