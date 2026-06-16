@@ -472,11 +472,11 @@ let snakeTimer = null;
 let snakeRunning = false;
 
 const SNAKE_PHASES = [
-  { speed: 160, foodToAdvance: 3,  label: 'Devagar'    },
-  { speed: 148, foodToAdvance: 4,  label: 'Animando'   },
-  { speed: 136, foodToAdvance: 4,  label: 'Acordada'   },
-  { speed: 124, foodToAdvance: 5,  label: 'Esperta'    },
-  { speed: 112, foodToAdvance: 5,  label: 'Rápida'     },
+  { speed: 350, foodToAdvance: 3,  label: 'Devagar'    },
+  { speed: 280, foodToAdvance: 4,  label: 'Animando'   },
+  { speed: 220, foodToAdvance: 4,  label: 'Acordada'   },
+  { speed: 180, foodToAdvance: 5,  label: 'Esperta'    },
+  { speed: 150, foodToAdvance: 5,  label: 'Rápida'     },
   { speed: 100, foodToAdvance: 6,  label: 'Veloz'      },
   { speed: 90,  foodToAdvance: 6,  label: 'Turbinada'  },
   { speed: 82,  foodToAdvance: 7,  label: 'Acelerada'  },
@@ -1894,7 +1894,9 @@ joinRoomForm.addEventListener('submit', (event) => {
   joinOnlineRoom(joinRoomCodeInput.value);
 });
 directionButtons.forEach((button) => {
-  button.addEventListener('click', () => changeSnakeDirection(button.dataset.direction));
+  const press = (e) => { e.preventDefault(); changeSnakeDirection(button.dataset.direction); };
+  button.addEventListener('mousedown', press);
+  button.addEventListener('touchstart', press, { passive: false });
 });
 
 // Window-level capture: intercepta teclas antes de qualquer outro handler
@@ -1920,9 +1922,21 @@ window.addEventListener('keydown', (event) => {
   }
 }, { capture: true, passive: false });
 
-// Suporte a swipe no canvas para mobile
+// Controle por clique/toque direto no canvas (zonas: topo=cima, base=baixo, esq=esq, dir=dir)
 let swipeTouchStartX = 0, swipeTouchStartY = 0;
 if (snakeCanvas) {
+  snakeCanvas.addEventListener('click', (e) => {
+    const r = snakeCanvas.getBoundingClientRect();
+    const cx = e.clientX - r.left;
+    const cy = e.clientY - r.top;
+    const w = r.width;
+    const h = r.height;
+    if (cy < h * 0.33) changeSnakeDirection('up');
+    else if (cy > h * 0.67) changeSnakeDirection('down');
+    else if (cx < w * 0.33) changeSnakeDirection('left');
+    else changeSnakeDirection('right');
+    if (!snakeRunning) startSnakeGame();
+  });
   snakeCanvas.addEventListener('touchstart', (e) => {
     swipeTouchStartX = e.touches[0].clientX;
     swipeTouchStartY = e.touches[0].clientY;
@@ -1930,7 +1944,7 @@ if (snakeCanvas) {
   snakeCanvas.addEventListener('touchend', (e) => {
     const dx = e.changedTouches[0].clientX - swipeTouchStartX;
     const dy = e.changedTouches[0].clientY - swipeTouchStartY;
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
     if (Math.abs(dx) > Math.abs(dy)) {
       changeSnakeDirection(dx > 0 ? 'right' : 'left');
     } else {
