@@ -1308,7 +1308,7 @@ body.card-match-active {
   align-items: flex-end;
   justify-content: flex-start;
   min-height: 162px;
-  gap: 10px;
+  gap: 0;
   padding: 10px 12px 8px;
   overflow-x: auto;
   overflow-y: visible;
@@ -1320,7 +1320,7 @@ body.card-match-active {
 
 .uno-hand .uno-card {
   flex: 0 0 auto;
-  margin-left: 0;
+  margin-left: -34px;
   transition: transform 160ms ease, filter 160ms ease;
 }
 
@@ -1328,8 +1328,34 @@ body.card-match-active {
   margin-left: 0;
 }
 
+.uno-hand .uno-card:nth-child(6n+1) {
+  transform: rotate(-8deg);
+}
+
+.uno-hand .uno-card:nth-child(6n+2) {
+  transform: rotate(-5deg) translateY(4px);
+}
+
+.uno-hand .uno-card:nth-child(6n+3) {
+  transform: rotate(-2deg) translateY(7px);
+}
+
+.uno-hand .uno-card:nth-child(6n+4) {
+  transform: rotate(2deg) translateY(7px);
+}
+
+.uno-hand .uno-card:nth-child(6n+5) {
+  transform: rotate(5deg) translateY(4px);
+}
+
+.uno-hand .uno-card:nth-child(6n) {
+  transform: rotate(8deg);
+}
+
 .uno-hand .uno-card:not(:disabled):hover {
-  transform: translateY(-20px) scale(1.04);
+  position: relative;
+  z-index: 10;
+  transform: translateY(-24px) scale(1.06);
   filter: brightness(1.08);
 }
 
@@ -1593,6 +1619,11 @@ body.card-match-active {
     width: 78px;
     min-height: 112px;
     padding: 10px;
+    margin-left: -28px;
+  }
+
+  .uno-hand .uno-card:first-child {
+    margin-left: 0;
   }
 }
 
