@@ -43,10 +43,17 @@
       <canvas id="runner-canvas" width="360" height="600" tabindex="0" aria-label="Jogo de corrida"></canvas>
 
       <div class="runner-mobile-controls">
-        <button class="runner-btn" id="runner-left" aria-label="Mover à esquerda">◀</button>
-        <button class="runner-btn runner-btn--start" id="runner-tap" aria-label="Iniciar ou reiniciar">Toque aqui</button>
-        <button class="runner-btn" id="runner-right" aria-label="Mover à direita">▶</button>
+        <div class="runner-btn-row">
+          <button class="runner-btn" id="runner-left" aria-label="Esquerda">◀</button>
+          <button class="runner-btn runner-btn--jump" id="runner-jump" aria-label="Pular">▲ Pular</button>
+          <button class="runner-btn" id="runner-right" aria-label="Direita">▶</button>
+        </div>
+        <div class="runner-btn-row runner-btn-row--center">
+          <button class="runner-btn runner-btn--crouch" id="runner-crouch" aria-label="Abaixar">▼ Abaixar</button>
+        </div>
       </div>
+
+      <p class="runner-hint">← → faixa &nbsp;·&nbsp; ↑ / espaço pular &nbsp;·&nbsp; ↓ agachar</p>
     </section>
   </main>
 

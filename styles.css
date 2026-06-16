@@ -3010,41 +3010,76 @@ body.card-match-active {
 
 .runner-mobile-controls {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 14px;
   width: min(100%, 360px);
 }
 
+.runner-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.runner-btn-row--center {
+  justify-content: center;
+}
+
 .runner-btn {
-  flex: 0 0 72px;
-  min-height: 58px;
-  border: 1px solid rgba(255,255,255,0.16);
+  flex: 0 0 68px;
+  min-height: 56px;
+  border: 1px solid rgba(255,255,255,0.14);
   border-radius: 18px;
   color: var(--text);
-  background: rgba(255,255,255,0.09);
-  font-size: 1.4rem;
+  background: rgba(255,255,255,0.08);
+  font-size: 1.3rem;
   font-weight: 900;
   cursor: pointer;
   touch-action: manipulation;
   transition: background 0.1s, transform 0.1s;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 .runner-btn:active {
   background: rgba(255,255,255,0.18);
-  transform: scale(0.94);
+  transform: scale(0.93);
 }
 
-.runner-btn--start {
+.runner-btn--jump {
   flex: 1;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 800;
+  background: rgba(34,211,238,0.1);
+  border-color: rgba(34,211,238,0.28);
+  color: #22d3ee;
+}
+
+.runner-btn--jump:active {
+  background: rgba(34,211,238,0.22);
+}
+
+.runner-btn--crouch {
+  min-width: 150px;
+  font-size: 1rem;
+  font-weight: 800;
+  background: rgba(251,113,133,0.1);
+  border-color: rgba(251,113,133,0.28);
+  color: #fb7185;
+}
+
+.runner-btn--crouch:active {
+  background: rgba(251,113,133,0.22);
+}
+
+.runner-hint {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
 }
 
 @media (max-width: 400px) {
-  .runner-btn {
-    flex-basis: 58px;
-    min-height: 52px;
-    font-size: 1.2rem;
-  }
+  .runner-btn { flex-basis: 56px; min-height: 50px; font-size: 1.1rem; }
+  .runner-btn--jump, .runner-btn--crouch { font-size: 0.88rem; }
 }
