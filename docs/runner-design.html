@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design do Jogo - Corrida do Aloncinho</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #0b1026;
+      color: #f8fbff;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.45;
+    }
+
+    .page {
+      min-height: 273mm;
+      padding: 24px;
+      page-break-after: always;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255, 244, 149, 0.35), transparent 24%),
+        radial-gradient(circle at 88% 18%, rgba(255, 169, 62, 0.18), transparent 28%),
+        linear-gradient(145deg, #148bd2 0%, #42c7ff 20%, #f5b34a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 24px;
+      align-items: center;
+      min-height: 660px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #9df7ff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 18px 0 14px;
+      font-size: 58px;
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 30px;
+      letter-spacing: -0.03em;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 12px;
+      color: #dce8ff;
+    }
+
+    .lead {
+      font-size: 20px;
+      color: #f7fbff;
+      max-width: 560px;
+    }
+
+    .badge-row,
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .badge,
+    .chip {
+      border-radius: 999px;
+      padding: 9px 12px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-weight: 700;
+      color: #f9fcff;
+    }
+
+    .badge strong {
+      color: #ffd940;
+    }
+
+    .visual-card {
+      border-radius: 30px;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+    }
+
+    .phone {
+      width: 100%;
+      min-height: 610px;
+      border-radius: 34px;
+      background: linear-gradient(#78d8ff 0 30%, #ffd75d 30% 46%, #b96d28 46% 100%);
+      border: 10px solid #050816;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+    }
+
+    .skyline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 78px;
+      height: 135px;
+      background:
+        linear-gradient(90deg, #ff354f 0 8%, #ffd940 8% 16%, #11a9ff 16% 27%, transparent 27% 34%, #ff7a1a 34% 43%, #13c46b 43% 51%, #ff354f 51% 61%, #ffd940 61% 70%, transparent 70% 76%, #14a2e8 76% 88%, #ff7a1a 88% 100%);
+      box-shadow: inset 0 -50px 0 rgba(255, 210, 64, 0.78);
+    }
+
+    .skyline::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: -42px;
+      width: 112px;
+      height: 76px;
+      background:
+        radial-gradient(circle at 24px 62px, #2fb66d 0 22px, transparent 23px),
+        linear-gradient(80deg, transparent 0 45px, #8c5424 46px 55px, transparent 56px),
+        radial-gradient(circle at 70px 34px, #36c878 0 18px, transparent 19px);
+    }
+
+    .skyline::after {
+      content: "";
+      position: absolute;
+      right: 16px;
+      top: -18px;
+      width: 76px;
+      height: 112px;
+      background:
+        linear-gradient(100deg, transparent 0 42px, #1f8f51 43px 53px, transparent 54px),
+        radial-gradient(circle at 30px 36px, #35c870 0 18px, transparent 19px),
+        radial-gradient(circle at 48px 64px, #2cad62 0 22px, transparent 23px);
+    }
+
+    .track {
+      position: absolute;
+      left: 7%;
+      right: 7%;
+      bottom: 0;
+      top: 150px;
+      background:
+        repeating-linear-gradient(0deg, rgba(93, 48, 20, 0.45) 0 8px, transparent 8px 38px),
+        linear-gradient(90deg, #9b571f 0 8%, #d88835 8% 31%, #6b391a 31% 33%, #d88835 33% 64%, #6b391a 64% 66%, #d88835 66% 92%, #9b571f 92% 100%);
+      clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+    }
+
+    .lane-line {
+      position: absolute;
+      top: 150px;
+      bottom: 0;
+      width: 10px;
+      background: #303744;
+      border-left: 2px solid #8a969f;
+      border-right: 2px solid #11151c;
+      opacity: 0.95;
+    }
+
+    .lane-line.left { left: 25%; transform: rotate(8deg); }
+    .lane-line.right { right: 25%; transform: rotate(-8deg); }
+
+    .lane-line.mid-left { left: 44%; transform: rotate(3deg); }
+    .lane-line.mid-right { right: 44%; transform: rotate(-3deg); }
+
+    .runner {
+      position: absolute;
+      left: 50%;
+      bottom: 64px;
+      width: 82px;
+      height: 112px;
+      transform: translateX(-50%);
+    }
+
+    .runner .head {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: #ffbd83;
+      border: 5px solid #161a33;
+      position: relative;
+    }
+
+    .runner .cap {
+      position: absolute;
+      left: 10px;
+      top: -9px;
+      width: 44px;
+      height: 18px;
+      border-radius: 16px 16px 5px 5px;
+      background: #f7f0df;
+      transform: rotate(-8deg);
+    }
+
+    .runner .body {
+      width: 58px;
+      height: 54px;
+      margin: -2px auto 0;
+      border-radius: 18px 18px 12px 12px;
+      background: linear-gradient(135deg, #f7f0df, #b8c8e8);
+      border: 5px solid #161a33;
+    }
+
+    .runner .legs {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: -4px;
+    }
+
+    .runner .legs span {
+      display: block;
+      width: 13px;
+      height: 28px;
+      border-radius: 999px;
+      background: #50b7ff;
+      border: 4px solid #161a33;
+    }
+
+    .obstacle {
+      position: absolute;
+      border: 5px solid #11172d;
+      box-shadow: 0 12px 0 rgba(0, 0, 0, 0.22);
+    }
+
+    .train {
+      right: 19%;
+      bottom: 255px;
+      width: 82px;
+      height: 100px;
+      border-radius: 16px 16px 10px 10px;
+      background:
+        linear-gradient(#35b6ff 0 28%, #f13a32 28% 72%, #7c1f20 72% 100%);
+      transform: perspective(140px) rotateY(-12deg) rotate(-1deg);
+    }
+
+    .train::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      right: 11px;
+      top: 12px;
+      height: 24px;
+      border-radius: 7px;
+      background: #e8fbff;
+      border: 3px solid #11172d;
+    }
+
+    .barrier {
+      left: 20%;
+      bottom: 210px;
+      width: 82px;
+      height: 48px;
+      border-radius: 10px;
+      background: repeating-linear-gradient(135deg, #ff3b4f 0 14px, #ffffff 14px 28px);
+      transform: rotate(-4deg);
+    }
+
+    .cone { display: none; }
+
+    .coin {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 30%, #fff7a8, #ffd940 55%, #f1a700);
+      border: 4px solid #11172d;
+    }
+
+    .coin.c1 { left: 47%; bottom: 238px; }
+    .coin.c2 { left: 52%; bottom: 298px; }
+    .coin.c3 { left: 45%; bottom: 360px; }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 900;
+      color: #10162f;
+    }
+
+    .hud span {
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .panel {
+      border-radius: 22px;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .panel strong,
+    .highlight {
+      color: #ffd940;
+    }
+
+    .control-map {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .control-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 88px);
+      grid-template-rows: repeat(3, 74px);
+      gap: 10px;
+      justify-content: center;
+      padding: 20px;
+      border-radius: 24px;
+      background: #111936;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .key {
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #f8fbff, #b8c8e8);
+      color: #111936;
+      font-weight: 900;
+      box-shadow: 0 8px 0 #6f7899;
+      text-align: center;
+    }
+
+    .key.up { grid-column: 2; grid-row: 1; }
+    .key.left { grid-column: 1; grid-row: 2; }
+    .key.right { grid-column: 3; grid-row: 2; }
+    .key.down { grid-column: 2; grid-row: 3; }
+
+    .gesture {
+      padding: 12px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(0, 224, 255, 0.18), rgba(255, 217, 64, 0.12));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      margin-bottom: 10px;
+    }
+
+    .icon {
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      margin-right: 10px;
+      border-radius: 14px;
+      background: #ffd940;
+      color: #111936;
+      font-size: 22px;
+      font-weight: 900;
+      vertical-align: middle;
+    }
+
+    .obstacle-card {
+      min-height: 210px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mini-road {
+      height: 78px;
+      border-radius: 18px;
+      background: linear-gradient(90deg, #29304f 0 32%, #ffd940 32% 34%, #3a4268 34% 66%, #ffd940 66% 68%, #29304f 68%);
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mini-block,
+    .mini-low,
+    .mini-gap,
+    .mini-train,
+    .mini-cone,
+    .mini-sign {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 3px solid #11172d;
+    }
+
+    .mini-block { width: 50px; height: 36px; border-radius: 8px; background: #ff3b4f; }
+    .mini-low { width: 86px; height: 22px; border-radius: 8px; background: #00e0ff; }
+    .mini-gap { width: 86px; height: 28px; bottom: 0; background: #060914; border-radius: 0 0 18px 18px; }
+    .mini-train { width: 70px; height: 48px; border-radius: 12px; background: #7b68ee; }
+    .mini-cone { width: 40px; height: 48px; background: #ff8a00; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+    .mini-sign { width: 58px; height: 42px; border-radius: 8px; background: repeating-linear-gradient(135deg, #ffd940 0 9px, #11172d 9px 18px); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .step {
+      min-height: 110px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+    }
+
+    .step b {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 10px;
+      border-radius: 50%;
+      background: #ffd940;
+      color: #111936;
+    }
+
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .swatch {
+      min-height: 94px;
+      border-radius: 18px;
+      padding: 10px;
+      display: flex;
+      align-items: end;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+
+    .screen-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .screen {
+      min-height: 250px;
+      border-radius: 24px;
+      padding: 14px;
+      background: #101936;
+      border: 8px solid #050816;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-title {
+      position: relative;
+      z-index: 1;
+      font-weight: 900;
+      color: #ffd940;
+    }
+
+    .button {
+      display: block;
+      margin: 12px 0;
+      padding: 12px;
+      border-radius: 14px;
+      background: #ffd940;
+      color: #111936;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .mock-road {
+      position: absolute;
+      left: 16%;
+      right: 16%;
+      top: 70px;
+      bottom: 0;
+      background: linear-gradient(90deg, #29304f 0 32%, #ffd940 32% 34%, #394166 34% 66%, #ffd940 66% 68%, #29304f 68%);
+      clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+    }
+
+    ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: #dce8ff;
+    }
+
+    li {
+      margin-bottom: 7px;
+    }
+
+    .footer-note {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 12px;
+      z-index: 2;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        border: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="content hero">
+      <div>
+        <span class="eyebrow">Game design runner nos trilhos</span>
+        <h1>Corrida do Aloncinho</h1>
+        <p class="lead">Um jogo de corrida infinita inspirado em Subway Surfers, com trilhos de trem, cidade colorida, moedas douradas, trem vindo na pista e reflexos rapidos.</p>
+        <div class="badge-row">
+          <span class="badge"><strong>Genero:</strong> runner infinito</span>
+          <span class="badge"><strong>Camera:</strong> por tras do personagem</span>
+          <span class="badge"><strong>Plataforma:</strong> navegador e celular</span>
+          <span class="badge"><strong>Partidas:</strong> 1 a 3 minutos</span>
+        </div>
+      </div>
+      <div class="visual-card">
+        <div class="phone">
+          <div class="hud"><span>Moedas 128</span><span>1.450 pts</span></div>
+          <div class="skyline"></div>
+          <div class="track"></div>
+          <div class="lane-line left"></div>
+          <div class="lane-line mid-left"></div>
+          <div class="lane-line mid-right"></div>
+          <div class="lane-line right"></div>
+          <div class="obstacle train"></div>
+          <div class="obstacle barrier"></div>
+          <div class="coin c1"></div>
+          <div class="coin c2"></div>
+          <div class="coin c3"></div>
+          <div class="runner">
+            <div class="head"><div class="cap"></div></div>
+            <div class="body"></div>
+            <div class="legs"><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note"><span>Documento de design visual</span><span>Corrida do Aloncinho</span></div>
+  </section>
+
+  <section class="page">
+    <div class="content">
+      <h2>Visao do Jogo</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Fantasia principal</h3>
+          <p>O jogador corre por trilhos em uma cidade ensolarada, desviando de trens, placas e barreiras enquanto coleta moedas douradas.</p>
+          <ul>
+            <li>Ritmo rapido, mas facil de entender.</li>
+            <li>Visual alegre, tropical, urbano e muito colorido.</li>
+            <li>Recompensa constante: moedas, recordes, missoes e skins.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Loop de gameplay</h3>
+          <p>Correr, reagir, coletar, sobreviver, bater recorde e desbloquear melhorias.</p>
+          <div class="flow">
+            <div class="step"><b>1</b><br>Comecar corrida</div>
+            <div class="step"><b>2</b><br>Desviar</div>
+            <div class="step"><b>3</b><br>Coletar</div>
+            <div class="step"><b>4</b><br>Usar poder</div>
+            <div class="step"><b>5</b><br>Recorde</div>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 24px;">Controles</h2>
+      <div class="control-map">
+        <div class="control-pad">
+          <div class="key up">Pular<br>↑</div>
+          <div class="key left">Esquerda<br>←</div>
+          <div class="key right">Direita<br>→</div>
+          <div class="key down">Abaixar<br>↓</div>
+        </div>
+        <div>
+          <div class="gesture"><span class="icon">←</span><strong>Ir para esquerda:</strong> muda para a pista da esquerda.</div>
+          <div class="gesture"><span class="icon">→</span><strong>Ir para direita:</strong> muda para a pista da direita.</div>
+          <div class="gesture"><span class="icon">↑</span><strong>Pular:</strong> passa por buracos, cones baixos e caixas pequenas.</div>
+          <div class="gesture"><span class="icon">↓</span><strong>Abaixar:</strong> desliza por baixo de placas, trens altos e barreiras suspensas.</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note"><span>Pagina 2</span><span>Controles simples para teclado e toque</span></div>
+  </section>
+
+  <section class="page">
+    <div class="content">
+      <h2>Obstaculos Principais</h2>
+      <p>Os obstaculos devem aparecer em combinacoes justas. O jogador sempre precisa ter pelo menos uma rota de fuga clara.</p>
+      <div class="grid-3">
+        <div class="panel obstacle-card">
+          <div class="mini-road"><div class="mini-block"></div></div>
+          <h3>Caixa vermelha</h3>
+          <p><span class="highlight">Acao:</span> mudar de pista ou pular.</p>
+          <p>Obstaculo basico para ensinar reflexo lateral.</p>
+        </div>
+        <div class="panel obstacle-card">
+          <div class="mini-road"><div class="mini-low"></div></div>
+          <h3>Barreira baixa</h3>
+          <p><span class="highlight">Acao:</span> pular.</p>
+          <p>Boa para sequencias rapidas no centro da pista.</p>
+        </div>
+        <div class="panel obstacle-card">
+          <div class="mini-road"><div class="mini-gap"></div></div>
+          <h3>Buraco</h3>
+          <p><span class="highlight">Acao:</span> pular ou trocar de pista.</p>
+          <p>Cria tensao visual sem bloquear a tela inteira.</p>
+        </div>
+        <div class="panel obstacle-card">
+          <div class="mini-road"><div class="mini-train"></div></div>
+          <h3>Trem vindo</h3>
+          <p><span class="highlight">Acao:</span> ir para esquerda/direita.</p>
+          <p>Obstaculo grande, parecido com a referencia, para decisao rapida.</p>
+        </div>
+        <div class="panel obstacle-card">
+          <div class="mini-road"><div class="mini-cone"></div></div>
+          <h3>Cones</h3>
+          <p><span class="highlight">Acao:</span> desviar ou pular.</p>
+          <p>Aparecem em grupos para criar padroes de movimento.</p>
+        </div>
+        <div class="panel obstacle-card">
+          <div class="mini-road"><div class="mini-sign"></div></div>
+          <h3>Placa suspensa</h3>
+          <p><span class="highlight">Acao:</span> abaixar.</p>
+          <p>Forca o uso do deslize e evita gameplay so de pulo.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note"><span>Pagina 3</span><span>Obstaculos e resposta esperada</span></div>
+  </section>
+
+  <section class="page">
+    <div class="content">
+      <h2>Power-ups, Pontos e Progressao</h2>
+      <div class="grid-4">
+        <div class="panel">
+          <h3>Escudo</h3>
+          <p>Protege contra uma batida. Visual: bolha azul ao redor do personagem.</p>
+        </div>
+        <div class="panel">
+          <h3>Ima</h3>
+          <p>Puxa moedas proximas por alguns segundos. Visual: particulas amarelas.</p>
+        </div>
+        <div class="panel">
+          <h3>Turbo</h3>
+          <p>Aumenta velocidade e pontuacao. Visual: rastro neon atras do jogador.</p>
+        </div>
+        <div class="panel">
+          <h3>Prancha</h3>
+          <p>Permite uma segunda chance ao bater. Visual: hoverboard colorido.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 24px;">Regras de Pontuacao</h2>
+      <div class="grid-3">
+        <div class="panel"><h3>Distancia</h3><p>+1 ponto por metro virtual percorrido.</p></div>
+        <div class="panel"><h3>Moedas</h3><p>+10 pontos por moeda coletada.</p></div>
+        <div class="panel"><h3>Combo</h3><p>Sequencia sem bater aumenta multiplicador ate x5.</p></div>
+      </div>
+
+      <h2 style="margin-top: 24px;">Missoes</h2>
+      <div class="grid-3">
+        <div class="panel"><h3>Iniciante</h3><p>Colete 50 moedas em uma corrida.</p></div>
+        <div class="panel"><h3>Reflexo</h3><p>Desvie de 25 obstaculos sem bater.</p></div>
+        <div class="panel"><h3>Pro</h3><p>Fique 90 segundos vivo com velocidade maxima.</p></div>
+      </div>
+
+      <div class="chips">
+        <span class="chip">Skins de personagem</span>
+        <span class="chip">Pranchas desbloqueaveis</span>
+        <span class="chip">Recorde local</span>
+        <span class="chip">Desafio diario</span>
+        <span class="chip">Loja com moedas</span>
+      </div>
+    </div>
+    <div class="footer-note"><span>Pagina 4</span><span>Recompensas e retencao</span></div>
+  </section>
+
+  <section class="page">
+    <div class="content">
+      <h2>Direcao Visual</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Estilo</h3>
+          <p>Diurno, tropical e colorido, com trilhos de trem em perspectiva. O jogador precisa reconhecer obstaculos em menos de um segundo.</p>
+          <ul>
+            <li>Contraste forte entre terra quente, trilhos escuros, moedas douradas e trem vermelho.</li>
+            <li>Obstaculos com silhuetas diferentes.</li>
+            <li>Interface com numeros grandes e botoes arredondados.</li>
+            <li>Animacoes curtas: pulo, deslize, batida e coleta.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Paleta sugerida</h3>
+          <div class="palette">
+            <div class="swatch" style="background:#78d8ff;color:#06101f">Ceu<br>#78d8ff</div>
+            <div class="swatch" style="background:#d88835;color:#201000">Terra<br>#d88835</div>
+            <div class="swatch" style="background:#ffd940;color:#201800">Moeda<br>#ffd940</div>
+            <div class="swatch" style="background:#ff3b4f">Perigo<br>#ff3b4f</div>
+            <div class="swatch" style="background:#7b68ee">Roxo<br>#7b68ee</div>
+            <div class="swatch" style="background:#20d67b;color:#061b10">Bonus<br>#20d67b</div>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 24px;">Telas Necessarias</h2>
+      <div class="screen-row">
+        <div class="screen">
+          <div class="screen-title">Menu inicial</div>
+          <div class="button">Jogar</div>
+          <div class="button" style="background:#00e0ff">Skins</div>
+          <div class="button" style="background:#7b68ee;color:#fff">Missoes</div>
+        </div>
+        <div class="screen">
+          <div class="screen-title">Corrida</div>
+          <div class="mock-road"></div>
+          <div class="coin" style="left:42%;bottom:72px"></div>
+          <div class="coin" style="left:52%;bottom:118px"></div>
+          <div class="mini-block" style="bottom:28px"></div>
+        </div>
+        <div class="screen">
+          <div class="screen-title">Fim de corrida</div>
+          <h3 style="margin-top:40px">Novo recorde!</h3>
+          <p>2.840 pontos</p>
+          <div class="button">Jogar de novo</div>
+          <div class="button" style="background:#ff3b4f;color:#fff">Menu</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note"><span>Pagina 5</span><span>Visual, cores e telas</span></div>
+  </section>
+
+  <section class="page">
+    <div class="content">
+      <h2>Plano de Implementacao</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Versao 1 jogavel</h3>
+          <ul>
+            <li>Tres pistas fixas.</li>
+            <li>Movimento para esquerda e direita.</li>
+            <li>Pulo e abaixar com duracao curta.</li>
+            <li>Obstaculos basicos: caixa, cone, barreira baixa e placa suspensa.</li>
+            <li>Colisao simples por retangulos.</li>
+            <li>Pontuacao por tempo vivo.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Versao 2 polida</h3>
+          <ul>
+            <li>Moedas coletaveis.</li>
+            <li>Power-ups de escudo, ima e turbo.</li>
+            <li>Loja de skins.</li>
+            <li>Missoes diarias.</li>
+            <li>Dificuldade progressiva.</li>
+            <li>Efeitos sonoros e animacoes de feedback.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 24px;">Regras de Boa Jogabilidade</h2>
+      <div class="grid-3">
+        <div class="panel"><h3>Justica</h3><p>Nunca bloquear as tres pistas ao mesmo tempo sem possibilidade de pulo ou deslize.</p></div>
+        <div class="panel"><h3>Leitura</h3><p>Cada obstaculo deve ter cor e formato unicos para o jogador reagir rapido.</p></div>
+        <div class="panel"><h3>Ritmo</h3><p>Aumentar velocidade aos poucos, com pequenos respiros entre sequencias dificeis.</p></div>
+      </div>
+
+      <h2 style="margin-top: 24px;">Nome Alternativo</h2>
+      <p class="lead">Caso queira um nome mais marcante: <span class="highlight">Aloncinho Rush</span>, <span class="highlight">Rua Neon</span> ou <span class="highlight">Turbo Aloncinho</span>.</p>
+    </div>
+    <div class="footer-note"><span>Pagina 6</span><span>Escopo recomendado para desenvolver</span></div>
+  </section>
+</body>
+</html>

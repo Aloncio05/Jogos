@@ -31,6 +31,7 @@ const CARD_KEYS = Object.keys(CARD_DEF);
 // layer  : 'ground' → jump over  |  'air' → crouch under
 // span   : 1=one lane  2=two adjacent lanes  3=all lanes
 const OBJ_POOL = [
+  { kind:'train',   w:74,  h:96, layer:'ground', span:1 },
   { kind:'box',     w:56,  h:44, layer:'ground', span:1 },
   { kind:'cone',    w:42,  h:52, layer:'ground', span:1 },
   { kind:'spike',   w:88,  h:36, layer:'ground', span:1 },   // full lane → must jump
@@ -194,31 +195,57 @@ function burst(x, y, color, n) {
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r ?? 6); }
 
 function drawRoad() {
-  // Outer background
-  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
-  // Sidewalks with a subtle brick pattern suggestion
-  ctx.fillStyle = '#1e2a38'; ctx.fillRect(0,0,20,H); ctx.fillRect(W-20,0,20,H);
-  // Road surface
-  ctx.fillStyle = '#111827'; ctx.fillRect(20,0,W-40,H);
-  // Subtle road texture bands
-  ctx.fillStyle = 'rgba(255,255,255,0.02)';
-  for (let ty = (frame*(baseSpeed+(P.turbo>0?2:0))*0.5) % 80 - 80; ty < H; ty+=80)
-    ctx.fillRect(20, ty, W-40, 4);
-
-  // Edge lines
-  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=2.5; ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(20,0); ctx.lineTo(20,H); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(W-20,0); ctx.lineTo(W-20,H); ctx.stroke();
-
-  // Lane dashes
   const spd = baseSpeed + (P.turbo>0 ? 2 : 0);
-  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=2;
-  ctx.setLineDash([26,18]);
-  ctx.lineDashOffset = -(frame * spd * 0.65 % 44);
-  [126, 234].forEach(lx => {
-    ctx.beginPath(); ctx.moveTo(lx,0); ctx.lineTo(lx,H); ctx.stroke();
+
+  // Bright sky, sun and colorful city walls, inspired by the reference image.
+  const sky = ctx.createLinearGradient(0, 0, 0, H * 0.45);
+  sky.addColorStop(0, '#68cfff'); sky.addColorStop(1, '#c6f4ff');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H * 0.45);
+  ctx.fillStyle = '#fff3a3'; ctx.beginPath(); ctx.arc(44, 46, 24, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.86)';
+  ctx.beginPath(); ctx.ellipse(278, 42, 34, 10, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(302, 39, 22, 9, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#ffd84d'; ctx.fillRect(0, 112, W, 96);
+  const blocks = [
+    ['#ef4444', 8, 80, 34, 88], ['#0ea5e9', 44, 62, 40, 106],
+    ['#22c55e', 84, 96, 34, 72], ['#f97316', 250, 74, 36, 94],
+    ['#facc15', 286, 56, 34, 112], ['#14b8a6', 320, 88, 30, 80],
+  ];
+  blocks.forEach(([color, x, y, w, h]) => {
+    ctx.fillStyle = color; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillRect(x + 8, y + 16, w - 16, 10);
+    ctx.fillRect(x + 8, y + 42, w - 16, 10);
   });
-  ctx.setLineDash([]);
+
+  // Warm dirt track with perspective.
+  const dirt = ctx.createLinearGradient(0, 190, 0, H);
+  dirt.addColorStop(0, '#e49a44'); dirt.addColorStop(1, '#a95f25');
+  ctx.fillStyle = dirt; ctx.fillRect(0, 190, W, H - 190);
+
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(126, 176); ctx.lineTo(234, 176); ctx.lineTo(W + 48, H); ctx.lineTo(-48, H); ctx.closePath(); ctx.clip();
+  ctx.fillStyle = 'rgba(255,217,95,0.14)';
+  ctx.fillRect(0, 176, W, H - 176);
+  for (let ty = (frame * spd * 1.15) % 44 - 44; ty < H; ty += 44) {
+    const t = Math.max(0, ty / H);
+    const half = 24 + t * 156;
+    ctx.strokeStyle = '#724016'; ctx.lineWidth = 2 + t * 3;
+    ctx.beginPath(); ctx.moveTo(W / 2 - half, ty); ctx.lineTo(W / 2 + half, ty + 6); ctx.stroke();
+  }
+
+  // Four rails create three readable lanes, like a train track runner.
+  ctx.strokeStyle = '#2f3742'; ctx.lineCap = 'round'; ctx.setLineDash([]);
+  [
+    [108, 182, 28, H + 20], [150, 178, 128, H + 20],
+    [210, 178, 232, H + 20], [252, 182, 332, H + 20],
+  ].forEach(([x1, y1, x2, y2]) => {
+    ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x1 - 2, y1); ctx.lineTo(x2 - 2, y2); ctx.stroke();
+    ctx.strokeStyle = '#2f3742';
+  });
+  ctx.restore();
 
   // Turbo speed lines on sides
   if (P.turbo > 0) {
@@ -238,7 +265,19 @@ function drawObstacle(o) {
   const {kind,x,y,w,h} = o;
   ctx.save();
 
-  if (kind === 'sign') {
+  if (kind === 'train') {
+    const grad = ctx.createLinearGradient(x - w / 2, y - h / 2, x + w / 2, y + h / 2);
+    grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.32, '#38bdf8');
+    grad.addColorStop(0.33, '#ef4444'); grad.addColorStop(1, '#7f1d1d');
+    ctx.fillStyle = 'rgba(0,0,0,0.24)'; rr(x - w / 2 + 6, y - h / 2 + 12, w, h, 12); ctx.fill();
+    ctx.fillStyle = grad; rr(x - w / 2, y - h / 2, w, h, 13); ctx.fill();
+    ctx.fillStyle = '#e0fbff'; rr(x - w / 2 + 12, y - h / 2 + 12, w - 24, 24, 6); ctx.fill();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.arc(x - 18, y + h / 2 - 18, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 18, y + h / 2 - 18, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#172033'; ctx.lineWidth = 3; rr(x - w / 2, y - h / 2, w, h, 13); ctx.stroke();
+
+  } else if (kind === 'sign') {
     // Hanging sign — air obstacle ("PLACA")
     const topY = Math.max(0, y - 28);
     ctx.strokeStyle='#475569'; ctx.lineWidth=3;
@@ -329,14 +368,13 @@ function drawCard(c) {
   const bob = Math.sin(frame*0.08 + x*0.05) * 3;
   ctx.save();
   ctx.translate(0, bob);
-  ctx.shadowColor=d.bg; ctx.shadowBlur=10;
-  ctx.fillStyle='rgba(0,0,0,0.3)'; rr(x-w/2+2,y-h/2+2,w,h,4); ctx.fill();
+  ctx.shadowColor='#facc15'; ctx.shadowBlur=12;
+  ctx.fillStyle='rgba(0,0,0,0.24)'; ctx.beginPath(); ctx.ellipse(x+3,y+5,w*0.48,h*0.34,0,0,Math.PI*2); ctx.fill();
   ctx.shadowBlur=0;
-  ctx.fillStyle=d.bg; rr(x-w/2,y-h/2,w,h,4); ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=1.5; ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.ellipse(x,y,w*0.3,h*0.28,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle=d.fg; ctx.font='bold 13px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(d.glyph, x, y);
+  ctx.fillStyle='#facc15'; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle='#fff8bd'; ctx.beginPath(); ctx.arc(x - 4, y - 5, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle='#9a5c00'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle=d.bg; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.lineTo(x, y + 8); ctx.stroke();
   ctx.restore();
 }
 
@@ -449,8 +487,8 @@ function drawStart() {
 
   ctx.fillStyle='#facc15'; ctx.font='bold 25px sans-serif';
   ctx.fillText('Corrida do Aloncinho', W/2, 95);
-  ctx.fillStyle='#64748b'; ctx.font='13px sans-serif';
-  ctx.fillText('Runner infinito — desvie, pule e agache!', W/2, 120);
+  ctx.fillStyle='#cbd5e1'; ctx.font='13px sans-serif';
+  ctx.fillText('Runner nos trilhos — trem, moedas, pulo e deslize!', W/2, 120);
 
   // Controls
   const ctrls = [
@@ -472,7 +510,7 @@ function drawStart() {
   ctx.fillText('Guia de obstáculos', W/2, 278);
 
   const guide = [
-    { col:'#f97316', lbl:'Cone / Caixa',   tip:'Mude de faixa' },
+    { col:'#ef4444', lbl:'Trem vermelho',  tip:'Mude de faixa' },
     { col:'#e2e8f0', lbl:'Espinhos',        tip:'Pule ↑' },
     { col:'#dc2626', lbl:'Placa vermelha',  tip:'Abaixe ↓' },
     { col:'#d97706', lbl:'Barra no chão',   tip:'Pule ↑ (todas as faixas)' },
