@@ -954,6 +954,59 @@ h2 {
   z-index: 4;
 }
 
+.table-status-panel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 14px;
+  max-width: 560px;
+  text-align: right;
+}
+
+.turn-timer {
+  display: grid;
+  min-width: 78px;
+  min-height: 70px;
+  place-items: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  color: var(--muted);
+  background: rgba(15, 23, 42, 0.64);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+}
+
+.turn-timer span {
+  font-family: var(--cards-condensed-font);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.turn-timer strong {
+  color: var(--text);
+  font-family: var(--cards-condensed-font);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.turn-timer.active {
+  border-color: rgba(34, 211, 238, 0.58);
+  background: rgba(8, 47, 73, 0.76);
+}
+
+.turn-timer.danger {
+  border-color: rgba(251, 113, 133, 0.82);
+  background: rgba(127, 29, 29, 0.82);
+  animation: timerPulse 700ms ease-in-out infinite alternate;
+}
+
+@keyframes timerPulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.04); }
+}
+
 .uno-opponents {
   position: relative;
   z-index: 3;
@@ -1300,6 +1353,23 @@ h2 {
 
   .uno-sidebar {
     position: static;
+  }
+
+  .table-hud,
+  .table-status-panel {
+    align-items: stretch;
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .table-status-panel {
+    max-width: none;
+  }
+
+  .turn-timer {
+    width: 100%;
+    grid-template-columns: 1fr auto;
+    justify-items: start;
   }
 
   .uno-center {

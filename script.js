@@ -35,6 +35,8 @@ const resetCardGameButton = document.querySelector('#reset-card-game');
 const drawCardButton = document.querySelector('#draw-card');
 const passTurnButton = document.querySelector('#pass-turn');
 const cardGameStatusElement = document.querySelector('#card-game-status');
+const turnTimerElement = document.querySelector('#turn-timer');
+const turnTimerCountElement = document.querySelector('#turn-timer-count');
 const playersListElement = document.querySelector('#players-list');
 const cardTableElement = document.querySelector('#card-table');
 const cardArenaElement = document.querySelector('#card-arena');
@@ -529,6 +531,7 @@ const colorLabels = {
 
 const maxCardPlayers = 10;
 const gameWinningScore = 500;
+const turnDurationSeconds = 12;
 
 let roomCode = '';
 let cardPlayers = [];
@@ -547,6 +550,8 @@ let lastPlayedByName = '';
 let roundWinnerName = '';
 let roundWinnerId = '';
 let lastRoundScore = 0;
+let turnStartedAt = 0;
+let turnTimerInterval = null;
 let firebaseDb = null;
 let onlineRoomRef = null;
 let onlineRoomCode = '';
@@ -574,6 +579,7 @@ function resetCardRoom(options = {}) {
   roundWinnerName = '';
   roundWinnerId = '';
   lastRoundScore = 0;
+  turnStartedAt = 0;
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
   playerHandElement.innerHTML = '';
@@ -582,6 +588,7 @@ function resetCardRoom(options = {}) {
   renderCardTable();
   renderRoundFinishOverlay();
   updateCardControls();
+  updateTurnTimerDisplay();
   if (sync) syncOnlineCardState();
 }
 
@@ -742,6 +749,7 @@ function startCardGame() {
   roundWinnerName = '';
   roundWinnerId = '';
   lastRoundScore = 0;
+  startCardTurnTimer();
   cardGameStatusElement.textContent = `Partida iniciada. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -792,6 +800,23 @@ function drawCards(amount) {
   return cards;
 }
 
+function drawUntilPlayable(player) {
+  const drawnCards = [];
+  let safety = 120;
+
+  while (safety > 0) {
+    if (!cardDeck.length) reshuffleDiscardIntoDeck();
+    const card = cardDeck.pop();
+    if (!card) break;
+    player.hand.push(card);
+    drawnCards.push(card);
+    if (isCardPlayable(card)) break;
+    safety -= 1;
+  }
+
+  return drawnCards;
+}
+
 function reshuffleDiscardIntoDeck() {
   const topCard = discardPile.pop();
   cardDeck = shuffle(discardPile);
@@ -806,6 +831,52 @@ function renderCardGame() {
   renderPlayerHand();
   renderRoundFinishOverlay();
   updateCardControls();
+  ensureTurnTimerRunning();
+}
+
+function startCardTurnTimer() {
+  turnStartedAt = Date.now();
+  ensureTurnTimerRunning();
+  updateTurnTimerDisplay();
+}
+
+function ensureTurnTimerRunning() {
+  if (turnTimerInterval || !turnTimerElement) return;
+  turnTimerInterval = setInterval(updateTurnTimerDisplay, 250);
+}
+
+function getTurnSecondsLeft() {
+  if (!cardGameStarted || !turnStartedAt) return turnDurationSeconds;
+  const elapsedSeconds = Math.floor((Date.now() - turnStartedAt) / 1000);
+  return Math.max(0, turnDurationSeconds - elapsedSeconds);
+}
+
+function updateTurnTimerDisplay() {
+  if (!turnTimerElement || !turnTimerCountElement) return;
+  turnTimerElement.classList.toggle('active', cardGameStarted);
+  const secondsLeft = getTurnSecondsLeft();
+  turnTimerCountElement.textContent = String(secondsLeft).padStart(2, '0');
+  turnTimerElement.classList.toggle('danger', cardGameStarted && secondsLeft <= 3);
+
+  if (cardGameStarted && secondsLeft <= 0) {
+    handleTurnTimeout();
+  }
+}
+
+function handleTurnTimeout() {
+  if (!cardGameStarted) return;
+  if (onlineRoomRef && onlineHostId !== onlinePlayerId) return;
+
+  const player = cardPlayers[currentCardPlayer];
+  closeUnoPenaltyWindow();
+  hasDrawnThisTurn = false;
+  pendingWildColorCardIndex = null;
+  currentCardPlayer = getNextCardPlayerIndex(1);
+  startCardTurnTimer();
+  cardGameStatusElement.textContent = `${player.name} perdeu a vez por passar de ${turnDurationSeconds} segundos. Vez de ${cardPlayers[currentCardPlayer].name}.`;
+  renderCardGame();
+  syncOnlineCardState();
+  scheduleBotTurn();
 }
 
 function renderRoundFinishOverlay() {
@@ -1051,6 +1122,7 @@ function playCardWithColor(cardIndex, chosenColor) {
     roundWinnerName = player.name;
     roundWinnerId = player.id;
     lastRoundScore = score;
+    turnStartedAt = 0;
     const reachedGameWin = player.score >= gameWinningScore;
     cardGameStatusElement.textContent = reachedGameWin
       ? `${player.name} venceu o jogo com ${player.score} pontos! Rodada: ${score} pontos.`
@@ -1066,6 +1138,7 @@ function playCardWithColor(cardIndex, chosenColor) {
   const steps = applyCardEffect(card, previousColor);
   currentCardPlayer = getNextCardPlayerIndex(steps);
   hasDrawnThisTurn = false;
+  startCardTurnTimer();
   cardGameStatusElement.textContent = `${player.name} jogou ${formatCard(card)}. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -1131,14 +1204,12 @@ function drawForCurrentPlayer() {
     return;
   }
 
-  const drawnCards = drawCards(1);
-  player.hand.push(...drawnCards);
+  const drawnCards = drawUntilPlayable(player);
   hasDrawnThisTurn = true;
-  const drawnCard = drawnCards[0];
-  const canPlayDrawn = drawnCard && isCardPlayable(drawnCard);
-  cardGameStatusElement.textContent = canPlayDrawn
-    ? `${player.name} comprou ${formatCard(drawnCard)} e pode jogar essa carta agora.`
-    : `${player.name} comprou uma carta e pode passar a vez.`;
+  const drawnCard = drawnCards[drawnCards.length - 1];
+  cardGameStatusElement.textContent = drawnCard && isCardPlayable(drawnCard)
+    ? `${player.name} comprou ${drawnCards.length} carta(s) até encontrar ${formatCard(drawnCard)}. Jogue essa carta agora.`
+    : `${player.name} comprou ${drawnCards.length} carta(s), mas não encontrou jogada. Pode passar a vez.`;
   renderCardGame();
   syncOnlineCardState();
 }
@@ -1165,8 +1236,14 @@ function passCardTurn() {
     return;
   }
 
+  if (player.hand.some((card) => isCardPlayable(card))) {
+    setCardStatus('Você encontrou uma carta jogável. Jogue a carta antes de passar a vez.');
+    return;
+  }
+
   currentCardPlayer = getNextCardPlayerIndex(1);
   hasDrawnThisTurn = false;
+  startCardTurnTimer();
   cardGameStatusElement.textContent = `${player.name} passou a vez. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -1329,7 +1406,7 @@ function playBotCardTurn() {
     return;
   }
 
-  player.hand.push(...drawCards(1));
+  drawUntilPlayable(player);
   const newPlayableIndex = player.hand.findIndex((card) => isCardPlayable(card));
   if (newPlayableIndex >= 0) {
     const card = player.hand[newPlayableIndex];
@@ -1339,6 +1416,7 @@ function playBotCardTurn() {
   }
 
   currentCardPlayer = getNextCardPlayerIndex(1);
+  startCardTurnTimer();
   cardGameStatusElement.textContent = `${player.name} comprou e passou. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -1500,6 +1578,7 @@ function getCardGameState() {
     roundWinnerName,
     roundWinnerId,
     lastRoundScore,
+    turnStartedAt,
     status: cardGameStatusElement.textContent,
     updatedAt: Date.now(),
     updatedBy: onlinePlayerId,
@@ -1525,6 +1604,7 @@ function applyOnlineCardState(state) {
   roundWinnerName = state.roundWinnerName || '';
   roundWinnerId = state.roundWinnerId || '';
   lastRoundScore = Number(state.lastRoundScore) || 0;
+  turnStartedAt = Number(state.turnStartedAt) || 0;
   onlineHostId = state.hostId || '';
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = state.status || 'Sala sincronizada.';
