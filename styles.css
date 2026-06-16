@@ -1348,11 +1348,24 @@ h2 {
   }
 
   .uno-layout {
-    width: min(100% - 18px, 1500px);
+    gap: 12px;
+    width: min(100% - 12px, 1500px);
+    margin: 10px auto 24px;
   }
 
   .uno-sidebar {
     position: static;
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .uno-sidebar h1 {
+    font-size: clamp(2rem, 12vw, 3rem);
+  }
+
+  .uno-game-table {
+    min-height: auto;
+    border-radius: 22px;
   }
 
   .table-hud,
@@ -1375,8 +1388,20 @@ h2 {
   .uno-center {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, auto);
-    min-height: 620px;
-    margin: 16px 12px 0;
+    min-height: auto;
+    margin: 12px 8px 0;
+    padding: 14px;
+    border-radius: 24px;
+  }
+
+  .uno-center.game-active {
+    min-height: auto;
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .uno-opponents {
+    margin-bottom: 12px;
   }
 
   .floating-deck {
@@ -1401,8 +1426,17 @@ h2 {
 
   .last-card-visual,
   .table-last-card {
-    width: 118px;
-    min-height: 166px;
+    width: 112px;
+    min-height: 156px;
+  }
+
+  .deck-card,
+  .discard-focus,
+  .uno-center.game-active .deck-card,
+  .uno-center.game-active .discard-focus {
+    width: 94px;
+    min-height: 128px;
+    padding: 12px 10px;
   }
 
   .avatar-card {
@@ -1414,6 +1448,61 @@ h2 {
   .uno-table-state {
     grid-template-columns: 1fr 1fr;
     grid-row: 4;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .uno-table-state .table-card {
+    padding: 10px;
+  }
+
+  .color-picker,
+  .table-actions {
+    padding-inline: 10px;
+  }
+
+  .hand-area {
+    padding: 10px 10px 14px;
+  }
+
+  .uno-hand {
+    min-height: 142px;
+  }
+
+  .uno-hand .uno-card {
+    width: 78px;
+    min-height: 112px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .cards-topbar {
+    padding: 12px;
+  }
+
+  .table-hud {
+    padding: 16px 14px 0;
+  }
+
+  .deck-card,
+  .discard-focus,
+  .uno-center.game-active .deck-card,
+  .uno-center.game-active .discard-focus {
+    width: 82px;
+    min-height: 116px;
+  }
+
+  .last-card-visual,
+  .table-last-card,
+  .uno-center.game-active .last-card-visual,
+  .uno-center.game-active .table-last-card {
+    width: 100px;
+    min-height: 142px;
+  }
+
+  .uno-table-state {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1438,5 +1527,31 @@ h2 {
 
   .uno-center {
     grid-template-columns: minmax(100px, 1fr) auto minmax(100px, 1fr);
+    padding-inline: 22px;
+  }
+
+  .uno-table-state,
+  .uno-center.game-active .uno-table-state {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    width: min(560px, 100%);
+  }
+}
+
+@media (min-width: 1440px) {
+  .uno-layout {
+    grid-template-columns: 360px minmax(0, 1fr);
+    width: min(1760px, calc(100% - 48px));
+  }
+
+  .uno-center {
+    min-height: 620px;
+  }
+
+  .uno-center.game-active {
+    min-height: 500px;
+  }
+
+  .uno-hand {
+    min-height: 184px;
   }
 }

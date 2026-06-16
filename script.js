@@ -800,23 +800,6 @@ function drawCards(amount) {
   return cards;
 }
 
-function drawUntilPlayable(player) {
-  const drawnCards = [];
-  let safety = 120;
-
-  while (safety > 0) {
-    if (!cardDeck.length) reshuffleDiscardIntoDeck();
-    const card = cardDeck.pop();
-    if (!card) break;
-    player.hand.push(card);
-    drawnCards.push(card);
-    if (isCardPlayable(card)) break;
-    safety -= 1;
-  }
-
-  return drawnCards;
-}
-
 function reshuffleDiscardIntoDeck() {
   const topCard = discardPile.pop();
   cardDeck = shuffle(discardPile);
@@ -868,12 +851,13 @@ function handleTurnTimeout() {
   if (onlineRoomRef && onlineHostId !== onlinePlayerId) return;
 
   const player = cardPlayers[currentCardPlayer];
+  player.hand.push(...drawCards(2));
   closeUnoPenaltyWindow();
   hasDrawnThisTurn = false;
   pendingWildColorCardIndex = null;
   currentCardPlayer = getNextCardPlayerIndex(1);
   startCardTurnTimer();
-  cardGameStatusElement.textContent = `${player.name} perdeu a vez por passar de ${turnDurationSeconds} segundos. Vez de ${cardPlayers[currentCardPlayer].name}.`;
+  cardGameStatusElement.textContent = `${player.name} passou de ${turnDurationSeconds} segundos, comprou +2 e perdeu a vez. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
   scheduleBotTurn();
@@ -1205,12 +1189,13 @@ function drawForCurrentPlayer() {
     return;
   }
 
-  const drawnCards = drawUntilPlayable(player);
+  const drawnCards = drawCards(1);
+  player.hand.push(...drawnCards);
   hasDrawnThisTurn = true;
-  const drawnCard = drawnCards[drawnCards.length - 1];
+  const drawnCard = drawnCards[0];
   cardGameStatusElement.textContent = drawnCard && isCardPlayable(drawnCard)
-    ? `${player.name} comprou ${drawnCards.length} carta(s) até encontrar ${formatCard(drawnCard)}. Jogue essa carta agora.`
-    : `${player.name} comprou ${drawnCards.length} carta(s), mas não encontrou jogada. Pode passar a vez.`;
+    ? `${player.name} comprou ${formatCard(drawnCard)} e pode jogar essa carta agora.`
+    : `${player.name} comprou uma carta e pode passar a vez.`;
   renderCardGame();
   syncOnlineCardState();
 }
@@ -1407,7 +1392,7 @@ function playBotCardTurn() {
     return;
   }
 
-  drawUntilPlayable(player);
+  player.hand.push(...drawCards(1));
   const newPlayableIndex = player.hand.findIndex((card) => isCardPlayable(card));
   if (newPlayableIndex >= 0) {
     const card = player.hand[newPlayableIndex];
