@@ -11,9 +11,9 @@ if (!canvas) throw new Error('runner canvas not found');
 const ctx = canvas.getContext('2d');
 const W = 360, H = 600;
 
-const LANES   = [72, 180, 288];     // x centres of the 3 lanes
+const LANES   = [90, 180, 270];     // x centres of the 3 lanes
 const BASE_Y  = H - 130;            // player ground y
-const HORIZON_Y = 142;
+const HORIZON_Y = 150;
 const VANISH_X = W / 2;
 const GRAV    = 0.62;               // gravity per frame
 const JUMP_V  = 13.4;               // initial upward velocity
@@ -214,64 +214,70 @@ function scaleAtY(y) {
 function drawPalm(x, y, scale = 1) {
   ctx.save();
   ctx.translate(x, y); ctx.scale(scale, scale);
-  ctx.fillStyle = '#8a4f22';
-  ctx.beginPath(); ctx.moveTo(-5, 70); ctx.quadraticCurveTo(3, 28, -1, 0); ctx.quadraticCurveTo(8, 28, 6, 70); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#20a85a';
-  for (let i = 0; i < 7; i++) {
-    ctx.save(); ctx.rotate(-1.2 + i * 0.4);
-    ctx.beginPath(); ctx.ellipse(0, -6, 8, 34, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#8b5a2b';
+  rr(-5, 10, 10, 68, 5); ctx.fill();
+  ctx.fillStyle = '#18a957';
+  [-1.2, -0.75, -0.28, 0.28, 0.75, 1.2].forEach((rot) => {
+    ctx.save(); ctx.rotate(rot);
+    ctx.beginPath(); ctx.ellipse(0, 0, 12, 38, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-  }
+  });
+  ctx.fillStyle = '#0f7f43'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
 function drawBuilding(x, y, w, h, color) {
-  ctx.fillStyle = color; ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = 'rgba(255,255,255,0.62)';
-  for (let yy = y + 14; yy < y + h - 10; yy += 26) {
-    ctx.fillRect(x + 8, yy, w - 16, 9);
+  ctx.fillStyle = 'rgba(36, 28, 18, 0.16)'; rr(x + 5, y + 6, w, h, 4); ctx.fill();
+  ctx.fillStyle = color; rr(x, y, w, h, 5); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.68)';
+  for (let yy = y + 16; yy < y + h - 12; yy += 28) {
+    rr(x + 8, yy, w - 16, 10, 3); ctx.fill();
   }
-  ctx.strokeStyle = 'rgba(18,31,52,0.22)'; ctx.lineWidth = 2;
-  ctx.strokeRect(x, y, w, h);
+  ctx.strokeStyle = 'rgba(18,31,52,0.28)'; ctx.lineWidth = 2;
+  rr(x, y, w, h, 5); ctx.stroke();
 }
 
 function drawTrainShape(x, y, w, h) {
-  const grad = ctx.createLinearGradient(x - w / 2, y - h / 2, x + w / 2, y + h / 2);
-  grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.3, '#38bdf8');
-  grad.addColorStop(0.31, '#ef4444'); grad.addColorStop(1, '#8b1d1d');
-  ctx.fillStyle = 'rgba(83,43,16,0.28)'; rr(x - w / 2 + 8, y - h / 2 + 12, w, h, 12); ctx.fill();
-  ctx.fillStyle = grad; rr(x - w / 2, y - h / 2, w, h, 12); ctx.fill();
-  ctx.fillStyle = '#dff8ff'; rr(x - w / 2 + 12, y - h / 2 + 12, w - 24, h * 0.24, 6); ctx.fill();
-  ctx.fillStyle = '#172033';
-  ctx.fillRect(x - w / 2 + 16, y - h / 2 + h * 0.44, w - 32, 5);
-  ctx.fillStyle = '#facc15';
-  ctx.beginPath(); ctx.arc(x - w * 0.24, y + h * 0.32, 6, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x + w * 0.24, y + h * 0.32, 6, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#172033'; ctx.lineWidth = 3; rr(x - w / 2, y - h / 2, w, h, 12); ctx.stroke();
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(72, 42, 18, 0.28)';
+  ctx.beginPath(); ctx.ellipse(6, h * 0.43, w * 0.5, h * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+  const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+  body.addColorStop(0, '#35b7ff'); body.addColorStop(0.32, '#1e9be0'); body.addColorStop(0.33, '#f44a3f'); body.addColorStop(1, '#b91c1c');
+  ctx.fillStyle = body; rr(-w / 2, -h / 2, w, h, 14); ctx.fill();
+  ctx.fillStyle = '#e8fbff'; rr(-w * 0.32, -h * 0.36, w * 0.64, h * 0.24, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(13, 28, 48, 0.12)'; rr(-w * 0.42, -h * 0.02, w * 0.84, h * 0.14, 5); ctx.fill();
+  ctx.fillStyle = '#ffd43b';
+  ctx.beginPath(); ctx.arc(-w * 0.25, h * 0.31, w * 0.095, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(w * 0.25, h * 0.31, w * 0.095, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#102033'; ctx.lineWidth = Math.max(2, w * 0.04); rr(-w / 2, -h / 2, w, h, 14); ctx.stroke();
+  ctx.restore();
 }
 
 function drawRoad() {
   const spd = baseSpeed + (P.turbo>0 ? 2 : 0);
 
-  const sky = ctx.createLinearGradient(0, 0, 0, 190);
-  sky.addColorStop(0, '#4dc3ff'); sky.addColorStop(0.72, '#baf1ff'); sky.addColorStop(1, '#ffdc62');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 190);
+  const sky = ctx.createLinearGradient(0, 0, 0, 220);
+  sky.addColorStop(0, '#38bdf8'); sky.addColorStop(0.58, '#a7eaff'); sky.addColorStop(1, '#ffe38a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 220);
 
   ctx.fillStyle = '#fff6a8'; ctx.beginPath(); ctx.arc(40, 46, 24, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.beginPath(); ctx.ellipse(285, 38, 34, 10, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(307, 35, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.beginPath(); ctx.ellipse(276, 42, 36, 11, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(305, 38, 22, 9, 0, 0, Math.PI * 2); ctx.fill();
 
-  // Left greenery and right colorful buildings/yellow wall, matching the reference composition.
-  drawPalm(25, 122, 0.55);
-  drawBuilding(220, 48, 30, 108, '#ef4444');
-  drawBuilding(250, 30, 36, 132, '#0ea5e9');
-  drawBuilding(286, 70, 34, 92, '#f97316');
-  drawBuilding(320, 22, 36, 140, '#22c55e');
+  drawPalm(30, 132, 0.52);
+  drawBuilding(218, 54, 30, 104, '#ef4444');
+  drawBuilding(250, 34, 36, 128, '#0ea5e9');
+  drawBuilding(288, 72, 32, 90, '#f97316');
+  drawBuilding(322, 28, 34, 134, '#22c55e');
+
+  // Yellow wall on the right, the strongest recognizable element from the reference.
   ctx.fillStyle = '#ffd84d';
-  ctx.beginPath(); ctx.moveTo(214, 142); ctx.lineTo(W, 120); ctx.lineTo(W, 268); ctx.lineTo(238, 230); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(192,117,22,0.2)'; ctx.fillRect(248, 164, 112, 8);
-  drawPalm(340, 184, 0.55);
+  ctx.beginPath(); ctx.moveTo(210, 144); ctx.lineTo(W, 124); ctx.lineTo(W, 272); ctx.lineTo(236, 224); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(194, 122, 20, 0.16)';
+  ctx.beginPath(); ctx.moveTo(244, 174); ctx.lineTo(W, 162); ctx.lineTo(W, 174); ctx.lineTo(244, 188); ctx.closePath(); ctx.fill();
+  drawPalm(342, 194, 0.45);
 
   // Festive flags near the top, like a subway-runner street.
   ctx.strokeStyle = 'rgba(28,43,65,0.42)'; ctx.lineWidth = 1.4;
@@ -282,47 +288,44 @@ function drawRoad() {
     ctx.beginPath(); ctx.moveTo(fx, 21); ctx.lineTo(fx + 14, 23); ctx.lineTo(fx + 5, 37); ctx.closePath(); ctx.fill();
   });
 
-  // Light overhead structure. Sparse lines avoid the ugly grid look.
+  // Light overhead structure. Sparse lines avoid a harsh grid.
   ctx.strokeStyle = 'rgba(32,55,78,0.32)'; ctx.lineWidth = 1.2;
-  [96, 180, 264].forEach(x => {
+  [108, 180, 252].forEach(x => {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(projectX(x, 500), 500); ctx.stroke();
   });
-  [44, 86, 128].forEach(y => {
+  [52, 94, 136].forEach(y => {
     const t = perspectiveT(y + 180);
-    ctx.beginPath(); ctx.moveTo(78 + t * 16, y); ctx.lineTo(282 - t * 16, y + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(88 + t * 12, y); ctx.lineTo(272 - t * 12, y + 4); ctx.stroke();
   });
 
-  const dirt = ctx.createLinearGradient(0, 152, 0, H);
-  dirt.addColorStop(0, '#efa33e'); dirt.addColorStop(0.62, '#d58631'); dirt.addColorStop(1, '#a96022');
-  ctx.fillStyle = dirt; ctx.fillRect(0, 152, W, H - 152);
+  const dirt = ctx.createLinearGradient(0, 154, 0, H);
+  dirt.addColorStop(0, '#eea13b'); dirt.addColorStop(0.64, '#d38331'); dirt.addColorStop(1, '#a85d21');
+  ctx.fillStyle = dirt; ctx.fillRect(0, 154, W, H - 154);
 
-  // Track bed shaped like the screenshot: narrow at horizon, wide at the bottom.
-  ctx.fillStyle = '#d98a35';
-  ctx.beginPath(); ctx.moveTo(104, HORIZON_Y); ctx.lineTo(256, HORIZON_Y); ctx.lineTo(W + 46, H); ctx.lineTo(-46, H); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(255,226,126,0.15)';
-  ctx.beginPath(); ctx.moveTo(142, HORIZON_Y); ctx.lineTo(218, HORIZON_Y); ctx.lineTo(264, H); ctx.lineTo(96, H); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(123,66,22,0.12)';
-  ctx.beginPath(); ctx.moveTo(104, HORIZON_Y); ctx.lineTo(132, HORIZON_Y); ctx.lineTo(70, H); ctx.lineTo(12, H); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(228, HORIZON_Y); ctx.lineTo(256, HORIZON_Y); ctx.lineTo(348, H); ctx.lineTo(290, H); ctx.closePath(); ctx.fill();
+  // Clean trapezoid track bed. Broad enough to read, not cluttered.
+  ctx.fillStyle = '#d88a34';
+  ctx.beginPath(); ctx.moveTo(112, HORIZON_Y); ctx.lineTo(248, HORIZON_Y); ctx.lineTo(338, H); ctx.lineTo(22, H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,225,125,0.18)';
+  ctx.beginPath(); ctx.moveTo(148, HORIZON_Y); ctx.lineTo(212, HORIZON_Y); ctx.lineTo(246, H); ctx.lineTo(114, H); ctx.closePath(); ctx.fill();
 
-  // Dormentes moving toward the camera.
-  for (let y = ((frame * spd * 1.22) % 42) + HORIZON_Y + 10; y < H + 30; y += 42) {
+  // Dormentes as warm horizontal strokes, simpler and more readable.
+  for (let y = ((frame * spd * 1.15) % 46) + HORIZON_Y + 14; y < H + 34; y += 46) {
     const t = perspectiveT(y);
-    const half = 22 + t * 148;
-    ctx.strokeStyle = '#6e3f18'; ctx.lineWidth = 1.6 + t * 4.2;
-    ctx.beginPath(); ctx.moveTo(VANISH_X - half, y); ctx.lineTo(VANISH_X + half, y + 2); ctx.stroke();
+    const half = 20 + t * 138;
+    ctx.strokeStyle = '#6b3c16'; ctx.lineWidth = 1.8 + t * 4.5;
+    ctx.beginPath(); ctx.moveTo(VANISH_X - half, y); ctx.lineTo(VANISH_X + half, y); ctx.stroke();
   }
 
-  // Three clean tracks. Each lane has only two rails, with enough gap to read well.
+  // Three clean tracks, exactly two rails per lane.
   const trackPairs = [
-    [48, 108],
-    [150, 210],
-    [252, 312],
+    [58, 122],
+    [148, 212],
+    [238, 302],
   ];
   trackPairs.forEach(pair => {
     pair.forEach(bottomX => {
       const horizonX = VANISH_X + (bottomX - VANISH_X) * 0.12;
-      ctx.strokeStyle = '#111827'; ctx.lineWidth = 5.2;
+      ctx.strokeStyle = '#121923'; ctx.lineWidth = 4.6;
       ctx.beginPath(); ctx.moveTo(horizonX, HORIZON_Y + 5); ctx.lineTo(bottomX, H + 24); ctx.stroke();
       ctx.strokeStyle = '#8fa0aa'; ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.moveTo(horizonX - 1.2, HORIZON_Y + 5); ctx.lineTo(bottomX - 2, H + 24); ctx.stroke();
@@ -330,7 +333,13 @@ function drawRoad() {
   });
 
   // Small train in the distance, not blocking the whole view.
-  drawTrainShape(214, 190, 44, 56);
+  drawTrainShape(214, 192, 42, 54);
+
+  // Soft foreground vignette makes the canvas look less flat.
+  const vignette = ctx.createRadialGradient(W / 2, H * 0.48, 120, W / 2, H * 0.58, 360);
+  vignette.addColorStop(0, 'rgba(255,255,255,0)');
+  vignette.addColorStop(1, 'rgba(56,27,10,0.16)');
+  ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
 
   // Turbo speed lines on sides
   if (P.turbo > 0) {
@@ -477,45 +486,52 @@ function drawPlayer() {
   ctx.save();
   ctx.translate(x, renderY + bounce + cOff);
 
-  const bodyCol = turbo>0 ? '#16a34a' : '#f8fafc';
+  const bodyCol = turbo>0 ? '#22c55e' : '#f8fafc';
   const legCol  = turbo>0 ? '#15803d' : '#38bdf8';
+  const outline = '#172033';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
   if (!crouching) {
-    // Legs
-    ctx.fillStyle=legCol;
-    ctx.save(); ctx.translate(-w*0.16, ch*0.16); ctx.rotate(leg*0.38);
-    ctx.fillRect(-7,0,14,ch*0.37); ctx.restore();
-    ctx.save(); ctx.translate(w*0.16, ch*0.16); ctx.rotate(-leg*0.38);
-    ctx.fillRect(-7,0,14,ch*0.37); ctx.restore();
-    // Shoes
-    ctx.fillStyle='#f8fafc';
-    ctx.save(); ctx.translate(-w*0.16+leg*3, ch*0.52); ctx.fillRect(-8,-5,18,8); ctx.restore();
-    ctx.save(); ctx.translate( w*0.16-leg*3, ch*0.52); ctx.fillRect(-10,-5,18,8); ctx.restore();
-    // Arms
-    ctx.fillStyle='#ffbd83';
-    const arm = -leg*0.28;
-    ctx.save(); ctx.translate(-w/2-4,-ch*0.07); ctx.rotate(arm);  ctx.fillRect(-5,0,10,ch*0.22); ctx.restore();
-    ctx.save(); ctx.translate( w/2+4,-ch*0.07); ctx.rotate(-arm); ctx.fillRect(-5,0,10,ch*0.22); ctx.restore();
+    // Legs and shoes, drawn as rounded limbs instead of raw rectangles.
+    [[-w * 0.18, leg * 0.32], [w * 0.18, -leg * 0.32]].forEach(([lx, rot]) => {
+      ctx.save(); ctx.translate(lx, ch * 0.15); ctx.rotate(rot);
+      ctx.fillStyle = legCol; ctx.strokeStyle = outline; ctx.lineWidth = 3;
+      rr(-6, 0, 12, ch * 0.34, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f8fafc'; rr(-10, ch * 0.32, 20, 8, 5); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    });
+
+    // Arms swinging behind the body.
+    ctx.strokeStyle = outline; ctx.lineWidth = 3;
+    ctx.fillStyle = '#ffbd83';
+    [[-w * 0.54, -leg * 0.25], [w * 0.54, leg * 0.25]].forEach(([ax, rot]) => {
+      ctx.save(); ctx.translate(ax, -ch * 0.12); ctx.rotate(rot);
+      rr(-5, 0, 10, ch * 0.23, 6); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    });
   } else {
-    // Crouching legs (bent)
-    ctx.fillStyle=legCol;
-    ctx.fillRect(-w*0.42, ch*0.06, w*0.38, ch*0.3);
-    ctx.fillRect( w*0.04, ch*0.06, w*0.38, ch*0.3);
-    ctx.fillStyle='#f8fafc';
-    ctx.fillRect(-w*0.42, ch*0.36, w*0.34, 10);
-    ctx.fillRect( w*0.04, ch*0.36, w*0.34, 10);
+    ctx.fillStyle = legCol; ctx.strokeStyle = outline; ctx.lineWidth = 3;
+    rr(-w * 0.44, ch * 0.08, w * 0.4, ch * 0.26, 7); ctx.fill(); ctx.stroke();
+    rr(w * 0.04, ch * 0.08, w * 0.4, ch * 0.26, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#f8fafc';
+    rr(-w * 0.44, ch * 0.34, w * 0.36, 9, 5); ctx.fill(); ctx.stroke();
+    rr(w * 0.08, ch * 0.34, w * 0.36, 9, 5); ctx.fill(); ctx.stroke();
   }
 
   // Body
-  ctx.fillStyle=bodyCol; rr(-w/2,-ch*0.28,w,ch*0.44,7); ctx.fill();
-  ctx.fillStyle='#cbd5e1'; rr(-w/2+5,-ch*0.2,w-10,ch*0.14,4); ctx.fill();
+  ctx.fillStyle = bodyCol; ctx.strokeStyle = outline; ctx.lineWidth = 3;
+  rr(-w / 2, -ch * 0.3, w, ch * 0.47, 9); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#dbeafe'; rr(-w / 2 + 6, -ch * 0.2, w - 12, ch * 0.13, 5); ctx.fill();
+  ctx.fillStyle = 'rgba(23,32,51,0.12)'; rr(-w * 0.22, -ch * 0.03, w * 0.44, ch * 0.16, 5); ctx.fill();
 
-  // Head
+  // Head and cap from behind.
   const hR  = crouching ? w*0.22 : w*0.27;
   const hY  = crouching ? -ch*0.3 : -ch*0.37;
-  ctx.fillStyle='#ffbd83'; ctx.beginPath(); ctx.arc(0,hY,hR,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#f8fafc'; rr(-hR*0.95,hY-hR*1.2,hR*1.9,hR*0.7,7); ctx.fill();
-  ctx.fillStyle='#111827'; ctx.fillRect(-hR*0.42, hY-hR*0.86, hR*0.84, 4);
+  ctx.fillStyle = '#ffbd83'; ctx.strokeStyle = outline; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, hY, hR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#f8fafc'; rr(-hR * 1.05, hY - hR * 1.22, hR * 2.1, hR * 0.68, 8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#38bdf8'; rr(-hR * 0.48, hY - hR * 1.02, hR * 0.96, 5, 3); ctx.fill();
 
   ctx.restore();
 }
