@@ -1,3 +1,9 @@
+// DEBUG: exibe erros JS no status da minhoca
+window.onerror = (msg, src, line) => {
+  const el = document.querySelector('#snake-status');
+  if (el) el.textContent = 'ERRO JS linha ' + line + ': ' + msg;
+};
+
 const ticBoardElement = document.querySelector('#tic-tac-toe-board');
 const ticStatusElement = document.querySelector('#tic-tac-toe-status');
 const resetTicButton = document.querySelector('#reset-tic-tac-toe');
@@ -1931,10 +1937,13 @@ if (snakeCanvas) {
     const cy = e.clientY - r.top;
     const w = r.width;
     const h = r.height;
-    if (cy < h * 0.33) changeSnakeDirection('up');
-    else if (cy > h * 0.67) changeSnakeDirection('down');
-    else if (cx < w * 0.33) changeSnakeDirection('left');
-    else changeSnakeDirection('right');
+    let dir;
+    if (cy < h * 0.33) dir = 'up';
+    else if (cy > h * 0.67) dir = 'down';
+    else if (cx < w * 0.33) dir = 'left';
+    else dir = 'right';
+    if (snakeStatusElement) snakeStatusElement.textContent = 'Clique detectado → ' + dir + (snakeRunning ? ' (jogando)' : ' (parado)');
+    changeSnakeDirection(dir);
     if (!snakeRunning) startSnakeGame();
   });
   snakeCanvas.addEventListener('touchstart', (e) => {
