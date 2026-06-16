@@ -511,11 +511,24 @@ function resetSnakeGame() {
 
 function startSnakeGame() {
   if (snakeRunning) return;
+
+  // Sempre recomeça da posição inicial
+  snake = [{ x: 6, y: 10 }, { x: 5, y: 10 }, { x: 4, y: 10 }];
+  snakeDirection = { x: 1, y: 0 };
+  nextSnakeDirection = { x: 1, y: 0 };
+  snakeScore = 0;
+  snakePhase = 0;
+  snakePhaseFood = 0;
+  placeSnakeFood();
+  updateSnakeHud();
+  drawSnake();
+
   snakeRunning = true;
-  if (snakeStatusElement) snakeStatusElement.textContent = `Fase 1: ${SNAKE_PHASES[0].label} — Pontuação: 0`;
   if (startSnakeButton) startSnakeButton.textContent = 'Jogando...';
   if (snakeCanvas) snakeCanvas.focus();
-  snakeTimer = setInterval(moveSnake, SNAKE_PHASES[snakePhase].speed);
+  const phase = SNAKE_PHASES[snakePhase];
+  if (snakeStatusElement) snakeStatusElement.textContent = `Fase 1: ${phase.label} — Pontuação: 0`;
+  snakeTimer = setInterval(moveSnake, phase.speed);
 }
 
 function stopSnake() {
