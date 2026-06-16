@@ -782,6 +782,14 @@ function renderCardAvatars() {
   if (!cardAvatarsElement) return;
   cardAvatarsElement.innerHTML = '';
 
+  if (!cardPlayers.length) {
+    const empty = document.createElement('div');
+    empty.className = 'avatar-card empty-avatar-card';
+    empty.innerHTML = '<strong>Participantes</strong><span>Nenhum jogador entrou ainda.</span>';
+    cardAvatarsElement.appendChild(empty);
+    return;
+  }
+
   cardPlayers.forEach((player, index) => {
     const avatar = document.createElement('div');
     avatar.className = `avatar-card ${cardGameStarted && index === currentCardPlayer ? 'active' : ''}`.trim();
@@ -794,7 +802,7 @@ function renderCardAvatars() {
     name.textContent = player.name;
 
     const detail = document.createElement('span');
-    detail.textContent = `${player.isBot ? 'BOT' : 'Jogador'} · ${player.hand.length} cartas · ${Number(player.score) || 0} pts${player.saidUno ? ' · UNO!' : ''}`;
+    detail.textContent = `${index + 1}/${maxCardPlayers} · ${player.isBot ? 'BOT' : 'Jogador'} · ${player.hand.length} cartas · ${Number(player.score) || 0} pts${player.saidUno ? ' · UNO!' : ''}`;
 
     avatar.append(face, name, detail);
     cardAvatarsElement.appendChild(avatar);
@@ -806,9 +814,14 @@ function renderCardPlayers() {
   playersListElement.innerHTML = '';
 
   if (!cardPlayers.length) {
-    playersListElement.innerHTML = '<div class="player-chip">Nenhum jogador na sala ainda.</div>';
+    playersListElement.innerHTML = `<div class="player-chip">Participantes 0/${maxCardPlayers}<br>Nenhum jogador na sala ainda.</div>`;
     return;
   }
+
+  const heading = document.createElement('div');
+  heading.className = 'player-chip players-count-chip';
+  heading.textContent = `Participantes na sala: ${cardPlayers.length}/${maxCardPlayers}`;
+  playersListElement.appendChild(heading);
 
   cardPlayers.forEach((player, index) => {
     const chip = document.createElement('div');

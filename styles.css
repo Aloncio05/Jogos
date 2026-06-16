@@ -714,7 +714,7 @@ h2 {
   position: relative;
   z-index: 2;
   grid-column: 2;
-  grid-row: 1;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -892,17 +892,25 @@ h2 {
 }
 
 .uno-opponents {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+  position: relative;
   z-index: 3;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  gap: 10px;
+  align-self: start;
+  width: min(100%, 980px);
+  margin: 0 auto 24px;
+  overflow-x: auto;
+  padding: 2px 4px 10px;
+  pointer-events: auto;
 }
 
 .uno-center {
   position: relative;
   display: grid;
   grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr auto;
   align-items: center;
   min-height: 560px;
   margin: 20px 28px 0;
@@ -963,14 +971,14 @@ h2 {
 
 .floating-deck {
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 2;
   left: auto;
   justify-self: end;
 }
 
 .floating-discard {
   grid-column: 3;
-  grid-row: 1;
+  grid-row: 2;
   right: auto;
   justify-self: start;
   transform: rotate(7deg);
@@ -1007,6 +1015,7 @@ h2 {
   bottom: auto;
   z-index: 2;
   grid-column: 1 / -1;
+  grid-row: 3;
   display: grid;
   grid-template-columns: repeat(4, minmax(110px, 1fr));
   gap: 12px;
@@ -1064,42 +1073,24 @@ h2 {
 }
 
 .avatar-card {
-  position: absolute;
-  width: 150px;
-  min-height: 118px;
+  position: relative;
+  flex: 0 0 170px;
+  width: 170px;
+  min-height: 104px;
   padding: 12px;
   pointer-events: auto;
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
 }
 
-.uno-opponents .avatar-card:nth-child(1) {
-  left: 6%;
-  top: 38%;
+.empty-avatar-card {
+  flex-basis: 260px;
 }
 
-.uno-opponents .avatar-card:nth-child(2) {
-  left: 39%;
-  top: 5%;
-}
-
-.uno-opponents .avatar-card:nth-child(3) {
-  right: 7%;
-  top: 38%;
-}
-
-.uno-opponents .avatar-card:nth-child(4) {
-  left: 18%;
-  bottom: 13%;
-}
-
-.uno-opponents .avatar-card:nth-child(5) {
-  right: 18%;
-  bottom: 13%;
-}
-
-.uno-opponents .avatar-card:nth-child(n+6) {
-  right: 4%;
-  bottom: 8%;
+.players-count-chip {
+  color: var(--text);
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.12);
+  font-weight: 900;
 }
 
 .uno-red {
@@ -1191,28 +1182,28 @@ h2 {
 
   .uno-center {
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(3, auto);
+    grid-template-rows: repeat(4, auto);
     min-height: 620px;
     margin: 16px 12px 0;
   }
 
   .floating-deck {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 2;
     justify-self: start;
     left: auto;
   }
 
   .floating-discard {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 2;
     justify-self: end;
     right: auto;
   }
 
   .last-card-visual {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
     margin: 18px auto 0;
   }
 
@@ -1223,28 +1214,14 @@ h2 {
   }
 
   .avatar-card {
+    flex-basis: 150px;
     width: 122px;
     min-height: 104px;
   }
 
-  .uno-opponents .avatar-card:nth-child(1) {
-    left: 4%;
-    top: 34%;
-  }
-
-  .uno-opponents .avatar-card:nth-child(2) {
-    left: 34%;
-    top: 4%;
-  }
-
-  .uno-opponents .avatar-card:nth-child(3) {
-    right: 4%;
-    top: 34%;
-  }
-
   .uno-table-state {
     grid-template-columns: 1fr 1fr;
-    grid-row: 3;
+    grid-row: 4;
   }
 }
 
