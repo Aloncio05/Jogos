@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cabin:wght@700&family=Cabin+Condensed:wght@700&display=swap');
+
 :root {
   --bg: #0b1020;
   --surface: rgba(255, 255, 255, 0.08);
@@ -10,6 +12,8 @@
   --success: #34d399;
   --danger: #fb7185;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  --cards-font: "Cabin", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cards-condensed-font: "Cabin Condensed", "Cabin", Inter, ui-sans-serif, system-ui, sans-serif;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -654,6 +658,7 @@ h2 {
 }
 
 .uno-card {
+  font-family: var(--cards-condensed-font);
   width: 92px;
   min-height: 132px;
   padding: 12px;
@@ -669,9 +674,9 @@ h2 {
 .uno-card span,
 .uno-card small {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 950;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -684,7 +689,8 @@ h2 {
 .uno-card strong {
   display: block;
   margin-top: 34px;
-  font-size: 1.35rem;
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
   text-align: center;
 }
 
@@ -704,44 +710,50 @@ h2 {
 }
 
 .last-card-visual {
-  position: absolute;
-  left: 50%;
-  top: 44%;
-  z-index: 5;
-  display: grid;
-  width: 148px;
-  min-height: 204px;
-  place-items: center;
-  padding: 16px;
+  font-family: var(--cards-condensed-font);
+  position: relative;
+  z-index: 2;
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  justify-self: center;
+  align-self: center;
+  width: 150px;
+  min-height: 210px;
+  padding: 18px 16px;
   border: 4px solid rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
+  border-radius: 26px;
   color: white;
   text-align: center;
-  background: rgba(15, 23, 42, 0.82);
-  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.34);
-  transform: translate(-50%, -50%) rotate(-2deg);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(17, 94, 89, 0.9));
+  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.34), inset 0 0 0 4px rgba(255, 255, 255, 0.09);
+  transform: rotate(-1deg);
 }
 
 .last-card-visual span,
 .last-card-visual small {
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 950;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .last-card-visual strong {
-  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
 .table-last-card {
-  width: 148px;
-  min-height: 204px;
+  width: 150px;
+  min-height: 210px;
 }
 
 .cards-page {
   min-height: 100vh;
+  font-family: var(--cards-font);
   background:
     radial-gradient(circle at 18% 18%, rgba(251, 191, 36, 0.28), transparent 18rem),
     radial-gradient(circle at 82% 22%, rgba(236, 72, 153, 0.22), transparent 22rem),
@@ -757,6 +769,22 @@ h2 {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(7, 12, 24, 0.72);
   backdrop-filter: blur(16px);
+}
+
+.cards-page button,
+.cards-page input,
+.cards-page .player-chip,
+.cards-page .avatar-card,
+.cards-page .table-card {
+  font-family: var(--cards-font);
+}
+
+.cards-page .eyebrow,
+.cards-page label,
+.cards-page .secondary-button,
+.cards-page .start-match-button {
+  font-family: var(--cards-condensed-font);
+  letter-spacing: 0.08em;
 }
 
 .uno-layout {
@@ -783,7 +811,9 @@ h2 {
 }
 
 .uno-sidebar h1 {
+  font-family: var(--cards-condensed-font);
   font-size: clamp(2.2rem, 4vw, 3.6rem);
+  letter-spacing: -0.035em;
 }
 
 .compact-invite {
@@ -856,13 +886,17 @@ h2 {
 
 .uno-center {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: center;
   min-height: 560px;
   margin: 20px 28px 0;
-  padding: clamp(18px, 4vw, 38px);
+  padding: clamp(22px, 4vw, 44px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 42px;
   background:
-    radial-gradient(circle at 50% 45%, rgba(250, 204, 21, 0.26), transparent 9rem),
+    radial-gradient(circle at 50% 43%, rgba(250, 204, 21, 0.26), transparent 9rem),
     radial-gradient(circle at center, #36c26f 0 30%, #22a55f 31% 45%, #16804e 46% 62%, transparent 63%),
     linear-gradient(135deg, rgba(14, 165, 233, 0.55), rgba(59, 130, 246, 0.22));
   box-shadow: inset 0 0 80px rgba(255, 255, 255, 0.13), 0 28px 70px rgba(0, 0, 0, 0.32);
@@ -881,18 +915,22 @@ h2 {
   content: "ALONCINHO";
   position: absolute;
   left: 50%;
-  top: 49%;
+  top: 43%;
   transform: translate(-50%, -50%) rotate(-9deg);
   color: rgba(255, 255, 255, 0.16);
-  font-size: clamp(2.4rem, 8vw, 7rem);
+  font-size: clamp(2rem, 7vw, 6rem);
   font-weight: 1000;
   letter-spacing: -0.08em;
 }
 
 .deck-card,
 .discard-focus {
+  font-family: var(--cards-condensed-font);
+  position: relative;
+  z-index: 2;
   display: grid;
-  min-height: 156px;
+  width: 132px;
+  min-height: 178px;
   place-items: center;
   padding: 18px 14px;
   border: 3px solid rgba(255, 255, 255, 0.72);
@@ -903,20 +941,25 @@ h2 {
 
 .floating-deck,
 .floating-discard {
-  position: absolute;
-  top: 43%;
-  z-index: 2;
+  position: relative;
+  top: auto;
   width: 132px;
-  transform: translateY(-50%) rotate(-8deg);
+  transform: rotate(-7deg);
 }
 
 .floating-deck {
-  left: 27%;
+  grid-column: 1;
+  grid-row: 1;
+  left: auto;
+  justify-self: end;
 }
 
 .floating-discard {
-  right: 27%;
-  transform: translateY(-50%) rotate(8deg);
+  grid-column: 3;
+  grid-row: 1;
+  right: auto;
+  justify-self: start;
+  transform: rotate(7deg);
 }
 
 .deck-card {
@@ -930,7 +973,7 @@ h2 {
 .deck-card span,
 .discard-focus span {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -941,26 +984,35 @@ h2 {
   display: block;
   margin-top: 8px;
   font-size: clamp(1.4rem, 3vw, 2.2rem);
+  letter-spacing: -0.02em;
 }
 
 .uno-table-state {
-  position: absolute;
-  left: 50%;
-  bottom: 22px;
-  z-index: 3;
-  display: flex;
-  gap: 10px;
-  width: min(520px, calc(100% - 36px));
-  margin: 0;
-  transform: translateX(-50%);
+  position: relative;
+  left: auto;
+  bottom: auto;
+  z-index: 2;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(110px, 1fr));
+  gap: 12px;
+  width: min(760px, 100%);
+  margin: 34px auto 0;
+  transform: none;
 }
 
 .uno-table-state .table-card {
-  flex: 1;
   min-height: auto;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.72);
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.uno-table-state .table-card strong {
+  overflow-wrap: anywhere;
+  font-family: var(--cards-condensed-font);
+  font-size: clamp(1rem, 2vw, 1.45rem);
 }
 
 .hand-area {
@@ -1124,16 +1176,36 @@ h2 {
   }
 
   .uno-center {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, auto);
     min-height: 620px;
     margin: 16px 12px 0;
   }
 
   .floating-deck {
-    left: 18%;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    left: auto;
   }
 
   .floating-discard {
-    right: 18%;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: end;
+    right: auto;
+  }
+
+  .last-card-visual {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 18px auto 0;
+  }
+
+  .last-card-visual,
+  .table-last-card {
+    width: 118px;
+    min-height: 166px;
   }
 
   .avatar-card {
@@ -1157,7 +1229,8 @@ h2 {
   }
 
   .uno-table-state {
-    flex-direction: column;
+    grid-template-columns: 1fr 1fr;
+    grid-row: 3;
   }
 }
 
@@ -1181,6 +1254,6 @@ h2 {
   }
 
   .uno-center {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(100px, 1fr) auto minmax(100px, 1fr);
   }
 }

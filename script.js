@@ -47,6 +47,7 @@ const createOnlineRoomButton = document.querySelector('#create-online-room');
 const joinRoomForm = document.querySelector('#join-room-form');
 const joinRoomCodeInput = document.querySelector('#join-room-code');
 const callUnoButton = document.querySelector('#call-uno');
+const catchUnoButton = document.querySelector('#catch-uno');
 const challengePlusFourButton = document.querySelector('#challenge-plus-four');
 const colorChoiceButtons = document.querySelectorAll('[data-card-color]');
 
@@ -520,6 +521,9 @@ const colorLabels = {
   yellow: 'Amarelo',
 };
 
+const maxCardPlayers = 10;
+const gameWinningScore = 500;
+
 let roomCode = '';
 let cardPlayers = [];
 let cardDeck = [];
@@ -531,6 +535,8 @@ let botCount = 0;
 let currentDeclaredColor = '';
 let pendingWildColorCardIndex = null;
 let lastPlusFour = null;
+let hasDrawnThisTurn = false;
+let unoPenaltyTargetIndex = null;
 let firebaseDb = null;
 let onlineRoomRef = null;
 let onlineRoomCode = '';
@@ -552,6 +558,8 @@ function resetCardRoom(options = {}) {
   currentDeclaredColor = '';
   pendingWildColorCardIndex = null;
   lastPlusFour = null;
+  hasDrawnThisTurn = false;
+  unoPenaltyTargetIndex = null;
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
   playerHandElement.innerHTML = '';
@@ -572,8 +580,13 @@ function addCardPlayer(name, isBot = false) {
     return;
   }
 
-  if (cardPlayers.length >= 8) {
-    showPlayerFeedback('A sala já chegou ao limite máximo de 8 jogadores.', 'error');
+  if (onlineRoomRef && !applyingRemoteCardState) {
+    addOnlineCardPlayer(cleanName, isBot);
+    return;
+  }
+
+  if (cardPlayers.length >= maxCardPlayers) {
+    showPlayerFeedback(`A sala já chegou ao limite máximo de ${maxCardPlayers} jogadores.`, 'error');
     return;
   }
 
@@ -592,6 +605,7 @@ function addCardPlayer(name, isBot = false) {
     name: cleanName,
     isBot,
     saidUno: false,
+    score: 0,
     hand: [],
   });
   cardGameStatusElement.textContent = `${cleanName} entrou na sala.`;
@@ -602,6 +616,69 @@ function addCardPlayer(name, isBot = false) {
   showPlayerFeedback(`${cleanName} entrou na mesa com sucesso.`, 'success');
   renderCardPlayers();
   syncOnlineCardState();
+}
+
+function addOnlineCardPlayer(cleanName, isBot = false) {
+  let validationError = '';
+  const playerId = isBot ? `bot_${Date.now()}_${botCount}` : onlinePlayerId;
+  const playerToAdd = {
+    id: playerId,
+    name: cleanName,
+    isBot,
+    saidUno: false,
+    score: 0,
+    hand: [],
+  };
+
+  onlineRoomRef.transaction((state) => {
+    validationError = '';
+    const roomState = state || getCardGameState();
+    const players = Array.isArray(roomState.cardPlayers) ? roomState.cardPlayers : [];
+
+    if (roomState.cardGameStarted) {
+      validationError = 'A partida já começou. Crie ou entre em outra sala.';
+      return undefined;
+    }
+    if (players.length >= maxCardPlayers) {
+      validationError = `A sala já chegou ao limite máximo de ${maxCardPlayers} jogadores.`;
+      return undefined;
+    }
+    if (players.some((player) => player.name.toLowerCase() === cleanName.toLowerCase())) {
+      validationError = 'Esse nome já está na sala. Use outro nome para identificar o amigo.';
+      return undefined;
+    }
+    if (!isBot && players.some((player) => player.id === onlinePlayerId && !player.isBot)) {
+      validationError = 'Você já entrou nessa sala. Para trocar o nome, crie ou entre em outra sala.';
+      return undefined;
+    }
+
+    return {
+      ...roomState,
+      roomCode,
+      cardPlayers: [...players, playerToAdd],
+      botCount: isBot ? Math.max(Number(roomState.botCount) || 0, botCount) : roomState.botCount,
+      updatedAt: Date.now(),
+      updatedBy: onlinePlayerId,
+      hostId: roomState.hostId || onlineHostId || onlinePlayerId,
+    };
+  }, (error, committed, snapshot) => {
+    if (error) {
+      showPlayerFeedback(`Erro ao entrar na sala: ${error.message}`, 'error');
+      return;
+    }
+    if (!committed) {
+      showPlayerFeedback(validationError || 'Não foi possível entrar nessa sala agora.', 'error');
+      return;
+    }
+
+    const state = snapshot.val();
+    if (state) applyOnlineCardState(state);
+    if (!isBot) {
+      selectedCardPlayerId = onlinePlayerId;
+      localStorage.setItem('aloncinho_selected_card_player_id', selectedCardPlayerId);
+    }
+    showPlayerFeedback(`${cleanName} entrou na mesa com sucesso.`, 'success');
+  });
 }
 
 function showPlayerFeedback(message, type = '') {
@@ -630,11 +707,14 @@ function startCardGame() {
   cardPlayers.forEach((player) => {
     player.hand = drawCards(7);
     player.saidUno = false;
+    player.score = Number(player.score) || 0;
   });
 
   discardPile.push(drawFirstDiscard());
   currentDeclaredColor = discardPile[discardPile.length - 1].color;
   lastPlusFour = null;
+  hasDrawnThisTurn = false;
+  unoPenaltyTargetIndex = null;
   cardGameStatusElement.textContent = `Partida iniciada. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -714,7 +794,7 @@ function renderCardAvatars() {
     name.textContent = player.name;
 
     const detail = document.createElement('span');
-    detail.textContent = `${player.isBot ? 'BOT' : 'Jogador'} · ${player.hand.length} cartas${player.saidUno ? ' · UNO!' : ''}`;
+    detail.textContent = `${player.isBot ? 'BOT' : 'Jogador'} · ${player.hand.length} cartas · ${Number(player.score) || 0} pts${player.saidUno ? ' · UNO!' : ''}`;
 
     avatar.append(face, name, detail);
     cardAvatarsElement.appendChild(avatar);
@@ -735,7 +815,7 @@ function renderCardPlayers() {
     chip.className = `player-chip ${cardGameStarted && index === currentCardPlayer ? 'active' : ''}`.trim();
     const name = document.createElement('strong');
     name.textContent = player.name;
-    const details = document.createTextNode(`${player.isBot ? 'BOT' : 'Amigo'} · ${player.hand.length} cartas`);
+    const details = document.createTextNode(`${player.isBot ? 'BOT' : 'Amigo'} · ${player.hand.length} cartas · ${Number(player.score) || 0} pts`);
     chip.append(name, details);
     playersListElement.appendChild(chip);
   });
@@ -871,6 +951,7 @@ function playCard(cardIndex) {
   }
   const player = cardPlayers[currentCardPlayer];
   const card = player.hand[cardIndex];
+  closeUnoPenaltyWindow();
   if (!card || !isCardPlayable(card)) {
     setCardStatus('Essa carta não pode ser jogada agora. Use a mesma cor, mesmo número/símbolo ou um curinga válido.');
     return;
@@ -899,16 +980,22 @@ function playCardWithColor(cardIndex, chosenColor) {
   if (!player.hand.length) {
     cardGameStarted = false;
     const score = calculateRoundScore();
-    cardGameStatusElement.textContent = `${player.name} venceu a partida! Pontuação da rodada: ${score} pontos.`;
+    player.score = (Number(player.score) || 0) + score;
+    const reachedGameWin = player.score >= gameWinningScore;
+    cardGameStatusElement.textContent = reachedGameWin
+      ? `${player.name} venceu o jogo com ${player.score} pontos! Rodada: ${score} pontos.`
+      : `${player.name} venceu a rodada e fez ${score} pontos. Total: ${player.score}/${gameWinningScore}. Inicie nova rodada para continuar.`;
     renderCardGame();
     syncOnlineCardState();
     return;
   }
 
-  applyUnoPenaltyIfNeeded(player);
+  if (player.isBot && player.hand.length === 1) player.saidUno = true;
+  markUnoPenaltyIfNeeded(player);
 
   const steps = applyCardEffect(card, previousColor);
   currentCardPlayer = getNextCardPlayerIndex(steps);
+  hasDrawnThisTurn = false;
   cardGameStatusElement.textContent = `${player.name} jogou ${formatCard(card)}. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -967,8 +1054,21 @@ function drawForCurrentPlayer() {
     return;
   }
 
-  player.hand.push(...drawCards(1));
-  cardGameStatusElement.textContent = `${player.name} comprou uma carta.`;
+  closeUnoPenaltyWindow();
+
+  if (player.hand.some((card) => isCardPlayable(card))) {
+    setCardStatus('Você ainda tem carta jogável. Jogue uma carta da mesma cor, número/símbolo ou um curinga válido.');
+    return;
+  }
+
+  const drawnCards = drawCards(1);
+  player.hand.push(...drawnCards);
+  hasDrawnThisTurn = true;
+  const drawnCard = drawnCards[0];
+  const canPlayDrawn = drawnCard && isCardPlayable(drawnCard);
+  cardGameStatusElement.textContent = canPlayDrawn
+    ? `${player.name} comprou ${formatCard(drawnCard)} e pode jogar essa carta agora.`
+    : `${player.name} comprou uma carta e pode passar a vez.`;
   renderCardGame();
   syncOnlineCardState();
 }
@@ -988,7 +1088,15 @@ function passCardTurn() {
     return;
   }
 
+  closeUnoPenaltyWindow();
+
+  if (!hasDrawnThisTurn) {
+    setCardStatus('Você só pode passar depois de comprar uma carta quando não tiver jogada possível.');
+    return;
+  }
+
   currentCardPlayer = getNextCardPlayerIndex(1);
+  hasDrawnThisTurn = false;
   cardGameStatusElement.textContent = `${player.name} passou a vez. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -1022,25 +1130,60 @@ function callUno() {
     setCardStatus('Inicie a partida antes de gritar UNO.');
     return;
   }
-  if (!canControlCurrentCardPlayer()) {
-    setCardStatus('Você só pode gritar UNO na sua vez.');
+  const playerIndex = getVisibleHandPlayerIndex();
+  if (!canControlPlayerIndex(playerIndex)) {
+    setCardStatus('Você só pode gritar UNO para a sua própria mão.');
     return;
   }
-  const player = cardPlayers[currentCardPlayer];
+  const player = cardPlayers[playerIndex];
+  if (!player || player.hand.length !== 1) {
+    setCardStatus('Grite UNO quando estiver com exatamente uma carta na mão.');
+    return;
+  }
   player.saidUno = true;
+  if (unoPenaltyTargetIndex === playerIndex) unoPenaltyTargetIndex = null;
   cardGameStatusElement.textContent = `${player.name} gritou UNO!`;
   renderCardGame();
   syncOnlineCardState();
 }
 
-function applyUnoPenaltyIfNeeded(player) {
+function markUnoPenaltyIfNeeded(player) {
+  unoPenaltyTargetIndex = null;
   if (player.hand.length === 1 && !player.saidUno) {
-    player.hand.push(...drawCards(2));
-    cardGameStatusElement.textContent = `${player.name} esqueceu de gritar UNO e comprou 2 cartas.`;
+    unoPenaltyTargetIndex = currentCardPlayer;
   }
 
   if (player.hand.length !== 1) {
     player.saidUno = false;
+  }
+}
+
+function catchUno() {
+  if (!cardGameStarted) {
+    setCardStatus('Inicie a partida antes de cobrar UNO.');
+    return;
+  }
+  if (unoPenaltyTargetIndex === null || !cardPlayers[unoPenaltyTargetIndex]) {
+    setCardStatus('Ninguém esqueceu de gritar UNO agora.');
+    return;
+  }
+  if (onlineRoomRef && canControlPlayerIndex(unoPenaltyTargetIndex)) {
+    setCardStatus('Outro jogador precisa perceber a falta de UNO para aplicar a penalidade.');
+    return;
+  }
+
+  const offender = cardPlayers[unoPenaltyTargetIndex];
+  offender.hand.push(...drawCards(2));
+  offender.saidUno = false;
+  unoPenaltyTargetIndex = null;
+  cardGameStatusElement.textContent = `${offender.name} esqueceu de gritar UNO e comprou 2 cartas de penalidade.`;
+  renderCardGame();
+  syncOnlineCardState();
+}
+
+function closeUnoPenaltyWindow() {
+  if (unoPenaltyTargetIndex !== null && unoPenaltyTargetIndex !== currentCardPlayer) {
+    unoPenaltyTargetIndex = null;
   }
 }
 
@@ -1224,7 +1367,11 @@ function connectOnlineRoom(code) {
   onlineRoomRef = firebaseDb.ref(`rooms/${code}`);
   onlineRoomRef.on('value', (snapshot) => {
     const state = snapshot.val();
-    if (state) applyOnlineCardState(state);
+    if (state) {
+      applyOnlineCardState(state);
+      return;
+    }
+    onlineStatusElement.textContent = `Sala ${code} ainda não tem dados. Confira o código ou crie uma nova sala.`;
   }, (error) => {
     onlineStatusElement.textContent = `Erro ao acessar sala online: ${error.message}`;
   });
@@ -1242,6 +1389,8 @@ function getCardGameState() {
     botCount,
     currentDeclaredColor,
     lastPlusFour,
+    hasDrawnThisTurn,
+    unoPenaltyTargetIndex,
     status: cardGameStatusElement.textContent,
     updatedAt: Date.now(),
     updatedBy: onlinePlayerId,
@@ -1250,8 +1399,6 @@ function getCardGameState() {
 }
 
 function applyOnlineCardState(state) {
-  if (state.updatedBy === onlinePlayerId) return;
-
   applyingRemoteCardState = true;
   roomCode = state.roomCode || onlineRoomCode;
   cardPlayers = state.cardPlayers || [];
@@ -1263,6 +1410,8 @@ function applyOnlineCardState(state) {
   botCount = state.botCount || 0;
   currentDeclaredColor = state.currentDeclaredColor || '';
   lastPlusFour = state.lastPlusFour || null;
+  hasDrawnThisTurn = Boolean(state.hasDrawnThisTurn);
+  unoPenaltyTargetIndex = state.unoPenaltyTargetIndex ?? null;
   onlineHostId = state.hostId || '';
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = state.status || 'Sala sincronizada.';
@@ -1309,6 +1458,7 @@ if (passTurnButton) passTurnButton.addEventListener('click', passCardTurn);
 if (copyRoomLinkButton) copyRoomLinkButton.addEventListener('click', copyRoomInvite);
 if (createOnlineRoomButton) createOnlineRoomButton.addEventListener('click', createOnlineRoom);
 if (callUnoButton) callUnoButton.addEventListener('click', callUno);
+if (catchUnoButton) catchUnoButton.addEventListener('click', catchUno);
 if (challengePlusFourButton) challengePlusFourButton.addEventListener('click', challengePlusFour);
 colorChoiceButtons.forEach((button) => {
   button.addEventListener('click', () => chooseWildColor(button.dataset.cardColor));
