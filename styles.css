@@ -1668,6 +1668,97 @@ body.card-match-active {
   text-align: center;
 }
 
+/* ─── Sudoku do Aloncinho ─────────────────────────────────────── */
+.sudoku-board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 1px;
+  width: min(460px, 100%);
+  margin: 18px 0 0;
+  background: rgba(124, 58, 237, 0.35);
+  border: 2px solid var(--primary);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.sudoku-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d1130;
+  border: 0;
+  color: var(--text);
+  font-size: clamp(0.85rem, 2.5vw, 1.25rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.1s;
+  padding: 0;
+}
+
+/* 3×3 box separators via data attributes set in JS */
+.sudoku-cell[data-col="2"],
+.sudoku-cell[data-col="5"] {
+  border-right: 2px solid rgba(124, 58, 237, 0.7);
+}
+
+.sudoku-cell[data-row="2"],
+.sudoku-cell[data-row="5"] {
+  border-bottom: 2px solid rgba(124, 58, 237, 0.7);
+}
+
+.sudoku-cell.given {
+  color: var(--primary-strong);
+  font-weight: 900;
+  cursor: default;
+}
+
+.sudoku-cell.selected {
+  background: rgba(124, 58, 237, 0.45);
+}
+
+.sudoku-cell.highlighted {
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.sudoku-cell.wrong {
+  color: var(--danger);
+  background: rgba(251, 113, 133, 0.15);
+}
+
+.sudoku-cell.correct-entry {
+  color: var(--success);
+}
+
+.sudoku-numpad {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: min(460px, 100%);
+  margin: 14px 0 4px;
+}
+
+.sudoku-numpad button {
+  min-height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.sudoku-numpad button:hover,
+.sudoku-numpad button:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sudoku-erase {
+  color: var(--danger) !important;
+}
+
 /* ─── Páginas individuais de jogo ─────────────────────────────── */
 .game-page {
   display: flex;

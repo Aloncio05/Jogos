@@ -1,4 +1,4 @@
-window.GAME_VERSION = '12';
+window.GAME_VERSION = '13';
 const ticBoardElement = document.querySelector('#tic-tac-toe-board');
 const ticStatusElement = document.querySelector('#tic-tac-toe-status');
 const resetTicButton = document.querySelector('#reset-tic-tac-toe');
@@ -1973,6 +1973,212 @@ if (roomCodeElement) {
 }
 
 const roomFromUrl = new URLSearchParams(window.location.hash.split('?')[1] || '').get('room');
+
+// ─── SUDOKU DO ALONCINHO ──────────────────────────────────────────────────────
+
+const sudokuBoardEl    = document.querySelector('#sudoku-board');
+const sudokuStatusEl   = document.querySelector('#sudoku-status');
+const resetSudokuBtn   = document.querySelector('#reset-sudoku');
+const sudokuPhaseDisp  = document.querySelector('#sudoku-phase-display');
+const sudokuErrorsDisp = document.querySelector('#sudoku-errors-display');
+const sudokuTimerDisp  = document.querySelector('#sudoku-timer-display');
+const sudokuLevelDisp  = document.querySelector('#sudoku-level-display');
+const sudokuNumpadBtns = document.querySelectorAll('[data-num]');
+
+const SUDOKU_PHASES = [
+  { remove: 30, label: 'Fácil 1'    },
+  { remove: 33, label: 'Fácil 2'    },
+  { remove: 36, label: 'Fácil 3'    },
+  { remove: 39, label: 'Médio 1'    },
+  { remove: 41, label: 'Médio 2'    },
+  { remove: 43, label: 'Médio 3'    },
+  { remove: 46, label: 'Difícil 1'  },
+  { remove: 48, label: 'Difícil 2'  },
+  { remove: 50, label: 'Difícil 3'  },
+  { remove: 52, label: 'Expert 1'   },
+  { remove: 53, label: 'Expert 2'   },
+  { remove: 54, label: 'Expert 3'   },
+  { remove: 55, label: 'Mestre 1'   },
+  { remove: 56, label: 'Mestre 2'   },
+  { remove: 57, label: 'Aloncinho!' },
+];
+
+const SUDOKU_MAX_ERRORS = 5;
+let sudokuPhase    = 0;
+let sudokuPuzzle   = [];
+let sudokuSolution = [];
+let sudokuGiven    = [];
+let sudokuErrors   = 0;
+let sudokuSelected = -1;
+let sudokuTimeSecs = 0;
+let sudokuTimerInt = null;
+let sudokuRunning  = false;
+let sudokuSolved   = false;
+
+function sdShuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function sdValid(board, pos, num) {
+  const row = Math.floor(pos / 9), col = pos % 9;
+  for (let c = 0; c < 9; c++) if (c !== col && board[row * 9 + c] === num) return false;
+  for (let r = 0; r < 9; r++) if (r !== row && board[r * 9 + col] === num) return false;
+  const br = Math.floor(row / 3) * 3, bc = Math.floor(col / 3) * 3;
+  for (let r = br; r < br + 3; r++)
+    for (let c = bc; c < bc + 3; c++)
+      if ((r !== row || c !== col) && board[r * 9 + c] === num) return false;
+  return true;
+}
+
+function sdSolve(board) {
+  const pos = board.indexOf(0);
+  if (pos === -1) return true;
+  for (const num of sdShuffle([1,2,3,4,5,6,7,8,9])) {
+    if (sdValid(board, pos, num)) {
+      board[pos] = num;
+      if (sdSolve(board)) return true;
+      board[pos] = 0;
+    }
+  }
+  return false;
+}
+
+function sdGenerate(remove) {
+  const solution = Array(81).fill(0);
+  sdSolve(solution);
+  const puzzle = [...solution];
+  sdShuffle(Array.from({length: 81}, (_, i) => i)).slice(0, remove).forEach(i => { puzzle[i] = 0; });
+  return { puzzle, solution };
+}
+
+function sdUpdateHud() {
+  if (sudokuPhaseDisp)  sudokuPhaseDisp.textContent  = `${sudokuPhase + 1} / 15`;
+  if (sudokuErrorsDisp) sudokuErrorsDisp.textContent = `${sudokuErrors} / ${SUDOKU_MAX_ERRORS}`;
+  if (sudokuLevelDisp)  sudokuLevelDisp.textContent  = SUDOKU_PHASES[sudokuPhase].label;
+  if (sudokuTimerDisp) {
+    const m = Math.floor(sudokuTimeSecs / 60);
+    const s = sudokuTimeSecs % 60;
+    sudokuTimerDisp.textContent = `${m}:${String(s).padStart(2, '0')}`;
+  }
+}
+
+function sdRender() {
+  if (!sudokuBoardEl) return;
+  sudokuBoardEl.innerHTML = '';
+  const selRow = sudokuSelected >= 0 ? Math.floor(sudokuSelected / 9) : -1;
+  const selCol = sudokuSelected >= 0 ? sudokuSelected % 9 : -1;
+
+  for (let i = 0; i < 81; i++) {
+    const row = Math.floor(i / 9), col = i % 9;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sudoku-cell';
+    btn.dataset.index = i;
+    btn.dataset.row = row;
+    btn.dataset.col = col;
+    const val = sudokuPuzzle[i];
+    btn.textContent = val || '';
+
+    if (sudokuGiven[i]) {
+      btn.classList.add('given');
+    } else if (val && val !== sudokuSolution[i]) {
+      btn.classList.add('wrong');
+    } else if (val && val === sudokuSolution[i]) {
+      btn.classList.add('correct-entry');
+    }
+
+    if (i === sudokuSelected) {
+      btn.classList.add('selected');
+    } else if (selRow >= 0) {
+      const br = Math.floor(selRow / 3), bc = Math.floor(selCol / 3);
+      if (row === selRow || col === selCol || (Math.floor(row/3) === br && Math.floor(col/3) === bc)) {
+        btn.classList.add('highlighted');
+      }
+    }
+
+    btn.addEventListener('click', () => { sudokuSelected = i; sdRender(); });
+    sudokuBoardEl.appendChild(btn);
+  }
+}
+
+function sdInput(num) {
+  if (sudokuSelected < 0 || sudokuSolved) return;
+  if (sudokuGiven[sudokuSelected]) return;
+
+  if (num === 0) { sudokuPuzzle[sudokuSelected] = 0; sdRender(); return; }
+  if (sudokuPuzzle[sudokuSelected] === num) return;
+
+  sudokuPuzzle[sudokuSelected] = num;
+
+  if (num !== sudokuSolution[sudokuSelected]) {
+    sudokuErrors++;
+    sdUpdateHud();
+    if (sudokuErrors >= SUDOKU_MAX_ERRORS) {
+      sudokuRunning = false; sudokuSolved = true;
+      clearInterval(sudokuTimerInt);
+      if (sudokuStatusEl) sudokuStatusEl.textContent = 'Game Over! Muitos erros. Clique em "Novo jogo" para tentar de novo.';
+      sdRender(); return;
+    }
+  }
+
+  const allCorrect = sudokuPuzzle.every((v, i) => v === sudokuSolution[i]);
+  if (allCorrect) {
+    sudokuRunning = false; sudokuSolved = true;
+    clearInterval(sudokuTimerInt);
+    if (sudokuPhase >= SUDOKU_PHASES.length - 1) {
+      if (sudokuStatusEl) sudokuStatusEl.textContent = 'Você zerou o Sudoku do Aloncinho! Incrível!';
+    } else {
+      if (sudokuStatusEl) sudokuStatusEl.textContent = `Fase ${sudokuPhase + 1} concluída! Próxima em 2s…`;
+      setTimeout(() => sdStartPhase(sudokuPhase + 1), 2000);
+    }
+  }
+
+  sdRender(); sdUpdateHud();
+}
+
+function sdStartPhase(phaseIndex) {
+  sudokuPhase = phaseIndex;
+  sudokuErrors = 0; sudokuSelected = -1; sudokuSolved = false;
+  clearInterval(sudokuTimerInt);
+  sudokuTimeSecs = 0; sudokuRunning = true;
+  sudokuTimerInt = setInterval(() => { if (sudokuRunning) { sudokuTimeSecs++; sdUpdateHud(); } }, 1000);
+  const { puzzle, solution } = sdGenerate(SUDOKU_PHASES[phaseIndex].remove);
+  sudokuPuzzle = puzzle; sudokuSolution = solution;
+  sudokuGiven = puzzle.map(v => v !== 0);
+  sdUpdateHud(); sdRender();
+  if (sudokuStatusEl) sudokuStatusEl.textContent = 'Selecione uma célula e escolha um número.';
+}
+
+if (sudokuBoardEl) {
+  sdStartPhase(0);
+
+  resetSudokuBtn && resetSudokuBtn.addEventListener('click', () => sdStartPhase(0));
+
+  sudokuNumpadBtns.forEach(btn => {
+    const handler = (e) => { e.preventDefault(); sdInput(parseInt(btn.dataset.num)); };
+    btn.addEventListener('click', handler);
+    btn.addEventListener('touchstart', handler, { passive: false });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!sudokuBoardEl) return;
+    if (e.key >= '1' && e.key <= '9') { e.preventDefault(); sdInput(parseInt(e.key)); return; }
+    if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); sdInput(0); return; }
+    const moves = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 };
+    const delta = moves[e.key];
+    if (delta === undefined) return;
+    e.preventDefault();
+    let next = sudokuSelected < 0 ? 40 : sudokuSelected + delta;
+    if (e.key === 'ArrowLeft' && sudokuSelected % 9 === 0) return;
+    if (e.key === 'ArrowRight' && sudokuSelected % 9 === 8) return;
+    next = Math.max(0, Math.min(80, next));
+    sudokuSelected = next; sdRender();
+  });
+}
 if (roomFromUrl && joinRoomCodeInput) {
   joinRoomCodeInput.value = roomFromUrl.toUpperCase();
   joinOnlineRoom(roomFromUrl);

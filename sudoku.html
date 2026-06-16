@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sudoku do Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="game-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel" aria-labelledby="sudoku-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 06</p>
+          <h2 id="sudoku-title">Sudoku do Aloncinho</h2>
+        </div>
+        <button id="reset-sudoku" class="secondary-button" type="button">Novo jogo</button>
+      </div>
+
+      <div class="snake-hud">
+        <div class="snake-hud-item">
+          <span>Fase</span>
+          <strong id="sudoku-phase-display">1 / 15</strong>
+        </div>
+        <div class="snake-hud-item">
+          <span>Erros</span>
+          <strong id="sudoku-errors-display">0 / 5</strong>
+        </div>
+        <div class="snake-hud-item">
+          <span>Tempo</span>
+          <strong id="sudoku-timer-display">0:00</strong>
+        </div>
+        <div class="snake-hud-item">
+          <span>Nível</span>
+          <strong id="sudoku-level-display">Fácil</strong>
+        </div>
+      </div>
+
+      <p id="sudoku-status" class="status">Selecione uma célula e escolha um número.</p>
+      <div id="sudoku-board" class="sudoku-board" role="grid" aria-label="Tabuleiro de Sudoku 9x9"></div>
+
+      <div id="sudoku-numpad" class="sudoku-numpad" aria-label="Teclado numérico">
+        <button type="button" data-num="1">1</button>
+        <button type="button" data-num="2">2</button>
+        <button type="button" data-num="3">3</button>
+        <button type="button" data-num="4">4</button>
+        <button type="button" data-num="5">5</button>
+        <button type="button" data-num="6">6</button>
+        <button type="button" data-num="7">7</button>
+        <button type="button" data-num="8">8</button>
+        <button type="button" data-num="9">9</button>
+        <button type="button" data-num="0" class="sudoku-erase">✕</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="script.js?v=13"></script>
+</body>
+</html>
