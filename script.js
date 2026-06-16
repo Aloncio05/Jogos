@@ -37,6 +37,7 @@ const passTurnButton = document.querySelector('#pass-turn');
 const cardGameStatusElement = document.querySelector('#card-game-status');
 const playersListElement = document.querySelector('#players-list');
 const cardTableElement = document.querySelector('#card-table');
+const cardArenaElement = document.querySelector('#card-arena');
 const cardAvatarsElement = document.querySelector('#card-avatars');
 const playerHandElement = document.querySelector('#player-hand');
 const deckCountLabel = document.querySelector('#deck-count-label');
@@ -563,8 +564,10 @@ function resetCardRoom(options = {}) {
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
   playerHandElement.innerHTML = '';
+  if (cardArenaElement) cardArenaElement.classList.remove('game-active');
   renderCardPlayers();
   renderCardTable();
+  updateCardControls();
   if (sync) syncOnlineCardState();
 }
 
@@ -693,6 +696,12 @@ function addCardBot() {
 }
 
 function startCardGame() {
+  if (onlineRoomRef && onlineHostId !== onlinePlayerId) {
+    setCardStatus('Somente quem criou a sala pode iniciar a partida.');
+    showPlayerFeedback('Aguarde o dono da sala iniciar a partida.', 'error');
+    return;
+  }
+
   if (cardPlayers.length < 2) {
     cardGameStatusElement.textContent = 'Adicione seu nome e pelo menos mais 1 jogador ou BOT para iniciar.';
     showPlayerFeedback('Entre na mesa e adicione um amigo ou BOT antes de iniciar.', 'error');
@@ -772,10 +781,21 @@ function reshuffleDiscardIntoDeck() {
 }
 
 function renderCardGame() {
+  if (cardArenaElement) cardArenaElement.classList.toggle('game-active', cardGameStarted);
   renderCardPlayers();
   renderCardAvatars();
   renderCardTable();
   renderPlayerHand();
+  updateCardControls();
+}
+
+function updateCardControls() {
+  if (!startCardGameButton) return;
+  const canStartOnline = !onlineRoomRef || onlineHostId === onlinePlayerId;
+  startCardGameButton.disabled = cardGameStarted || !canStartOnline;
+  startCardGameButton.title = canStartOnline
+    ? 'Iniciar partida'
+    : 'Somente quem criou a sala pode iniciar a partida';
 }
 
 function renderCardAvatars() {

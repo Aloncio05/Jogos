@@ -866,6 +866,13 @@ h2 {
   filter: brightness(1.08);
 }
 
+.start-match-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(0.6);
+  transform: none;
+}
+
 .sidebar-players {
   grid-template-columns: 1fr;
 }
@@ -922,6 +929,62 @@ h2 {
     radial-gradient(circle at center, #36c26f 0 30%, #22a55f 31% 45%, #16804e 46% 62%, transparent 63%),
     linear-gradient(135deg, rgba(14, 165, 233, 0.55), rgba(59, 130, 246, 0.22));
   box-shadow: inset 0 0 80px rgba(255, 255, 255, 0.13), 0 28px 70px rgba(0, 0, 0, 0.32);
+}
+
+.uno-center.game-active {
+  min-height: 430px;
+  padding: 18px clamp(18px, 3vw, 34px) 20px;
+  border-radius: 34px;
+}
+
+.uno-center.game-active .uno-opponents {
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+}
+
+.uno-center.game-active .avatar-card {
+  flex-basis: 138px;
+  min-height: 84px;
+  padding: 10px;
+  border-radius: 16px;
+}
+
+.uno-center.game-active .avatar-face {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+
+.uno-center.game-active .avatar-card strong,
+.uno-center.game-active .avatar-card span {
+  font-size: 0.82rem;
+  line-height: 1.1;
+}
+
+.uno-center.game-active .deck-card,
+.uno-center.game-active .discard-focus {
+  width: 108px;
+  min-height: 146px;
+}
+
+.uno-center.game-active .last-card-visual,
+.uno-center.game-active .table-last-card {
+  width: 126px;
+  min-height: 176px;
+}
+
+.uno-center.game-active .last-card-visual strong {
+  font-size: clamp(2.1rem, 3.2vw, 3rem);
+}
+
+.uno-center.game-active .uno-table-state {
+  margin-top: 18px;
+  grid-template-columns: repeat(4, minmax(96px, 1fr));
+}
+
+.uno-center.game-active .uno-table-state .table-card {
+  padding: 10px 12px;
 }
 
 .game-board::before {
@@ -1040,7 +1103,7 @@ h2 {
 
 .hand-area {
   margin: 0;
-  padding: 14px 18px 28px;
+  padding: 12px 18px 18px;
   border: 0;
   border-radius: 0;
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.25), rgba(15, 23, 42, 0.76));
@@ -1048,10 +1111,12 @@ h2 {
 
 .uno-hand {
   align-items: flex-end;
-  justify-content: center;
-  min-height: 190px;
-  gap: 0;
-  padding-top: 12px;
+  justify-content: flex-start;
+  min-height: 162px;
+  gap: 10px;
+  padding: 10px 12px 8px;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .full-line {
@@ -1059,7 +1124,8 @@ h2 {
 }
 
 .uno-hand .uno-card {
-  margin-left: -18px;
+  flex: 0 0 auto;
+  margin-left: 0;
   transition: transform 160ms ease, filter 160ms ease;
 }
 
