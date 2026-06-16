@@ -43,6 +43,11 @@ const playerHandElement = document.querySelector('#player-hand');
 const deckCountLabel = document.querySelector('#deck-count-label');
 const discardLabel = document.querySelector('#discard-label');
 const lastCardVisualElement = document.querySelector('#last-card-visual');
+const roundFinishOverlayElement = document.querySelector('#round-finish-overlay');
+const roundFinishTitleElement = document.querySelector('#round-finish-title');
+const roundFinishMessageElement = document.querySelector('#round-finish-message');
+const restartRoundButton = document.querySelector('#restart-round');
+const closeOnlineRoomButton = document.querySelector('#close-online-room');
 const onlineStatusElement = document.querySelector('#online-status');
 const createOnlineRoomButton = document.querySelector('#create-online-room');
 const joinRoomForm = document.querySelector('#join-room-form');
@@ -538,6 +543,10 @@ let pendingWildColorCardIndex = null;
 let lastPlusFour = null;
 let hasDrawnThisTurn = false;
 let unoPenaltyTargetIndex = null;
+let lastPlayedByName = '';
+let roundWinnerName = '';
+let roundWinnerId = '';
+let lastRoundScore = 0;
 let firebaseDb = null;
 let onlineRoomRef = null;
 let onlineRoomCode = '';
@@ -561,12 +570,17 @@ function resetCardRoom(options = {}) {
   lastPlusFour = null;
   hasDrawnThisTurn = false;
   unoPenaltyTargetIndex = null;
+  lastPlayedByName = '';
+  roundWinnerName = '';
+  roundWinnerId = '';
+  lastRoundScore = 0;
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
   playerHandElement.innerHTML = '';
   if (cardArenaElement) cardArenaElement.classList.remove('game-active');
   renderCardPlayers();
   renderCardTable();
+  renderRoundFinishOverlay();
   updateCardControls();
   if (sync) syncOnlineCardState();
 }
@@ -724,6 +738,10 @@ function startCardGame() {
   lastPlusFour = null;
   hasDrawnThisTurn = false;
   unoPenaltyTargetIndex = null;
+  lastPlayedByName = '';
+  roundWinnerName = '';
+  roundWinnerId = '';
+  lastRoundScore = 0;
   cardGameStatusElement.textContent = `Partida iniciada. Vez de ${cardPlayers[currentCardPlayer].name}.`;
   renderCardGame();
   syncOnlineCardState();
@@ -786,7 +804,22 @@ function renderCardGame() {
   renderCardAvatars();
   renderCardTable();
   renderPlayerHand();
+  renderRoundFinishOverlay();
   updateCardControls();
+}
+
+function renderRoundFinishOverlay() {
+  if (!roundFinishOverlayElement) return;
+  const hasWinner = Boolean(roundWinnerName);
+  roundFinishOverlayElement.hidden = !hasWinner;
+  if (!hasWinner) return;
+
+  const winnerIsLocal = roundWinnerId && cardPlayers.some((player) => player.id === roundWinnerId && player.id === onlinePlayerId && !player.isBot);
+  roundFinishTitleElement.textContent = winnerIsLocal || !onlineRoomRef ? 'VOCÊ GANHOU!' : `${roundWinnerName} GANHOU!`;
+  roundFinishMessageElement.textContent = `${roundWinnerName} venceu a rodada com ${lastRoundScore} pontos. Recomece com os mesmos participantes ou encerre a sala.`;
+  const canManageRoom = !onlineRoomRef || onlineHostId === onlinePlayerId;
+  restartRoundButton.disabled = !canManageRoom;
+  closeOnlineRoomButton.disabled = !canManageRoom;
 }
 
 function updateCardControls() {
@@ -890,7 +923,7 @@ function renderLastCardVisual(card) {
   }
 
   lastCardVisualElement.className = `last-card-visual uno-card ${getCardClass(card)} table-last-card`;
-  lastCardVisualElement.innerHTML = getCardFace(card, 'Última carta');
+  lastCardVisualElement.innerHTML = `${getCardFace(card, 'Última carta')}<em>Jogada por ${lastPlayedByName || 'mesa'}</em>`;
 }
 
 function renderPlayerHand() {
@@ -1008,12 +1041,16 @@ function playCardWithColor(cardIndex, chosenColor) {
   player.hand.splice(cardIndex, 1);
   discardPile.push(card);
   currentDeclaredColor = chosenColor || card.color;
+  lastPlayedByName = player.name;
   pendingWildColorCardIndex = null;
 
   if (!player.hand.length) {
     cardGameStarted = false;
     const score = calculateRoundScore();
     player.score = (Number(player.score) || 0) + score;
+    roundWinnerName = player.name;
+    roundWinnerId = player.id;
+    lastRoundScore = score;
     const reachedGameWin = player.score >= gameWinningScore;
     cardGameStatusElement.textContent = reachedGameWin
       ? `${player.name} venceu o jogo com ${player.score} pontos! Rodada: ${score} pontos.`
@@ -1326,6 +1363,41 @@ function copyRoomInvite() {
   cardGameStatusElement.textContent = `Convite copiado: ${code}. Compartilhe o link e peça para o amigo informar o nome na sala.`;
 }
 
+function restartCardRound() {
+  if (onlineRoomRef && onlineHostId !== onlinePlayerId) {
+    setCardStatus('Somente quem criou a sala pode recomeçar o jogo.');
+    return;
+  }
+  if (cardPlayers.length < 2) {
+    setCardStatus('Mantenha pelo menos 2 participantes para recomeçar.');
+    return;
+  }
+  startCardGame();
+}
+
+function closeCardRoom() {
+  if (onlineRoomRef && onlineHostId !== onlinePlayerId) {
+    setCardStatus('Somente quem criou a sala pode encerrar a sala.');
+    return;
+  }
+
+  const roomRefToClose = onlineRoomRef;
+  if (onlineRoomRef) onlineRoomRef.off();
+  onlineRoomRef = null;
+  onlineRoomCode = '';
+  onlineHostId = '';
+  selectedCardPlayerId = '';
+  localStorage.removeItem('aloncinho_selected_card_player_id');
+  resetCardRoom();
+  onlineStatusElement.textContent = 'Sala encerrada. Crie uma nova sala online para jogar novamente.';
+
+  if (roomRefToClose) {
+    roomRefToClose.remove().catch((error) => {
+      onlineStatusElement.textContent = `Sala local encerrada, mas houve erro ao apagar online: ${error.message}`;
+    });
+  }
+}
+
 function getOnlinePlayerId() {
   const savedId = localStorage.getItem('aloncinho_online_player_id');
   if (savedId) return savedId;
@@ -1424,6 +1496,10 @@ function getCardGameState() {
     lastPlusFour,
     hasDrawnThisTurn,
     unoPenaltyTargetIndex,
+    lastPlayedByName,
+    roundWinnerName,
+    roundWinnerId,
+    lastRoundScore,
     status: cardGameStatusElement.textContent,
     updatedAt: Date.now(),
     updatedBy: onlinePlayerId,
@@ -1445,6 +1521,10 @@ function applyOnlineCardState(state) {
   lastPlusFour = state.lastPlusFour || null;
   hasDrawnThisTurn = Boolean(state.hasDrawnThisTurn);
   unoPenaltyTargetIndex = state.unoPenaltyTargetIndex ?? null;
+  lastPlayedByName = state.lastPlayedByName || '';
+  roundWinnerName = state.roundWinnerName || '';
+  roundWinnerId = state.roundWinnerId || '';
+  lastRoundScore = Number(state.lastRoundScore) || 0;
   onlineHostId = state.hostId || '';
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = state.status || 'Sala sincronizada.';
@@ -1493,6 +1573,8 @@ if (createOnlineRoomButton) createOnlineRoomButton.addEventListener('click', cre
 if (callUnoButton) callUnoButton.addEventListener('click', callUno);
 if (catchUnoButton) catchUnoButton.addEventListener('click', catchUno);
 if (challengePlusFourButton) challengePlusFourButton.addEventListener('click', challengePlusFour);
+if (restartRoundButton) restartRoundButton.addEventListener('click', restartCardRound);
+if (closeOnlineRoomButton) closeOnlineRoomButton.addEventListener('click', closeCardRoom);
 colorChoiceButtons.forEach((button) => {
   button.addEventListener('click', () => chooseWildColor(button.dataset.cardColor));
 });

@@ -81,6 +81,18 @@
         </div>
 
         <div id="card-table" class="card-table uno-table-state" aria-label="Estado da mesa"></div>
+
+        <div id="round-finish-overlay" class="round-finish-overlay" hidden>
+          <div class="round-finish-card">
+            <span class="eyebrow">Fim da rodada</span>
+            <h2 id="round-finish-title">VOCÊ GANHOU!</h2>
+            <p id="round-finish-message">Escolha o próximo passo da sala.</p>
+            <div class="actions round-finish-actions">
+              <button id="restart-round" class="secondary-button start-match-button" type="button">Recomeçar jogo</button>
+              <button id="close-online-room" class="secondary-button" type="button">Encerrar sala</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="color-picker" aria-label="Escolha de cor para curinga">
