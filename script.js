@@ -471,6 +471,26 @@ let snakeScore = 0;
 let snakeTimer = null;
 let snakeRunning = false;
 
+const SNAKE_PHASES = [
+  { speed: 160, foodToAdvance: 3,  label: 'Devagar'    },
+  { speed: 148, foodToAdvance: 4,  label: 'Animando'   },
+  { speed: 136, foodToAdvance: 4,  label: 'Acordada'   },
+  { speed: 124, foodToAdvance: 5,  label: 'Esperta'    },
+  { speed: 112, foodToAdvance: 5,  label: 'Rápida'     },
+  { speed: 100, foodToAdvance: 6,  label: 'Veloz'      },
+  { speed: 90,  foodToAdvance: 6,  label: 'Turbinada'  },
+  { speed: 82,  foodToAdvance: 7,  label: 'Acelerada'  },
+  { speed: 74,  foodToAdvance: 7,  label: 'Furiosa'    },
+  { speed: 68,  foodToAdvance: 8,  label: 'Louca'      },
+  { speed: 62,  foodToAdvance: 8,  label: 'Insana'     },
+  { speed: 56,  foodToAdvance: 9,  label: 'Absurda'    },
+  { speed: 50,  foodToAdvance: 9,  label: 'Impossível' },
+  { speed: 46,  foodToAdvance: 10, label: 'Lendária'   },
+  { speed: 42,  foodToAdvance: 999,label: 'Aloncinho!' },
+];
+let snakePhase = 0;
+let snakePhaseFood = 0;
+
 function resetSnakeGame() {
   stopSnake();
   snake = [
@@ -481,17 +501,21 @@ function resetSnakeGame() {
   snakeDirection = { x: 1, y: 0 };
   nextSnakeDirection = { x: 1, y: 0 };
   snakeScore = 0;
+  snakePhase = 0;
+  snakePhaseFood = 0;
   placeSnakeFood();
-  snakeStatusElement.textContent = 'Use as setas do teclado ou os botões para jogar.';
+  updateSnakeHud();
+  if (snakeStatusElement) snakeStatusElement.textContent = 'Use as setas do teclado ou os botões para jogar.';
   drawSnake();
 }
 
 function startSnakeGame() {
   if (snakeRunning) return;
   snakeRunning = true;
-  snakeStatusElement.textContent = `Pontuação: ${snakeScore}`;
+  if (snakeStatusElement) snakeStatusElement.textContent = `Fase 1: ${SNAKE_PHASES[0].label} — Pontuação: 0`;
   if (startSnakeButton) startSnakeButton.textContent = 'Jogando...';
-  snakeTimer = setInterval(moveSnake, 130);
+  if (snakeCanvas) snakeCanvas.focus();
+  snakeTimer = setInterval(moveSnake, SNAKE_PHASES[snakePhase].speed);
 }
 
 function stopSnake() {
@@ -515,7 +539,7 @@ function moveSnake() {
 
   if (hitWall || hitBody) {
     stopSnake();
-    snakeStatusElement.textContent = `Fim de jogo! Pontuação final: ${snakeScore}`;
+    if (snakeStatusElement) snakeStatusElement.textContent = `Fim de jogo! Fase ${snakePhase + 1} — Pontuação final: ${snakeScore}`;
     drawSnake();
     return;
   }
@@ -523,39 +547,90 @@ function moveSnake() {
   snake.unshift(head);
 
   if (head.x === snakeFood.x && head.y === snakeFood.y) {
-    snakeScore += 1;
+    snakeScore += snakePhase + 1;
+    snakePhaseFood += 1;
     placeSnakeFood();
+
+    const phase = SNAKE_PHASES[snakePhase];
+    if (snakePhaseFood >= phase.foodToAdvance && snakePhase < SNAKE_PHASES.length - 1) {
+      snakePhase += 1;
+      snakePhaseFood = 0;
+      clearInterval(snakeTimer);
+      snakeTimer = setInterval(moveSnake, SNAKE_PHASES[snakePhase].speed);
+    }
   } else {
     snake.pop();
   }
 
-  snakeStatusElement.textContent = `Pontuação: ${snakeScore}`;
+  updateSnakeHud();
+  const cur = SNAKE_PHASES[snakePhase];
+  if (snakeStatusElement) snakeStatusElement.textContent = `Fase ${snakePhase + 1}: ${cur.label} — Pontuação: ${snakeScore}`;
   drawSnake();
+}
+
+function updateSnakeHud() {
+  const phaseEl = document.querySelector('#snake-phase-display');
+  const scoreEl = document.querySelector('#snake-score-display');
+  const nextEl  = document.querySelector('#snake-next-display');
+  const speedEl = document.querySelector('#snake-speed-display');
+  const phase = SNAKE_PHASES[snakePhase];
+  if (phaseEl) phaseEl.textContent = (snakePhase + 1) + ' / 15';
+  if (scoreEl) scoreEl.textContent = snakeScore;
+  if (nextEl) {
+    const rem = phase.foodToAdvance - snakePhaseFood;
+    nextEl.textContent = snakePhase >= SNAKE_PHASES.length - 1 ? '—' : rem + (rem === 1 ? ' comida' : ' comidas');
+  }
+  if (speedEl) speedEl.textContent = phase.label;
 }
 
 function drawSnake() {
   if (!snakeContext) return;
   snakeContext.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
-  snakeContext.fillStyle = 'rgba(255, 255, 255, 0.05)';
+
+  snakeContext.fillStyle = 'rgba(0, 0, 0, 0.22)';
   snakeContext.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
 
+  snakeContext.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+  snakeContext.lineWidth = 0.5;
+  for (let i = 0; i <= snakeTileCount; i++) {
+    snakeContext.beginPath();
+    snakeContext.moveTo(i * snakeGridSize, 0);
+    snakeContext.lineTo(i * snakeGridSize, snakeCanvas.height);
+    snakeContext.stroke();
+    snakeContext.beginPath();
+    snakeContext.moveTo(0, i * snakeGridSize);
+    snakeContext.lineTo(snakeCanvas.width, i * snakeGridSize);
+    snakeContext.stroke();
+  }
+
+  snakeContext.shadowColor = '#22d3ee';
+  snakeContext.shadowBlur = 10;
   snakeContext.fillStyle = '#22d3ee';
-  snakeContext.fillRect(
-    snakeFood.x * snakeGridSize + 3,
-    snakeFood.y * snakeGridSize + 3,
-    snakeGridSize - 6,
-    snakeGridSize - 6,
+  snakeContext.beginPath();
+  snakeContext.arc(
+    snakeFood.x * snakeGridSize + snakeGridSize / 2,
+    snakeFood.y * snakeGridSize + snakeGridSize / 2,
+    snakeGridSize / 2 - 2, 0, Math.PI * 2,
   );
+  snakeContext.fill();
+  snakeContext.shadowBlur = 0;
 
   snake.forEach((part, index) => {
-    snakeContext.fillStyle = index === 0 ? '#a78bfa' : '#34d399';
-    snakeContext.fillRect(
-      part.x * snakeGridSize + 2,
-      part.y * snakeGridSize + 2,
-      snakeGridSize - 4,
-      snakeGridSize - 4,
-    );
+    const x = part.x * snakeGridSize + 2;
+    const y = part.y * snakeGridSize + 2;
+    const size = snakeGridSize - 4;
+    if (index === 0) {
+      snakeContext.shadowColor = '#a78bfa';
+      snakeContext.shadowBlur = 12;
+      snakeContext.fillStyle = '#a78bfa';
+    } else {
+      snakeContext.shadowBlur = 0;
+      const alpha = Math.max(0.35, 1 - (index / snake.length) * 0.6);
+      snakeContext.fillStyle = `rgba(52, 211, 153, ${alpha})`;
+    }
+    snakeContext.fillRect(x, y, size, size);
   });
+  snakeContext.shadowBlur = 0;
 }
 
 function placeSnakeFood() {
@@ -1803,28 +1878,29 @@ directionButtons.forEach((button) => {
   button.addEventListener('click', () => changeSnakeDirection(button.dataset.direction));
 });
 
+const snakeKeyMap = {
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+  w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right',
+};
+
 window.addEventListener('keydown', (event) => {
   if (!snakeCanvas) return;
-  const keyDirections = {
-    ArrowUp: 'up',
-    ArrowDown: 'down',
-    ArrowLeft: 'left',
-    ArrowRight: 'right',
-    w: 'up',
-    W: 'up',
-    s: 'down',
-    S: 'down',
-    a: 'left',
-    A: 'left',
-    d: 'right',
-    D: 'right',
-  };
-
-  if (keyDirections[event.key]) {
+  const dir = snakeKeyMap[event.key];
+  if (dir) {
     event.preventDefault();
-    changeSnakeDirection(keyDirections[event.key]);
+    changeSnakeDirection(dir);
   }
 });
+
+if (snakeCanvas) {
+  snakeCanvas.addEventListener('keydown', (event) => {
+    const dir = snakeKeyMap[event.key];
+    if (dir) {
+      event.preventDefault();
+      changeSnakeDirection(dir);
+    }
+  });
+}
 
 if (ticBoardElement) resetTicTacToe();
 if (memoryBoardElement) startMemoryPhase(0);
