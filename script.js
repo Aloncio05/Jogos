@@ -1897,29 +1897,46 @@ directionButtons.forEach((button) => {
   button.addEventListener('click', () => changeSnakeDirection(button.dataset.direction));
 });
 
-const snakeKeyMap = {
-  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
-  w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right',
-};
-
-// capture:true garante que interceptamos ANTES do browser tratar scroll ou foco
-document.addEventListener('keydown', (event) => {
+// Window-level capture: intercepta teclas antes de qualquer outro handler
+window.addEventListener('keydown', (event) => {
   if (!snakeCanvas) return;
-  const dir = snakeKeyMap[event.key];
-  if (!dir) return;
+  const snakeDirs = {
+    ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 },
+    ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 },
+    w: { x: 0, y: -1 }, W: { x: 0, y: -1 },
+    s: { x: 0, y: 1 },  S: { x: 0, y: 1 },
+    a: { x: -1, y: 0 }, A: { x: -1, y: 0 },
+    d: { x: 1, y: 0 },  D: { x: 1, y: 0 },
+  };
+  const next = snakeDirs[event.key];
+  if (!next) return;
   event.preventDefault();
-  event.stopPropagation();
-  changeSnakeDirection(dir);
+  const isOpposite = next.x + nextSnakeDirection.x === 0 && next.y + nextSnakeDirection.y === 0;
+  if (!isOpposite) {
+    nextSnakeDirection = next;
+  }
+  if (!snakeRunning && snakeCanvas) {
+    startSnakeGame();
+  }
 }, { capture: true, passive: false });
 
+// Suporte a swipe no canvas para mobile
+let swipeTouchStartX = 0, swipeTouchStartY = 0;
 if (snakeCanvas) {
-  snakeCanvas.addEventListener('keydown', (event) => {
-    const dir = snakeKeyMap[event.key];
-    if (dir) {
-      event.preventDefault();
-      changeSnakeDirection(dir);
+  snakeCanvas.addEventListener('touchstart', (e) => {
+    swipeTouchStartX = e.touches[0].clientX;
+    swipeTouchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  snakeCanvas.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - swipeTouchStartX;
+    const dy = e.changedTouches[0].clientY - swipeTouchStartY;
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      changeSnakeDirection(dx > 0 ? 'right' : 'left');
+    } else {
+      changeSnakeDirection(dy > 0 ? 'down' : 'up');
     }
-  });
+  }, { passive: true });
 }
 
 if (ticBoardElement) resetTicTacToe();
