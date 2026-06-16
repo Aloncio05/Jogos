@@ -851,8 +851,8 @@ function renderLastCardVisual(card) {
   if (!lastCardVisualElement) return;
 
   if (!card) {
-    lastCardVisualElement.className = 'last-card-visual';
-    lastCardVisualElement.innerHTML = '<span>Última carta</span><strong>Aguardando</strong>';
+    lastCardVisualElement.className = 'last-card-visual empty-card-visual';
+    lastCardVisualElement.innerHTML = '<span>Descarte</span><strong>--</strong><small>Aguardando partida</small>';
     return;
   }
 

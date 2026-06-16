@@ -746,6 +746,20 @@ h2 {
   line-height: 1;
 }
 
+.empty-card-visual {
+  opacity: 0.86;
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.82));
+}
+
+.empty-card-visual strong {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(2rem, 3vw, 2.8rem);
+}
+
+.empty-card-visual small {
+  color: var(--muted);
+}
+
 .table-last-card {
   width: 150px;
   min-height: 210px;
