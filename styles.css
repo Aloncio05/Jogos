@@ -160,7 +160,7 @@ h2 {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -175,6 +175,20 @@ h2 {
 
 .card {
   padding: 24px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 28px 80px rgba(124, 58, 237, 0.22);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--primary-strong);
+  outline-offset: 3px;
 }
 
 .card span {

@@ -1,4 +1,4 @@
-window.GAME_VERSION = '9';
+window.GAME_VERSION = '10';
 const ticBoardElement = document.querySelector('#tic-tac-toe-board');
 const ticStatusElement = document.querySelector('#tic-tac-toe-status');
 const resetTicButton = document.querySelector('#reset-tic-tac-toe');
@@ -1974,3 +1974,457 @@ if (roomFromUrl && joinRoomCodeInput) {
   joinRoomCodeInput.value = roomFromUrl.toUpperCase();
   joinOnlineRoom(roomFromUrl);
 }
+
+// ─── PAC-MAN DO ALONCINHO ─────────────────────────────────────────────────────
+
+const pacCanvas = document.querySelector('#pac-canvas');
+const pacStatusElement = document.querySelector('#pac-status');
+const startPacButton = document.querySelector('#start-pacman');
+const resetPacButton = document.querySelector('#reset-pacman');
+const pacPhaseDisplay = document.querySelector('#pac-phase-display');
+const pacScoreDisplay = document.querySelector('#pac-score-display');
+const pacLivesDisplay = document.querySelector('#pac-lives-display');
+const pacSpeedDisplay = document.querySelector('#pac-speed-display');
+const pacDirButtons = document.querySelectorAll('[data-pac-direction]');
+
+const PAC_PHASES = [
+  { speed: 220, ghosts: 1, label: 'Iniciante'  },
+  { speed: 205, ghosts: 1, label: 'Curioso'    },
+  { speed: 190, ghosts: 2, label: 'Atento'     },
+  { speed: 175, ghosts: 2, label: 'Esperto'    },
+  { speed: 162, ghosts: 2, label: 'Ágil'       },
+  { speed: 150, ghosts: 3, label: 'Rápido'     },
+  { speed: 138, ghosts: 3, label: 'Veloz'      },
+  { speed: 126, ghosts: 3, label: 'Turbinado'  },
+  { speed: 115, ghosts: 4, label: 'Acelerado'  },
+  { speed: 105, ghosts: 4, label: 'Furioso'    },
+  { speed: 96,  ghosts: 4, label: 'Louco'      },
+  { speed: 87,  ghosts: 4, label: 'Insano'     },
+  { speed: 79,  ghosts: 4, label: 'Absurdo'    },
+  { speed: 72,  ghosts: 4, label: 'Lendário'   },
+  { speed: 65,  ghosts: 4, label: 'Aloncinho!' },
+];
+
+// 0=pellet, 1=wall, 2=power pellet, 3=empty(no pellet), 9=ghost door
+const PAC_MAZE_TEMPLATE = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,1],
+  [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+  [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],
+  [1,0,0,0,0,1,0,0,0,3,3,0,0,0,1,0,0,0,1],
+  [1,1,1,1,0,1,1,1,3,1,1,3,1,1,1,0,1,1,1],
+  [1,1,1,1,0,1,3,3,3,3,3,3,3,3,1,0,1,1,1],
+  [1,1,1,1,0,1,3,1,9,3,3,9,1,3,1,0,1,1,1],
+  [3,3,3,3,0,3,3,1,3,3,3,3,1,3,3,0,3,3,3],
+  [1,1,1,1,0,1,3,1,1,1,1,1,1,3,1,0,1,1,1],
+  [1,1,1,1,0,1,3,3,3,3,3,3,3,3,1,0,1,1,1],
+  [1,1,1,1,0,1,1,1,3,1,1,3,1,1,1,0,1,1,1],
+  [1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,1],
+  [1,0,1,1,0,1,0,1,1,1,1,1,1,0,1,0,1,1,1],
+  [1,2,0,1,0,0,0,0,0,3,3,0,0,0,0,0,1,0,1],
+  [1,1,0,1,0,1,0,1,1,1,1,1,1,0,1,0,1,0,1],
+  [1,0,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1],
+  [1,0,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+
+const PAC_ROWS = PAC_MAZE_TEMPLATE.length;
+const PAC_COLS = PAC_MAZE_TEMPLATE[0].length;
+const PAC_TILE = Math.floor(380 / PAC_COLS);
+
+const GHOST_COLORS = ['#fb7185', '#f9a8d4', '#22d3ee', '#fb923c'];
+const GHOST_START = [
+  { row: 9, col: 9 }, { row: 9, col: 10 },
+  { row: 10, col: 9 }, { row: 10, col: 10 },
+];
+
+let pacMaze = [];
+let pacMan = null;
+let pacGhosts = [];
+let pacPhase = 0;
+let pacScore = 0;
+let pacLives = 3;
+let pacRunning = false;
+let pacInterval = null;
+let pacPowerTimer = 0;
+let pacTick = 0;
+let pacGameOver = false;
+let pacWon = false;
+let pacPelletsTotal = 0;
+let pacPelletsEaten = 0;
+let pacNextDir = null;
+let pacMouthOpen = true;
+let pacMouthTick = 0;
+
+function cloneMaze() {
+  return PAC_MAZE_TEMPLATE.map(row => [...row]);
+}
+
+function countPellets(maze) {
+  let count = 0;
+  for (let r = 0; r < PAC_ROWS; r++)
+    for (let c = 0; c < PAC_COLS; c++)
+      if (maze[r][c] === 0 || maze[r][c] === 2) count++;
+  return count;
+}
+
+function pacCanMove(maze, row, col) {
+  if (row < 0 || row >= PAC_ROWS) return false;
+  const c = (col + PAC_COLS) % PAC_COLS;
+  const cell = maze[row][c];
+  return cell !== 1 && cell !== 9;
+}
+
+function initPacGhosts(count) {
+  return GHOST_START.slice(0, Math.min(count, 4)).map((pos, i) => ({
+    row: pos.row, col: pos.col,
+    dir: { dr: 0, dc: 1 },
+    color: GHOST_COLORS[i],
+    scared: false,
+    dead: false,
+    homeTick: 0,
+  }));
+}
+
+function resetPacGame() {
+  clearInterval(pacInterval);
+  pacInterval = null;
+  pacRunning = false;
+  pacGameOver = false;
+  pacWon = false;
+  pacScore = 0;
+  pacLives = 3;
+  pacPhase = 0;
+  pacMaze = cloneMaze();
+  pacPelletsTotal = countPellets(pacMaze);
+  pacPelletsEaten = 0;
+  pacPowerTimer = 0;
+  pacNextDir = null;
+  pacMan = { row: 20, col: 9, dir: { dr: 0, dc: 1 } };
+  pacGhosts = initPacGhosts(PAC_PHASES[0].ghosts);
+  updatePacHud();
+  drawPac();
+  if (pacStatusElement) pacStatusElement.textContent = 'Use as setas do teclado ou os botões para jogar.';
+}
+
+function startPacGame() {
+  if (pacGameOver || pacRunning) return;
+  pacRunning = true;
+  if (pacStatusElement) pacStatusElement.textContent = '';
+  const speed = PAC_PHASES[pacPhase].speed;
+  clearInterval(pacInterval);
+  pacInterval = setInterval(pacStep, speed);
+}
+
+function pacDirFromKey(key) {
+  const map = {
+    ArrowUp: { dr: -1, dc: 0 }, ArrowDown: { dr: 1, dc: 0 },
+    ArrowLeft: { dr: 0, dc: -1 }, ArrowRight: { dr: 0, dc: 1 },
+    w: { dr: -1, dc: 0 }, W: { dr: -1, dc: 0 },
+    s: { dr: 1, dc: 0 },  S: { dr: 1, dc: 0 },
+    a: { dr: 0, dc: -1 }, A: { dr: 0, dc: -1 },
+    d: { dr: 0, dc: 1 },  D: { dr: 0, dc: 1 },
+  };
+  return map[key] || null;
+}
+
+function pacStep() {
+  pacTick++;
+  pacMouthTick++;
+  if (pacMouthTick >= 5) { pacMouthOpen = !pacMouthOpen; pacMouthTick = 0; }
+  if (pacPowerTimer > 0) pacPowerTimer--;
+
+  // Move Pac-Man
+  const { row, col, dir } = pacMan;
+  const tryNext = pacNextDir;
+  let moved = false;
+  if (tryNext) {
+    const nr = row + tryNext.dr;
+    const nc = (col + tryNext.dc + PAC_COLS) % PAC_COLS;
+    if (pacCanMove(pacMaze, nr, nc)) {
+      pacMan.dir = tryNext;
+      pacMan.row = nr;
+      pacMan.col = nc;
+      pacNextDir = null;
+      moved = true;
+    }
+  }
+  if (!moved) {
+    const nr = row + dir.dr;
+    const nc = (col + dir.dc + PAC_COLS) % PAC_COLS;
+    if (pacCanMove(pacMaze, nr, nc)) {
+      pacMan.row = nr;
+      pacMan.col = nc;
+    }
+  }
+
+  // Eat pellet
+  const cell = pacMaze[pacMan.row][pacMan.col];
+  if (cell === 0) {
+    pacMaze[pacMan.row][pacMan.col] = 3;
+    pacPelletsEaten++;
+    pacScore += 10;
+  } else if (cell === 2) {
+    pacMaze[pacMan.row][pacMan.col] = 3;
+    pacPelletsEaten++;
+    pacScore += 50;
+    pacPowerTimer = Math.floor(3000 / PAC_PHASES[pacPhase].speed);
+    pacGhosts.forEach(g => { if (!g.dead) g.scared = true; });
+  }
+
+  // Move ghosts
+  pacGhosts.forEach(g => {
+    if (g.dead) {
+      g.homeTick--;
+      if (g.homeTick <= 0) {
+        g.dead = false;
+        g.scared = false;
+        const spawn = GHOST_START[pacGhosts.indexOf(g) % 4];
+        g.row = spawn.row; g.col = spawn.col;
+        g.dir = { dr: 0, dc: 1 };
+      }
+      return;
+    }
+    if (pacPowerTimer === 0 && g.scared) g.scared = false;
+    moveGhost(g);
+  });
+
+  // Collision
+  for (const g of pacGhosts) {
+    if (g.dead) continue;
+    if (g.row === pacMan.row && g.col === pacMan.col) {
+      if (g.scared) {
+        g.dead = true;
+        g.scared = false;
+        g.homeTick = Math.floor(4000 / PAC_PHASES[pacPhase].speed);
+        pacScore += 200;
+      } else {
+        pacLives--;
+        if (pacLives <= 0) {
+          pacGameOver = true;
+          pacRunning = false;
+          clearInterval(pacInterval);
+          pacInterval = null;
+          if (pacStatusElement) pacStatusElement.textContent = `Game Over! Pontuação: ${pacScore}`;
+          drawPac();
+          updatePacHud();
+          return;
+        }
+        pacMan = { row: 20, col: 9, dir: { dr: 0, dc: 1 } };
+        pacNextDir = null;
+        drawPac();
+        updatePacHud();
+        return;
+      }
+    }
+  }
+
+  // Check win phase
+  if (pacPelletsEaten >= pacPelletsTotal) {
+    if (pacPhase >= PAC_PHASES.length - 1) {
+      pacRunning = false;
+      pacWon = true;
+      clearInterval(pacInterval);
+      pacInterval = null;
+      if (pacStatusElement) pacStatusElement.textContent = `Você zerou o Pac-Man! Pontuação: ${pacScore}`;
+      drawPac();
+      updatePacHud();
+      return;
+    }
+    // Next phase
+    pacPhase++;
+    pacMaze = cloneMaze();
+    pacPelletsTotal = countPellets(pacMaze);
+    pacPelletsEaten = 0;
+    pacPowerTimer = 0;
+    pacMan = { row: 20, col: 9, dir: { dr: 0, dc: 1 } };
+    pacGhosts = initPacGhosts(PAC_PHASES[pacPhase].ghosts);
+    clearInterval(pacInterval);
+    pacInterval = setInterval(pacStep, PAC_PHASES[pacPhase].speed);
+    if (pacStatusElement) pacStatusElement.textContent = `Fase ${pacPhase + 1} — ${PAC_PHASES[pacPhase].label}!`;
+  }
+
+  updatePacHud();
+  drawPac();
+}
+
+function moveGhost(g) {
+  const dirs = [
+    { dr: -1, dc: 0 }, { dr: 1, dc: 0 },
+    { dr: 0, dc: -1 }, { dr: 0, dc: 1 },
+  ];
+  const reverse = { dr: -g.dir.dr, dc: -g.dir.dc };
+  const valid = dirs.filter(d => {
+    if (d.dr === reverse.dr && d.dc === reverse.dc) return false;
+    const nr = g.row + d.dr;
+    const nc = (g.col + d.dc + PAC_COLS) % PAC_COLS;
+    return pacCanMove(pacMaze, nr, nc);
+  });
+  if (valid.length === 0) {
+    const nr = g.row + reverse.dr;
+    const nc = (g.col + reverse.dc + PAC_COLS) % PAC_COLS;
+    if (pacCanMove(pacMaze, nr, nc)) { g.dir = reverse; g.row = nr; g.col = nc; }
+    return;
+  }
+  let chosen;
+  if (g.scared || valid.length === 1) {
+    chosen = valid[Math.floor(Math.random() * valid.length)];
+  } else {
+    // Chase: pick direction that gets closer to pac-man
+    chosen = valid.reduce((best, d) => {
+      const nr = g.row + d.dr;
+      const nc = (g.col + d.dc + PAC_COLS) % PAC_COLS;
+      const distNew = Math.abs(nr - pacMan.row) + Math.abs(nc - pacMan.col);
+      const nr2 = g.row + best.dr;
+      const nc2 = (g.col + best.dc + PAC_COLS) % PAC_COLS;
+      const distBest = Math.abs(nr2 - pacMan.row) + Math.abs(nc2 - pacMan.col);
+      return distNew < distBest ? d : best;
+    });
+  }
+  g.dir = chosen;
+  g.row += chosen.dr;
+  g.col = (g.col + chosen.dc + PAC_COLS) % PAC_COLS;
+}
+
+function updatePacHud() {
+  if (pacPhaseDisplay) pacPhaseDisplay.textContent = `${pacPhase + 1} / 15`;
+  if (pacScoreDisplay) pacScoreDisplay.textContent = pacScore;
+  if (pacLivesDisplay) pacLivesDisplay.textContent = pacLives;
+  if (pacSpeedDisplay) pacSpeedDisplay.textContent = PAC_PHASES[pacPhase].label;
+}
+
+function drawPac() {
+  if (!pacCanvas) return;
+  const ctx = pacCanvas.getContext('2d');
+  const T = PAC_TILE;
+  ctx.clearRect(0, 0, pacCanvas.width, pacCanvas.height);
+
+  // Draw maze
+  for (let r = 0; r < PAC_ROWS; r++) {
+    for (let c = 0; c < PAC_COLS; c++) {
+      const x = c * T;
+      const y = r * T;
+      const cell = pacMaze[r][c];
+      if (cell === 1) {
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(x, y, T, T);
+        ctx.strokeStyle = '#7c3aed';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+      } else if (cell === 0) {
+        ctx.fillStyle = '#f7f8ff';
+        ctx.beginPath();
+        ctx.arc(x + T / 2, y + T / 2, T * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (cell === 2) {
+        const pulse = 0.85 + 0.15 * Math.sin(pacTick * 0.3);
+        ctx.fillStyle = '#22d3ee';
+        ctx.shadowColor = '#22d3ee';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(x + T / 2, y + T / 2, T * 0.28 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      } else if (cell === 9) {
+        ctx.strokeStyle = '#fb7185';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y + T / 2);
+        ctx.lineTo(x + T, y + T / 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Draw ghosts
+  for (const g of pacGhosts) {
+    if (g.dead) continue;
+    const gx = g.col * T + T / 2;
+    const gy = g.row * T + T / 2;
+    const r2 = T * 0.42;
+    ctx.fillStyle = g.scared ? '#a78bfa' : g.color;
+    ctx.beginPath();
+    ctx.arc(gx, gy - r2 * 0.1, r2, Math.PI, 0, false);
+    ctx.lineTo(gx + r2, gy + r2 * 0.9);
+    const segs = 3;
+    for (let s = segs; s >= 0; s--) {
+      const sx = gx - r2 + (r2 * 2 / segs) * s;
+      const sy = gy + r2 * 0.9 + (s % 2 === 0 ? r2 * 0.3 : 0);
+      ctx.lineTo(sx, sy);
+    }
+    ctx.closePath();
+    ctx.fill();
+    // Eyes
+    if (!g.scared) {
+      ctx.fillStyle = 'white';
+      ctx.beginPath(); ctx.arc(gx - r2 * 0.3, gy - r2 * 0.15, r2 * 0.22, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx + r2 * 0.3, gy - r2 * 0.15, r2 * 0.22, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1e40af';
+      ctx.beginPath(); ctx.arc(gx - r2 * 0.3 + g.dir.dc * 3, gy - r2 * 0.15 + g.dir.dr * 3, r2 * 0.12, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx + r2 * 0.3 + g.dir.dc * 3, gy - r2 * 0.15 + g.dir.dr * 3, r2 * 0.12, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = 'white';
+      ctx.font = `${T * 0.4}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('~', gx, gy);
+    }
+  }
+
+  // Draw Pac-Man
+  const px = pacMan.col * T + T / 2;
+  const py = pacMan.row * T + T / 2;
+  const angle = pacMouthOpen ? 0.25 : 0.05;
+  let baseAngle = 0;
+  if (pacMan.dir.dc < 0) baseAngle = Math.PI;
+  else if (pacMan.dir.dr < 0) baseAngle = -Math.PI / 2;
+  else if (pacMan.dir.dr > 0) baseAngle = Math.PI / 2;
+  ctx.fillStyle = '#fde047';
+  ctx.shadowColor = '#fde047';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.arc(px, py, T * 0.44, baseAngle + angle * Math.PI, baseAngle + (2 - angle) * Math.PI);
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+if (pacCanvas) {
+  resetPacGame();
+
+  startPacButton && startPacButton.addEventListener('click', () => {
+    if (!pacRunning && !pacGameOver) startPacGame();
+  });
+
+  resetPacButton && resetPacButton.addEventListener('click', () => {
+    resetPacGame();
+  });
+
+  pacDirButtons.forEach(btn => {
+    const press = (e) => {
+      e.preventDefault();
+      const dirMap = { up: { dr: -1, dc: 0 }, down: { dr: 1, dc: 0 }, left: { dr: 0, dc: -1 }, right: { dr: 0, dc: 1 } };
+      pacNextDir = dirMap[btn.dataset.pacDirection];
+      if (!pacRunning && !pacGameOver) startPacGame();
+    };
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('click', press);
+  });
+}
+
+window.addEventListener('keydown', (e) => {
+  if (!pacCanvas) return;
+  const next = pacDirFromKey(e.key);
+  if (!next) return;
+  const isPacSection = pacCanvas.getBoundingClientRect().top < window.innerHeight * 1.5
+    && pacCanvas.getBoundingClientRect().bottom > -window.innerHeight * 0.5;
+  if (!isPacSection) return;
+  e.preventDefault();
+  pacNextDir = next;
+  if (!pacRunning && !pacGameOver) startPacGame();
+}, { capture: false, passive: false });
