@@ -199,6 +199,45 @@ function burst(x, y, color, n) {
 // ── Drawing helpers ───────────────────────────────────────────────────────────
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r ?? 6); }
 
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function drawQuad(points, fill, stroke, lineWidth = 1) {
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(); }
+}
+
+function drawSoftCloud(x, y, scale = 1) {
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(scale, scale);
+  ctx.fillStyle = 'rgba(255,255,255,0.86)';
+  ctx.beginPath(); ctx.ellipse(0, 10, 36, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-18, 4, 18, 16, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(9, -2, 24, 20, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(30, 7, 18, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawRail(bottomX, horizonX, yTop, yBottom, widthBottom = 8, widthTop = 2.2) {
+  drawQuad([
+    [horizonX - widthTop / 2, yTop],
+    [horizonX + widthTop / 2, yTop],
+    [bottomX + widthBottom / 2, yBottom],
+    [bottomX - widthBottom / 2, yBottom],
+  ], '#172033', '#0b1220', 1);
+  drawQuad([
+    [horizonX - widthTop / 2, yTop],
+    [horizonX - widthTop / 5, yTop],
+    [bottomX - widthBottom / 5, yBottom],
+    [bottomX - widthBottom / 2, yBottom],
+  ], 'rgba(255,255,255,0.34)');
+}
+
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
@@ -232,9 +271,12 @@ function drawPalm(x, y, scale = 1) {
 }
 
 function drawBuilding(x, y, w, h, color) {
-  ctx.fillStyle = 'rgba(36, 28, 18, 0.16)'; rr(x + 5, y + 6, w, h, 4); ctx.fill();
-  ctx.fillStyle = color; rr(x, y, w, h, 5); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.68)';
+  const side = ctx.createLinearGradient(x, y, x + w, y + h);
+  side.addColorStop(0, color);
+  side.addColorStop(1, 'rgba(15,23,42,0.24)');
+  ctx.fillStyle = 'rgba(36, 28, 18, 0.16)'; rr(x + 5, y + 7, w, h, 5); ctx.fill();
+  ctx.fillStyle = side; rr(x, y, w, h, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.76)';
   for (let yy = y + 16; yy < y + h - 12; yy += 28) {
     rr(x + 8, yy, w - 16, 10, 3); ctx.fill();
   }
@@ -245,16 +287,18 @@ function drawBuilding(x, y, w, h, color) {
 function drawTrainShape(x, y, w, h) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = 'rgba(72, 42, 18, 0.28)';
-  ctx.beginPath(); ctx.ellipse(6, h * 0.43, w * 0.5, h * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(72, 42, 18, 0.32)';
+  ctx.beginPath(); ctx.ellipse(6, h * 0.44, w * 0.56, h * 0.15, 0, 0, Math.PI * 2); ctx.fill();
   const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-  body.addColorStop(0, '#35b7ff'); body.addColorStop(0.32, '#1e9be0'); body.addColorStop(0.33, '#f44a3f'); body.addColorStop(1, '#b91c1c');
-  ctx.fillStyle = body; rr(-w / 2, -h / 2, w, h, 14); ctx.fill();
-  ctx.fillStyle = '#e8fbff'; rr(-w * 0.32, -h * 0.36, w * 0.64, h * 0.24, 6); ctx.fill();
-  ctx.fillStyle = 'rgba(13, 28, 48, 0.12)'; rr(-w * 0.42, -h * 0.02, w * 0.84, h * 0.14, 5); ctx.fill();
+  body.addColorStop(0, '#4cc8ff'); body.addColorStop(0.28, '#1e9be0'); body.addColorStop(0.29, '#ff5a45'); body.addColorStop(1, '#b91c1c');
+  ctx.fillStyle = body; rr(-w / 2, -h / 2, w, h, 15); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; rr(-w * 0.38, -h * 0.44, w * 0.76, h * 0.08, 5); ctx.fill();
+  ctx.fillStyle = '#e8fbff'; rr(-w * 0.33, -h * 0.34, w * 0.66, h * 0.24, 7); ctx.fill();
+  ctx.fillStyle = '#1479b9'; rr(-w * 0.12, -h * 0.03, w * 0.24, h * 0.12, 4); ctx.fill();
   ctx.fillStyle = '#ffd43b';
   ctx.beginPath(); ctx.arc(-w * 0.25, h * 0.31, w * 0.095, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.arc(w * 0.25, h * 0.31, w * 0.095, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#7f1d1d'; rr(-w * 0.42, h * 0.42, w * 0.84, h * 0.1, 5); ctx.fill();
   ctx.strokeStyle = '#102033'; ctx.lineWidth = Math.max(2, w * 0.04); rr(-w / 2, -h / 2, w, h, 14); ctx.stroke();
   ctx.restore();
 }
@@ -262,84 +306,66 @@ function drawTrainShape(x, y, w, h) {
 function drawRoad() {
   const spd = baseSpeed + (P.turbo>0 ? 2 : 0);
 
-  const sky = ctx.createLinearGradient(0, 0, 0, 220);
-  sky.addColorStop(0, '#38bdf8'); sky.addColorStop(0.58, '#a7eaff'); sky.addColorStop(1, '#ffe38a');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 220);
+  const sky = ctx.createLinearGradient(0, 0, 0, 230);
+  sky.addColorStop(0, '#36bdf5'); sky.addColorStop(0.55, '#9de7ff'); sky.addColorStop(1, '#ffe082');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 230);
+  ctx.fillStyle = '#fff0a6'; ctx.beginPath(); ctx.arc(46, 48, 25, 0, Math.PI * 2); ctx.fill();
+  drawSoftCloud(286, 44, 0.74);
 
-  ctx.fillStyle = '#fff6a8'; ctx.beginPath(); ctx.arc(40, 46, 24, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
-  ctx.beginPath(); ctx.ellipse(276, 42, 36, 11, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(305, 38, 22, 9, 0, 0, Math.PI * 2); ctx.fill();
+  drawPalm(30, 135, 0.55);
+  drawBuilding(214, 56, 31, 108, '#ef4444');
+  drawBuilding(248, 32, 40, 136, '#0ea5e9');
+  drawBuilding(292, 78, 32, 90, '#f97316');
+  drawBuilding(326, 28, 32, 140, '#22c55e');
 
-  drawPalm(30, 132, 0.52);
-  drawBuilding(218, 54, 30, 104, '#ef4444');
-  drawBuilding(250, 34, 36, 128, '#0ea5e9');
-  drawBuilding(288, 72, 32, 90, '#f97316');
-  drawBuilding(322, 28, 34, 134, '#22c55e');
+  // Warm right wall and ground planes create a recognizable street canyon.
+  drawQuad([[206, 145], [W, 122], [W, 280], [234, 226]], '#ffd84d');
+  drawQuad([[244, 174], [W, 160], [W, 175], [244, 190]], 'rgba(190,112,18,0.16)');
+  drawPalm(340, 196, 0.46);
 
-  // Yellow wall on the right, the strongest recognizable element from the reference.
-  ctx.fillStyle = '#ffd84d';
-  ctx.beginPath(); ctx.moveTo(210, 144); ctx.lineTo(W, 124); ctx.lineTo(W, 272); ctx.lineTo(236, 224); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(194, 122, 20, 0.16)';
-  ctx.beginPath(); ctx.moveTo(244, 174); ctx.lineTo(W, 162); ctx.lineTo(W, 174); ctx.lineTo(244, 188); ctx.closePath(); ctx.fill();
-  drawPalm(342, 194, 0.45);
-
-  // Festive flags near the top, like a subway-runner street.
-  ctx.strokeStyle = 'rgba(28,43,65,0.42)'; ctx.lineWidth = 1.4;
-  ctx.beginPath(); ctx.moveTo(70, 18); ctx.quadraticCurveTo(180, 34, 300, 18); ctx.stroke();
+  ctx.strokeStyle = 'rgba(24,44,70,0.34)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(74, 18); ctx.quadraticCurveTo(180, 34, 302, 18); ctx.stroke();
   ['#facc15', '#22c55e', '#ef4444', '#38bdf8', '#f97316'].forEach((color, i) => {
-    const fx = 86 + i * 42;
+    const fx = 90 + i * 40;
     ctx.fillStyle = color;
-    ctx.beginPath(); ctx.moveTo(fx, 21); ctx.lineTo(fx + 14, 23); ctx.lineTo(fx + 5, 37); ctx.closePath(); ctx.fill();
-  });
-
-  // Two subtle overhead wires are enough; more lines make the scene look like a grid.
-  ctx.strokeStyle = 'rgba(32,55,78,0.22)'; ctx.lineWidth = 1.2;
-  [132, 228].forEach(x => {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(projectX(x, 500), 500); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fx, 20); ctx.lineTo(fx + 13, 22); ctx.lineTo(fx + 5, 36); ctx.closePath(); ctx.fill();
   });
 
   const dirt = ctx.createLinearGradient(0, 154, 0, H);
-  dirt.addColorStop(0, '#eea13b'); dirt.addColorStop(0.64, '#d38331'); dirt.addColorStop(1, '#a85d21');
+  dirt.addColorStop(0, '#efa13c'); dirt.addColorStop(0.62, '#d48431'); dirt.addColorStop(1, '#a75f23');
   ctx.fillStyle = dirt; ctx.fillRect(0, 154, W, H - 154);
 
-  // Clean trapezoid track bed. Broad enough to read, not cluttered.
-  ctx.fillStyle = '#d88a34';
-  ctx.beginPath(); ctx.moveTo(112, HORIZON_Y); ctx.lineTo(248, HORIZON_Y); ctx.lineTo(338, H); ctx.lineTo(22, H); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(255,225,125,0.18)';
-  ctx.beginPath(); ctx.moveTo(148, HORIZON_Y); ctx.lineTo(212, HORIZON_Y); ctx.lineTo(246, H); ctx.lineTo(114, H); ctx.closePath(); ctx.fill();
+  // Side shadows and central highlight give the floor a finished game-art look.
+  drawQuad([[112, HORIZON_Y], [248, HORIZON_Y], [340, H], [20, H]], '#d88a35');
+  drawQuad([[148, HORIZON_Y], [212, HORIZON_Y], [248, H], [112, H]], 'rgba(255,226,126,0.2)');
+  drawQuad([[112, HORIZON_Y], [140, HORIZON_Y], [88, H], [24, H]], 'rgba(113,61,20,0.13)');
+  drawQuad([[220, HORIZON_Y], [248, HORIZON_Y], [336, H], [272, H]], 'rgba(113,61,20,0.13)');
 
-  // Dormentes as warm horizontal strokes, simpler and more readable.
-  for (let y = ((frame * spd * 1.15) % 46) + HORIZON_Y + 14; y < H + 34; y += 46) {
+  // Three lane beds with subtle separation.
+  [
+    [[118, HORIZON_Y + 5], [154, HORIZON_Y + 5], [126, H], [42, H]],
+    [[164, HORIZON_Y + 5], [196, HORIZON_Y + 5], [222, H], [138, H]],
+    [[206, HORIZON_Y + 5], [242, HORIZON_Y + 5], [318, H], [234, H]],
+  ].forEach((lane, i) => drawQuad(lane, i === 1 ? 'rgba(255,189,84,0.14)' : 'rgba(112,61,22,0.08)'));
+
+  for (let y = ((frame * spd * 1.1) % 48) + HORIZON_Y + 16; y < H + 36; y += 48) {
     const t = perspectiveT(y);
-    const half = 20 + t * 138;
-    ctx.strokeStyle = '#6b3c16'; ctx.lineWidth = 1.8 + t * 4.5;
+    const half = 18 + t * 132;
+    ctx.strokeStyle = 'rgba(96,52,18,0.9)'; ctx.lineWidth = 1.5 + t * 4.2;
     ctx.beginPath(); ctx.moveTo(VANISH_X - half, y); ctx.lineTo(VANISH_X + half, y); ctx.stroke();
   }
 
-  // Three clean tracks, exactly two rails per lane.
-  const trackPairs = [
-    [58, 122],
-    [148, 212],
-    [238, 302],
-  ];
-  trackPairs.forEach(pair => {
-    pair.forEach(bottomX => {
-      const horizonX = VANISH_X + (bottomX - VANISH_X) * 0.12;
-      ctx.strokeStyle = '#121923'; ctx.lineWidth = 4.6;
-      ctx.beginPath(); ctx.moveTo(horizonX, HORIZON_Y + 5); ctx.lineTo(bottomX, H + 24); ctx.stroke();
-      ctx.strokeStyle = '#8fa0aa'; ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.moveTo(horizonX - 1.2, HORIZON_Y + 5); ctx.lineTo(bottomX - 2, H + 24); ctx.stroke();
-    });
+  // Rails are filled polygons, not raw lines, so they read like actual metal tracks.
+  [[70, 126], [150, 210], [234, 290]].forEach(pair => {
+    pair.forEach(bottomX => drawRail(bottomX, VANISH_X + (bottomX - VANISH_X) * 0.1, HORIZON_Y + 7, H + 22));
   });
 
-  // Small train in the distance, not blocking the whole view.
-  drawTrainShape(214, 192, 42, 54);
+  // Distant train acts as a focal point.
+  drawTrainShape(214, 190, 44, 56);
 
-  // Soft foreground vignette makes the canvas look less flat.
   const vignette = ctx.createRadialGradient(W / 2, H * 0.48, 120, W / 2, H * 0.58, 360);
   vignette.addColorStop(0, 'rgba(255,255,255,0)');
-  vignette.addColorStop(1, 'rgba(56,27,10,0.16)');
+  vignette.addColorStop(1, 'rgba(56,27,10,0.13)');
   ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
 
   // Turbo speed lines on sides
