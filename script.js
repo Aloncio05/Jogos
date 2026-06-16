@@ -1904,7 +1904,7 @@ directionButtons.forEach((button) => {
   button.addEventListener('click', press);
 });
 
-// Window-level capture: intercepta teclas antes de qualquer outro handler
+// Window-level capture: só age se o canvas da minhoca estiver visível na tela
 window.addEventListener('keydown', (event) => {
   if (!snakeCanvas) return;
   const snakeDirs = {
@@ -1917,6 +1917,9 @@ window.addEventListener('keydown', (event) => {
   };
   const next = snakeDirs[event.key];
   if (!next) return;
+  const rect = snakeCanvas.getBoundingClientRect();
+  const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+  if (!isVisible) return;
   event.preventDefault();
   const isOpposite = next.x + nextSnakeDirection.x === 0 && next.y + nextSnakeDirection.y === 0;
   if (!isOpposite) {
@@ -2421,10 +2424,10 @@ window.addEventListener('keydown', (e) => {
   if (!pacCanvas) return;
   const next = pacDirFromKey(e.key);
   if (!next) return;
-  const isPacSection = pacCanvas.getBoundingClientRect().top < window.innerHeight * 1.5
-    && pacCanvas.getBoundingClientRect().bottom > -window.innerHeight * 0.5;
-  if (!isPacSection) return;
+  const rect = pacCanvas.getBoundingClientRect();
+  const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+  if (!isVisible) return;
   e.preventDefault();
   pacNextDir = next;
   if (!pacRunning && !pacGameOver) startPacGame();
-}, { capture: false, passive: false });
+}, { capture: true, passive: false });
