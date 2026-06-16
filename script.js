@@ -1836,7 +1836,13 @@ if (resetMemoryButton) resetMemoryButton.addEventListener('click', createMemoryC
 if (memoryNextPhaseButton) memoryNextPhaseButton.addEventListener('click', function() { startMemoryPhase(currentMemoryPhase + 1); });
 if (guessForm) guessForm.addEventListener('submit', submitGuess);
 if (resetGuessButton) resetGuessButton.addEventListener('click', resetGuessGame);
-if (startSnakeButton) startSnakeButton.addEventListener('click', startSnakeGame);
+if (startSnakeButton) startSnakeButton.addEventListener('click', () => {
+  startSnakeGame();
+  if (snakeCanvas) {
+    snakeCanvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    snakeCanvas.focus();
+  }
+});
 if (resetSnakeButton) resetSnakeButton.addEventListener('click', resetSnakeGame);
 if (resetDetectiveButton) resetDetectiveButton.addEventListener('click', createDetectiveCase);
 if (playerForm) {
@@ -1883,14 +1889,15 @@ const snakeKeyMap = {
   w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right',
 };
 
-window.addEventListener('keydown', (event) => {
+// capture:true garante que interceptamos ANTES do browser tratar scroll ou foco
+document.addEventListener('keydown', (event) => {
   if (!snakeCanvas) return;
   const dir = snakeKeyMap[event.key];
-  if (dir) {
-    event.preventDefault();
-    changeSnakeDirection(dir);
-  }
-});
+  if (!dir) return;
+  event.preventDefault();
+  event.stopPropagation();
+  changeSnakeDirection(dir);
+}, { capture: true, passive: false });
 
 if (snakeCanvas) {
   snakeCanvas.addEventListener('keydown', (event) => {
