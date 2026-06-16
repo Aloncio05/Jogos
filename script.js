@@ -885,8 +885,9 @@ function renderRoundFinishOverlay() {
   roundFinishOverlayElement.hidden = !hasWinner;
   if (!hasWinner) return;
 
-  const winnerIsLocal = roundWinnerId && cardPlayers.some((player) => player.id === roundWinnerId && player.id === onlinePlayerId && !player.isBot);
-  roundFinishTitleElement.textContent = winnerIsLocal || !onlineRoomRef ? 'VOCÊ GANHOU!' : `${roundWinnerName} GANHOU!`;
+  const visiblePlayer = cardPlayers[getVisibleHandPlayerIndex()];
+  const winnerIsVisiblePlayer = visiblePlayer && roundWinnerId && visiblePlayer.id === roundWinnerId;
+  roundFinishTitleElement.textContent = winnerIsVisiblePlayer ? 'VOCÊ GANHOU!' : 'VOCÊ PERDEU😭';
   roundFinishMessageElement.textContent = `${roundWinnerName} venceu a rodada com ${lastRoundScore} pontos. Recomece com os mesmos participantes ou encerre a sala.`;
   const canManageRoom = !onlineRoomRef || onlineHostId === onlinePlayerId;
   restartRoundButton.disabled = !canManageRoom;
