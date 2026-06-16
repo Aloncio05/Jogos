@@ -548,6 +548,11 @@ function stopSnake() {
 
 function moveSnake() {
   snakeDirection = nextSnakeDirection;
+  const _dn = {'1,0':'→','-1,0':'←','0,-1':'↑','0,1':'↓'};
+  if (snakeStatusElement) snakeStatusElement.textContent =
+    'Dir: ' + (_dn[snakeDirection.x+','+snakeDirection.y]||'?') +
+    ' | Pos: ' + snake[0].x + ',' + snake[0].y +
+    ' | Pts: ' + snakeScore;
   const head = {
     x: snake[0].x + snakeDirection.x,
     y: snake[0].y + snakeDirection.y,
@@ -1900,9 +1905,14 @@ joinRoomForm.addEventListener('submit', (event) => {
   joinOnlineRoom(joinRoomCodeInput.value);
 });
 directionButtons.forEach((button) => {
-  const press = (e) => { e.preventDefault(); changeSnakeDirection(button.dataset.direction); };
+  const press = (e) => {
+    e.preventDefault();
+    if (snakeStatusElement) snakeStatusElement.textContent = 'Botão ' + button.dataset.direction + ' pressionado!';
+    changeSnakeDirection(button.dataset.direction);
+  };
   button.addEventListener('mousedown', press);
   button.addEventListener('touchstart', press, { passive: false });
+  button.addEventListener('click', press);
 });
 
 // Window-level capture: intercepta teclas antes de qualquer outro handler
