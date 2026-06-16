@@ -583,6 +583,7 @@ function resetCardRoom(options = {}) {
   roomCodeElement.textContent = roomCode;
   cardGameStatusElement.textContent = 'Adicione pelo menos 2 jogadores para iniciar.';
   playerHandElement.innerHTML = '';
+  document.body.classList.remove('card-match-active');
   if (cardArenaElement) cardArenaElement.classList.remove('game-active');
   renderCardPlayers();
   renderCardTable();
@@ -807,6 +808,7 @@ function reshuffleDiscardIntoDeck() {
 }
 
 function renderCardGame() {
+  document.body.classList.toggle('card-match-active', cardGameStarted);
   if (cardArenaElement) cardArenaElement.classList.toggle('game-active', cardGameStarted);
   renderCardPlayers();
   renderCardAvatars();
