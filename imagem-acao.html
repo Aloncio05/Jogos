@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imagem e Ação do Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="game-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel" aria-labelledby="ia-title">
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 10</p>
+          <h2 id="ia-title">Imagem e Ação</h2>
+        </div>
+        <button id="ia-restart-btn" class="secondary-button" type="button">Reiniciar</button>
+      </div>
+
+      <!-- SETUP -->
+      <div id="ia-setup">
+        <p class="status">Quantas equipes vão jogar?</p>
+
+        <div class="ia-team-count-row">
+          <button class="ia-count-btn" data-team-count="2" type="button">2 equipes</button>
+          <button class="ia-count-btn" data-team-count="3" type="button">3 equipes</button>
+          <button class="ia-count-btn" data-team-count="4" type="button">4 equipes</button>
+        </div>
+
+        <div id="ia-name-inputs" class="ia-name-inputs">
+          <div class="ia-name-group" data-team-idx="0">
+            <span class="ia-name-dot" style="background:#7c3aed"></span>
+            <input type="text" placeholder="Nome da Equipe 1" maxlength="18">
+          </div>
+          <div class="ia-name-group" data-team-idx="1">
+            <span class="ia-name-dot" style="background:#fb7185"></span>
+            <input type="text" placeholder="Nome da Equipe 2" maxlength="18">
+          </div>
+          <div class="ia-name-group ia-name-group--hidden" data-team-idx="2">
+            <span class="ia-name-dot" style="background:#22d3ee"></span>
+            <input type="text" placeholder="Nome da Equipe 3" maxlength="18">
+          </div>
+          <div class="ia-name-group ia-name-group--hidden" data-team-idx="3">
+            <span class="ia-name-dot" style="background:#34d399"></span>
+            <input type="text" placeholder="Nome da Equipe 4" maxlength="18">
+          </div>
+        </div>
+
+        <button id="ia-start-btn" class="hero-button" type="button" style="margin-top:20px">Começar partida →</button>
+      </div>
+
+      <!-- GAME -->
+      <div id="ia-game" hidden>
+
+        <!-- Scoreboard -->
+        <div id="ia-scoreboard" class="ia-scoreboard"></div>
+
+        <!-- Board -->
+        <div id="ia-board" class="ia-board" aria-label="Tabuleiro Imagem e Ação"></div>
+
+        <!-- Controls -->
+        <div class="ia-controls">
+          <div id="ia-current-team" class="ia-current-team"></div>
+          <div id="ia-dice" class="ia-dice" aria-live="polite">🎲</div>
+
+          <button id="ia-roll-btn" class="hero-button ia-roll-btn" type="button">Rolar dado</button>
+
+          <!-- Word section -->
+          <div id="ia-word-section" class="ia-word-section" hidden>
+            <div id="ia-category-badge" class="ia-category-badge"></div>
+            <button id="ia-reveal-btn" class="hero-button" type="button">👁 Ver palavra</button>
+
+            <div id="ia-word-reveal" class="ia-word-reveal" hidden>
+              <div id="ia-word" class="ia-word"></div>
+              <div id="ia-timer-wrap" class="ia-timer-wrap">
+                <div class="ia-timer-bar-bg">
+                  <div id="ia-timer-bar" class="ia-timer-bar"></div>
+                </div>
+                <span id="ia-timer" class="ia-timer-num">60</span>
+              </div>
+              <div class="ia-answer-btns">
+                <button id="ia-correct-btn" class="ia-correct-btn" type="button">✓ Acertou</button>
+                <button id="ia-wrong-btn" class="ia-wrong-btn" type="button">✗ Errou</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Result -->
+          <div id="ia-result" class="ia-result" hidden></div>
+          <button id="ia-next-btn" class="secondary-button ia-next-btn" type="button" hidden>Próxima equipe →</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="imagem-acao.js"></script>
+</body>
+</html>
