@@ -473,11 +473,11 @@ let snakeTimer = null;
 let snakeRunning = false;
 
 const SNAKE_PHASES = [
-  { speed: 350, foodToAdvance: 3,  label: 'Devagar'    },
-  { speed: 280, foodToAdvance: 4,  label: 'Animando'   },
-  { speed: 220, foodToAdvance: 4,  label: 'Acordada'   },
-  { speed: 180, foodToAdvance: 5,  label: 'Esperta'    },
-  { speed: 150, foodToAdvance: 5,  label: 'Rápida'     },
+  { speed: 180, foodToAdvance: 3,  label: 'Devagar'    },
+  { speed: 160, foodToAdvance: 4,  label: 'Animando'   },
+  { speed: 140, foodToAdvance: 4,  label: 'Acordada'   },
+  { speed: 124, foodToAdvance: 5,  label: 'Esperta'    },
+  { speed: 110, foodToAdvance: 5,  label: 'Rápida'     },
   { speed: 100, foodToAdvance: 6,  label: 'Veloz'      },
   { speed: 90,  foodToAdvance: 6,  label: 'Turbinada'  },
   { speed: 82,  foodToAdvance: 7,  label: 'Acelerada'  },
