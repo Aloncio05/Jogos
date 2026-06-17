@@ -48,6 +48,71 @@ const powersEl = document.getElementById('runner-powers');
 
 bestEl.textContent = best;
 
+// ── Web Audio (sons sem arquivos) ─────────────────────────────────────────────
+let _audioCtx;
+function audioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+function _tone(freq, endFreq, dur, type, vol) {
+  try {
+    const ctx = audioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + dur);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+function sfxJump()  { _tone(300, 600, 0.13, 'square',   0.07); }
+function sfxLand()  { _tone(160, 80,  0.10, 'sine',     0.06); }
+function sfxCoin()  {
+  _tone(800,  0,    0.08, 'sine',   0.12);
+  setTimeout(() => _tone(1200, 0, 0.10, 'sine', 0.10), 60);
+}
+function sfxDie()   { _tone(380, 55,  0.55, 'sawtooth', 0.15); }
+function sfxSpeed() {
+  _tone(440, 0, 0.07, 'square', 0.07);
+  setTimeout(() => _tone(660, 0, 0.09, 'square', 0.07), 70);
+}
+
+// ── HUD helpers ───────────────────────────────────────────────────────────────
+function coinPop() {
+  const wrap = canvas.parentElement;
+  const div  = document.createElement('div');
+  div.textContent = '+5';
+  Object.assign(div.style, {
+    position:'absolute', left:'50%', top:'52%',
+    transform:'translateX(-50%)', color:'#ffee00',
+    fontWeight:'900', fontSize:'1.8rem', lineHeight:'1',
+    textShadow:'0 2px 8px #000, 0 0 16px #ff8800',
+    pointerEvents:'none', zIndex:'10', transition:'all 0.65s ease-out',
+  });
+  wrap.appendChild(div);
+  requestAnimationFrame(() => { div.style.top = '30%'; div.style.opacity = '0'; });
+  setTimeout(() => div.remove(), 700);
+}
+
+function flashScreen(color, ms) {
+  const wrap = canvas.parentElement;
+  const div  = document.createElement('div');
+  Object.assign(div.style, {
+    position:'absolute', inset:'0', background:color,
+    pointerEvents:'none', zIndex:'8', borderRadius:'18px',
+    transition:`opacity ${ms}ms ease-out`,
+  });
+  wrap.appendChild(div);
+  requestAnimationFrame(() => { div.style.opacity = '0'; });
+  setTimeout(() => div.remove(), ms + 50);
+}
+
+// ── Camera shake ──────────────────────────────────────────────────────────────
+let camShake = 0;
+
 // ── Toon helpers ─────────────────────────────────────────────────────────────
 function makeToonGrad() {
   const c = document.createElement('canvas');
@@ -349,10 +414,19 @@ function buildPlayer(scene) {
   add(new THREE.BoxGeometry(0.33, 0.06, 0.47), red,  -0.21, 0.19, 0.04);
   add(new THREE.BoxGeometry(0.33, 0.06, 0.47), red,   0.21, 0.19, 0.04);
 
+  // Sombra no chão (plano escuro que acompanha o personagem)
+  const shadowMesh = new THREE.Mesh(
+    new THREE.CircleGeometry(0.65, 14),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.40 })
+  );
+  shadowMesh.rotation.x = -Math.PI / 2;
+  shadowMesh.position.y = 0.01;
+  group.add(shadowMesh);
+
   group.position.set(LANE_X[1], 0, 0);
   group.rotation.y = Math.PI;
   scene.add(group);
-  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap } };
+  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap }, shadowMesh };
 }
 
 // ── Obstacles ─────────────────────────────────────────────────────────────────
@@ -449,22 +523,34 @@ function makeMotorcycleMesh() {
 
 function makePotholeMesh() {
   const group = new THREE.Group();
-  // Buraco escuro elíptico no chão
+
+  // Buraco escuro
   const hole = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.9, 0.9, 0.15, 16),
+    new THREE.CylinderGeometry(0.85, 0.85, 0.18, 16),
     toon(0x111111)
   );
-  hole.position.y = 0.05;
-  group.add(hole); outline(hole, 1.04);
+  hole.position.y = 0.04;
+  group.add(hole); outline(hole, 1.05);
 
-  // Borda do buraco (mais clara)
+  // Borda amarela de aviso (bem visível no asfalto escuro)
   const rim = new THREE.Mesh(
-    new THREE.TorusGeometry(0.9, 0.14, 6, 16),
-    toon(0x666666)
+    new THREE.TorusGeometry(0.90, 0.18, 6, 16),
+    toon(0xffee00)
   );
   rim.rotation.x = Math.PI / 2;
-  rim.position.y = 0.12;
-  group.add(rim);
+  rim.position.y = 0.10;
+  group.add(rim); outline(rim, 1.05);
+
+  // Setas de aviso apontando para o buraco
+  [-1.6, 0, 1.6].forEach(xOff => {
+    const arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.22, 0.45, 4),
+      toon(0xff3300)
+    );
+    arrow.position.set(xOff, 0.30, -1.4);
+    arrow.rotation.x = -Math.PI / 2;
+    group.add(arrow); outline(arrow, 1.08);
+  });
 
   return group;
 }
@@ -631,6 +717,8 @@ function update(dt) {
     speedEl.style.color = '#ff6600';
     speedEl.style.transform = 'scale(1.5)';
     setTimeout(() => { speedEl.style.color = ''; speedEl.style.transform = ''; }, 500);
+    sfxSpeed();
+    flashScreen('rgba(255,180,0,0.18)', 300);
     if (getDiff() > prevDiff && powersEl) {
       const LABELS = ['','🔥 MAIS RÁPIDO!','🔥🔥 VELOZ!','⚡ ULTRA!','⚡⚡ INSANO!','💥 MAX!'];
       const label = LABELS[getDiff()] || '💥 MAX!';
@@ -658,13 +746,22 @@ function update(dt) {
 
   const onGround = playerY <= GROUND_Y + 0.01;
 
-  // Landing squash
+  // Landing squash + som
   if (!wasOnGround && onGround && playerVY < -2) {
     playerObj.group.scale.set(1.40, 0.60, 1.40);
+    sfxLand();
   }
   wasOnGround = onGround;
   if (onGround) { playerY = GROUND_Y; playerVY = 0; }
   playerObj.group.position.y = playerY;
+
+  // Sombra: encolhe e esmaece conforme o personagem sobe
+  if (playerObj.shadowMesh) {
+    const sh = Math.max(0.15, 1 - playerY * 0.12);
+    playerObj.shadowMesh.scale.set(sh, sh, 1);
+    playerObj.shadowMesh.material.opacity = sh * 0.40;
+    playerObj.shadowMesh.position.y = 0.01 - playerY; // fica no chão
+  }
 
   // ── Squash & stretch spring ───────────────────────────────────────────────
   const tSY  = (crouching && onGround) ? CROUCH_S : 1.0;
@@ -737,7 +834,9 @@ function update(dt) {
     if (c.mesh.position.z > DESPAWN_Z) { three.scene.remove(c.mesh); coins.splice(i, 1); continue; }
     if (c.mesh.position.z > -2.5 && c.mesh.position.z < 2.5) {
       if (Math.abs(pX - LANE_X[c.lane]) < 1.5 && Math.abs(playerY + 1.0 - c.y) < 1.3) {
-        three.scene.remove(c.mesh); coins.splice(i, 1); score += 5; scoreEl.textContent = score; i--;
+        three.scene.remove(c.mesh); coins.splice(i, 1);
+        score += 5; scoreEl.textContent = score;
+        sfxCoin(); coinPop(); i--;
       }
     }
   }
@@ -755,6 +854,18 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
   const dt = Math.min(three.clock.getDelta(), 0.05);
   if (state === 'playing') update(dt);
+
+  // Camera shake (pós-morte)
+  if (camShake > 0.01) {
+    three.camera.position.x += (Math.random() - 0.5) * camShake * 0.6;
+    three.camera.position.y += (Math.random() - 0.5) * camShake * 0.35;
+    camShake *= 0.82;
+  } else if (camShake > 0) {
+    // Restaura y padrão da câmera
+    three.camera.position.y += (5.5 - three.camera.position.y) * 0.1;
+    camShake = 0;
+  }
+
   three.renderer.render(three.scene, three.camera);
 }
 
@@ -782,6 +893,9 @@ function die() {
   state = 'dead';
   playerObj.group.rotation.z = 0.6;
   playerObj.group.scale.set(1.3, 0.5, 1.3);
+  sfxDie();
+  flashScreen('rgba(255,30,0,0.45)', 400);
+  camShake = 1.0;
   unlockScroll();
   setTimeout(() => { if (state === 'dead') showOverlay(true); }, 500);
 }
@@ -815,6 +929,7 @@ function doJump() {
   if (playerY <= 0.02) {
     playerVY = JUMP_V;
     crouching = false;
+    sfxJump();
     // Stretch no pulo
     playerObj.group.scale.set(0.78, 1.38, 0.78);
   }
