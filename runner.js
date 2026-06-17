@@ -112,10 +112,21 @@ canvas.addEventListener('touchend',e=>{
 // ── AÇÕES ──────────────────────────────────────────────────────────────────────
 function shiftLane(d){ const n=Math.max(0,Math.min(2,P.lane+d)); if(n===P.lane)return; P.lane=n; P.targetX=LANE_X[n]; }
 function jump(){ if(P.jumpH<2){ P.jumpVY=JUMP_V; P.crouching=false; } }
+function lockScroll(){
+  document.body.style.overflow='hidden';
+  document.documentElement.style.overflow='hidden';
+  canvas.scrollIntoView({block:'center',behavior:'smooth'});
+}
+function unlockScroll(){
+  document.body.style.overflow='';
+  document.documentElement.style.overflow='';
+}
+
 function begin(){
   score=0; baseSpeed=3.2; frame=0; obstacles=[]; cards=[]; parts=[]; popups=[];
   P.lane=1; P.x=LANE_X[1]; P.targetX=LANE_X[1]; P.jumpH=0; P.jumpVY=0; P.crouching=false; P.magnet=0; P.turbo=0;
   state='play';
+  lockScroll();
 }
 
 // ── SPAWN ──────────────────────────────────────────────────────────────────────
@@ -675,7 +686,7 @@ function loop(){
   drawPlayer();
   popups.forEach(drawPopup);
 
-  if(died) state='dead';
+  if(died){ state='dead'; unlockScroll(); }
   if(frame%4===0){ updateHUD(); updatePowers(); }
 }
 

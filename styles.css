@@ -1774,6 +1774,16 @@ body.card-match-active {
 .game-page-main {
   flex: 1;
   padding: 36px clamp(18px, 5vw, 72px) 60px;
+  display: flex;
+  justify-content: center;
+}
+
+.runner-game-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
 }
 
 .back-link {
