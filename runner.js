@@ -1,19 +1,20 @@
 'use strict';
 /* global THREE */
 
-// ── Corrida do Aloncinho 3D — Three.js ───────────────────────────────────────
+// ── Corrida do Aloncinho 3D — Subway Surfers style ───────────────────────────
 
 const W = 360, H = 600;
-const LANE_X    = [-3, 0, 3];
-const SPAWN_Z   = -130;
-const DESPAWN_Z = 12;
-const BASE_SPEED = 15;   // units/sec
+const LANE_X     = [-3, 0, 3];
+const SPAWN_Z    = -130;
+const DESPAWN_Z  = 12;
+const BASE_SPEED = 15;
 const MAX_SPEED  = 38;
 const SPEED_INC  = 0.5;
 const GRAVITY    = -30;
 const JUMP_V     = 13;
 const GROUND_Y   = 0;
-const CROUCH_S   = 0.5;  // y-scale when crouching
+const CROUCH_S   = 0.5;
+const TILE_PERIOD = 8 * 24; // recycle period for ground objects
 
 // ── State ────────────────────────────────────────────────────────────────────
 let three = {};
@@ -44,8 +45,8 @@ bestEl.textContent = best;
 // ── Three.js init ────────────────────────────────────────────────────────────
 function initThree() {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0d0620);
-  scene.fog = new THREE.FogExp2(0x0d0620, 0.0085);
+  scene.background = new THREE.Color(0x87ceeb); // daytime sky blue
+  scene.fog = new THREE.Fog(0xc8e8ff, 55, 200);
 
   const camera = new THREE.PerspectiveCamera(62, W / H, 0.1, 260);
   camera.position.set(0, 5, 10);
@@ -66,131 +67,177 @@ function initThree() {
 }
 
 function setupLights(scene) {
-  scene.add(new THREE.AmbientLight(0x5533aa, 0.7));
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
 
-  const sun = new THREE.DirectionalLight(0xff88cc, 2.5);
-  sun.position.set(4, 20, 8);
+  const sun = new THREE.DirectionalLight(0xfff5d0, 3.2);
+  sun.position.set(12, 32, 18);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left   = -15;
-  sun.shadow.camera.right  =  15;
-  sun.shadow.camera.top    =  15;
+  sun.shadow.camera.left   = -18;
+  sun.shadow.camera.right  =  18;
+  sun.shadow.camera.top    =  18;
   sun.shadow.camera.bottom =  -5;
-  sun.shadow.camera.far    =  60;
+  sun.shadow.camera.far    =  70;
   scene.add(sun);
 
-  [[-5, 2, -8, 0x00ffff], [5, 2, -8, 0xff44aa]].forEach(([x, y, z, col]) => {
-    const l = new THREE.PointLight(col, 3.5, 28);
-    l.position.set(x, y, z);
-    scene.add(l);
-  });
+  // Sky fill (blue-ish, from opposite side)
+  const skyFill = new THREE.DirectionalLight(0x9ac8e8, 0.9);
+  skyFill.position.set(-8, 18, -12);
+  scene.add(skyFill);
 }
 
 // ── Environment ──────────────────────────────────────────────────────────────
 function buildEnvironment(scene) {
-  // Ground tiles (recycled)
-  const tileGeo = new THREE.BoxGeometry(14, 0.4, 24);
-  const tileMat = new THREE.MeshLambertMaterial({ color: 0x1a0830 });
+
+  // ── Ground platform (concrete) ─────────────────────────────────────────────
+  const concreteMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+  const tileGeo     = new THREE.BoxGeometry(14, 0.4, 24);
   for (let i = 0; i < 8; i++) {
-    const m = new THREE.Mesh(tileGeo, tileMat);
+    const m = new THREE.Mesh(tileGeo, concreteMat);
     m.position.set(0, -0.2, -i * 24 + 12);
     m.receiveShadow = true;
     scene.add(m);
     envTiles.push(m);
   }
 
-  // Lane dividers (neon pink)
-  const divGeo = new THREE.BoxGeometry(0.08, 0.06, 400);
-  [-1.5, 1.5].forEach(x => {
-    const m = new THREE.Mesh(divGeo, new THREE.MeshBasicMaterial({ color: 0xff33aa }));
-    m.position.set(x, 0.03, -195);
+  // ── Railroad sleepers (dark wood, across track) ────────────────────────────
+  const sleeperMat = new THREE.MeshLambertMaterial({ color: 0x3d2200 });
+  const sleeperGeo = new THREE.BoxGeometry(11.5, 0.18, 0.55);
+  const sleeperCount = 55;
+  for (let i = 0; i < sleeperCount; i++) {
+    const m = new THREE.Mesh(sleeperGeo, sleeperMat);
+    m.position.set(0, 0.09, 12 - i * (TILE_PERIOD / sleeperCount));
+    m.receiveShadow = true;
     scene.add(m);
-  });
-
-  // Outer rails
-  const railGeo = new THREE.BoxGeometry(0.2, 0.4, 400);
-  [[-6.2, 0x00ffff], [6.2, 0xff44aa]].forEach(([x, col]) => {
-    const m = new THREE.Mesh(railGeo, new THREE.MeshBasicMaterial({ color: col }));
-    m.position.set(x, 0.05, -195);
-    scene.add(m);
-  });
-
-  // Subway tunnel arches (decorative, recycled)
-  const archMat = new THREE.MeshLambertMaterial({ color: 0x2d0e50 });
-  for (let i = 0; i < 10; i++) {
-    // Left pillar
-    const pl = new THREE.Mesh(new THREE.BoxGeometry(0.4, 5, 0.4), archMat);
-    pl.position.set(-6.5, 2.5, -i * 30);
-    scene.add(pl);
-    // Right pillar
-    const pr = new THREE.Mesh(new THREE.BoxGeometry(0.4, 5, 0.4), archMat);
-    pr.position.set(6.5, 2.5, -i * 30);
-    scene.add(pr);
-    // Top bar
-    const tb = new THREE.Mesh(new THREE.BoxGeometry(14, 0.4, 0.4), archMat);
-    tb.position.set(0, 5.2, -i * 30);
-    scene.add(tb);
+    envTiles.push(m);
   }
 
-  // Buildings (recycled)
-  const bCols = [0x2d1055, 0x0d2060, 0x551030, 0x105040, 0x332266, 0x5c1a00];
+  // ── Steel rails ───────────────────────────────────────────────────────────
+  const railMat = new THREE.MeshLambertMaterial({ color: 0xbbbbbb });
+  const railGeo = new THREE.BoxGeometry(0.2, 0.22, 400);
+  [-1.8, 1.8].forEach(x => {
+    const m = new THREE.Mesh(railGeo, railMat);
+    m.position.set(x, 0.26, -195);
+    scene.add(m);
+  });
+
+  // Outer rail edges of the platform
+  const edgeGeo = new THREE.BoxGeometry(0.2, 0.22, 400);
+  [-6.0, 6.0].forEach(x => {
+    const m = new THREE.Mesh(edgeGeo, railMat.clone());
+    m.position.set(x, 0.26, -195);
+    scene.add(m);
+  });
+
+  // ── Low platform walls / fences ───────────────────────────────────────────
+  const fenceH   = 1.8;
+  const fenceMat = new THREE.MeshLambertMaterial({ color: 0x999999 });
+  const fenceGeo = new THREE.BoxGeometry(0.35, fenceH, 400);
+  [-6.4, 6.4].forEach(x => {
+    const m = new THREE.Mesh(fenceGeo, fenceMat);
+    m.position.set(x, fenceH / 2, -195);
+    scene.add(m);
+  });
+
+  // Fence horizontal bars
+  const barMat = new THREE.MeshBasicMaterial({ color: 0xbbbbbb });
+  [0.5, 1.2].forEach(y => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(400, 0.08, 0.08), barMat);
+    m.position.set(-6.4, y, -195);
+    scene.add(m);
+    const m2 = new THREE.Mesh(new THREE.BoxGeometry(400, 0.08, 0.08), barMat);
+    m2.position.set(6.4, y, -195);
+    scene.add(m2);
+  });
+
+  // ── Graffiti on fences / walls ────────────────────────────────────────────
+  const grafColors = [0xff2244, 0x44aaff, 0xffcc00, 0x44ff88, 0xff6622, 0xcc44ff, 0xff44cc, 0x22ffcc];
+  for (let i = 0; i < 40; i++) {
+    const col  = grafColors[Math.floor(Math.random() * grafColors.length)];
+    const w2   = 0.6 + Math.random() * 2.2;
+    const h2   = 0.25 + Math.random() * 0.9;
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, h2, w2),
+      new THREE.MeshBasicMaterial({ color: col })
+    );
+    m.position.set(side * 6.38, 0.3 + Math.random() * 1.2, -5 - Math.random() * 220);
+    scene.add(m);
+    envBuildings.push(m);
+  }
+
+  // ── City buildings (behind the fence) ─────────────────────────────────────
+  const buildingPalette = [
+    0xf5a623, 0x7b9fba, 0xc0392b, 0x27ae60,
+    0x8e44ad, 0x2980b9, 0xe67e22, 0xd4a800,
+  ];
   for (let i = 0; i < 14; i++) {
     [-1, 1].forEach(side => {
-      const h = 6 + Math.random() * 22;
-      const w = 3 + Math.random() * 5;
-      const d = 4 + Math.random() * 3;
-      const col = bCols[Math.floor(Math.random() * bCols.length)];
+      const h = 7 + Math.random() * 22;
+      const w = 3.5 + Math.random() * 5;
+      const d = 3 + Math.random() * 3;
+      const col = buildingPalette[Math.floor(Math.random() * buildingPalette.length)];
       const m = new THREE.Mesh(
         new THREE.BoxGeometry(w, h, d),
         new THREE.MeshLambertMaterial({ color: col })
       );
-      m.position.set(side * (9 + Math.random() * 4), h / 2, -i * 18);
+      m.position.set(side * (10 + Math.random() * 5), h / 2, -i * 18);
       m.castShadow = true;
       scene.add(m);
       envBuildings.push(m);
 
-      // Neon window strips on buildings
-      const wm = new THREE.Mesh(
-        new THREE.BoxGeometry(w * 0.6, 0.15, 0.05),
-        new THREE.MeshBasicMaterial({ color: side < 0 ? 0x00ffff : 0xff44aa })
-      );
-      wm.position.set(side * (9 + Math.random() * 4), h * 0.6, -i * 18 + d / 2 + 0.01);
-      scene.add(wm);
-      envBuildings.push(wm);
+      // Window rows (light yellow)
+      const winMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+      for (let wr = 0; wr < 3; wr++) {
+        const wRow = new THREE.Mesh(
+          new THREE.BoxGeometry(w * 0.55, 0.3, 0.05),
+          winMat
+        );
+        wRow.position.set(
+          side * (10 + Math.random() * 5),
+          h * 0.25 + wr * h * 0.2,
+          -i * 18 + d / 2 + 0.01
+        );
+        scene.add(wRow);
+        envBuildings.push(wRow);
+      }
     });
   }
 
-  // Stars
-  const sv = [];
-  for (let i = 0; i < 900; i++) {
-    sv.push(
-      (Math.random() - 0.5) * 300,
-      8 + Math.random() * 50,
-      -Math.random() * 300
-    );
-  }
-  const sg = new THREE.BufferGeometry();
-  sg.setAttribute('position', new THREE.Float32BufferAttribute(sv, 3));
-  scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.17 })));
+  // ── Clouds ────────────────────────────────────────────────────────────────
+  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const cloudPositions = [
+    [-12, 25, -40], [8, 22, -80], [-5, 28, -130], [15, 24, -170], [-18, 26, -200],
+  ];
+  cloudPositions.forEach(([cx, cy, cz]) => {
+    [0, 2, -2, 1, -1].forEach((ox, i) => {
+      const r = 1.4 + Math.random() * 1.2;
+      const c = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), cloudMat);
+      c.position.set(cx + ox * 2.2, cy + (i % 2 === 0 ? 0 : -0.8), cz);
+      scene.add(c);
+      envBuildings.push(c);
+    });
+  });
 
-  // Moon
-  const moon = new THREE.Mesh(
-    new THREE.SphereGeometry(3.8, 16, 10),
-    new THREE.MeshBasicMaterial({ color: 0xffffcc })
+  // ── Sun disc ──────────────────────────────────────────────────────────────
+  const sunDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(5, 16),
+    new THREE.MeshBasicMaterial({ color: 0xffee88, side: THREE.DoubleSide })
   );
-  moon.position.set(-25, 42, -170);
-  scene.add(moon);
+  sunDisc.position.set(18, 32, -210);
+  scene.add(sunDisc);
 }
 
-// ── Player ───────────────────────────────────────────────────────────────────
+// ── Player (Jake-inspired) ───────────────────────────────────────────────────
 function buildPlayer(scene) {
   const group = new THREE.Group();
 
-  const skin  = new THREE.MeshLambertMaterial({ color: 0xffaa77 });
-  const body  = new THREE.MeshLambertMaterial({ color: 0xff5500 });
-  const pants = new THREE.MeshLambertMaterial({ color: 0x2244cc });
-  const hair  = new THREE.MeshLambertMaterial({ color: 0x221100 });
-  const shoe  = new THREE.MeshLambertMaterial({ color: 0x111111 });
+  const skin   = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
+  const hoodie = new THREE.MeshLambertMaterial({ color: 0xff5500 });
+  const pants  = new THREE.MeshLambertMaterial({ color: 0x224499 });
+  const capM   = new THREE.MeshLambertMaterial({ color: 0xffcc00 });
+  const shoe   = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const lace   = new THREE.MeshLambertMaterial({ color: 0xdd3333 });
 
   function box(w, h, d, mat, px, py, pz) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -201,15 +248,18 @@ function buildPlayer(scene) {
   }
 
   const meshes = {
-    head:  box(0.52, 0.52, 0.52, skin,  0,     1.74, 0),
-    hair:  box(0.56, 0.22, 0.56, hair,  0,     2.03, 0),
-    torso: box(0.66, 0.76, 0.42, body,  0,     1.10, 0),
-    armL:  box(0.24, 0.58, 0.28, body, -0.48,  1.10, 0),
-    armR:  box(0.24, 0.58, 0.28, body,  0.48,  1.10, 0),
-    legL:  box(0.29, 0.56, 0.32, pants,-0.20,  0.47, 0),
-    legR:  box(0.29, 0.56, 0.32, pants, 0.20,  0.47, 0),
-    shoeL: box(0.31, 0.20, 0.40, shoe, -0.20,  0.10, 0.04),
-    shoeR: box(0.31, 0.20, 0.40, shoe,  0.20,  0.10, 0.04),
+    head:     box(0.52, 0.52, 0.52, skin,   0,      1.74,  0),
+    cap:      box(0.60, 0.14, 0.60, capM,   0,      2.06,  0),
+    capBrim:  box(0.70, 0.08, 0.32, capM,   0,      1.96,  0.24),
+    torso:    box(0.66, 0.76, 0.42, hoodie, 0,      1.10,  0),
+    armL:     box(0.24, 0.58, 0.28, hoodie,-0.48,   1.10,  0),
+    armR:     box(0.24, 0.58, 0.28, hoodie, 0.48,   1.10,  0),
+    legL:     box(0.29, 0.56, 0.32, pants, -0.20,   0.47,  0),
+    legR:     box(0.29, 0.56, 0.32, pants,  0.20,   0.47,  0),
+    shoeL:    box(0.32, 0.20, 0.42, shoe,  -0.20,   0.10,  0.04),
+    shoeR:    box(0.32, 0.20, 0.42, shoe,   0.20,   0.10,  0.04),
+    laceL:    box(0.20, 0.06, 0.20, lace,  -0.20,   0.21,  0.14),
+    laceR:    box(0.20, 0.06, 0.20, lace,   0.20,   0.21,  0.14),
   };
 
   group.position.set(LANE_X[1], 0, 0);
@@ -217,70 +267,153 @@ function buildPlayer(scene) {
   playerObj = { group, meshes };
 }
 
-// ── Obstacle spawning ────────────────────────────────────────────────────────
-const OBS_DEFS = [
-  { id:'train',    w:2.5, h:2.9, d:0.9, yBot:0,    color:0xdd2020, emit:0x330000 },
-  { id:'train2',   w:2.5, h:2.9, d:0.9, yBot:0,    color:0x22aaee, emit:0x002244 },
-  { id:'barrier',  w:2.2, h:0.65,d:0.7, yBot:0,    color:0xffaa00, emit:0x442200 },
-  { id:'barrier2', w:2.2, h:0.65,d:0.7, yBot:0,    color:0x44ee44, emit:0x114411 },
-  { id:'overhead', w:13,  h:0.38,d:0.55,yBot:1.45, color:0x4488ff, emit:0x001144, allLanes:true },
+// ── Obstacles ────────────────────────────────────────────────────────────────
+const TRAIN_COLORS = [
+  { body: 0xee2222, stripe: 0xffd700 },  // red + gold
+  { body: 0x2266ee, stripe: 0xffffff },  // blue + white
+  { body: 0x22aa44, stripe: 0xffee22 },  // green + yellow
+  { body: 0xee8800, stripe: 0xffffff },  // orange + white
 ];
 
-function makeMesh(def) {
-  const mat = new THREE.MeshLambertMaterial({
-    color: def.color,
-    emissive: new THREE.Color(def.emit || 0x000000),
+function makeTrainMesh(w, h, d) {
+  const tc   = TRAIN_COLORS[Math.floor(Math.random() * TRAIN_COLORS.length)];
+  const group = new THREE.Group();
+
+  // Body
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshLambertMaterial({ color: tc.body })
+  );
+  body.castShadow = true;
+  group.add(body);
+
+  // Front face stripe
+  const stripe = new THREE.Mesh(
+    new THREE.BoxGeometry(w * 0.88, 0.28, 0.04),
+    new THREE.MeshBasicMaterial({ color: tc.stripe })
+  );
+  stripe.position.set(0, h * 0.12, d / 2 + 0.02);
+  group.add(stripe);
+
+  // Windows (2 per lane face)
+  const winMat = new THREE.MeshBasicMaterial({ color: 0xd4f4ff });
+  [-w * 0.22, w * 0.22].forEach(wx => {
+    const win = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.28, h * 0.28, 0.04),
+      winMat
+    );
+    win.position.set(wx, h * 0.2, d / 2 + 0.02);
+    group.add(win);
   });
-  const m = new THREE.Mesh(new THREE.BoxGeometry(def.w, def.h, def.d), mat);
-  m.castShadow = true;
-  return m;
+
+  // Headlights
+  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+  [-w * 0.3, w * 0.3].forEach(lx => {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.04), lightMat);
+    l.position.set(lx, -h * 0.28, d / 2 + 0.02);
+    group.add(l);
+  });
+
+  return group;
+}
+
+function makeBarrierMesh(w, h, d) {
+  const group = new THREE.Group();
+  const colors = [0xffaa00, 0xff5500, 0xffdd00];
+  const col = colors[Math.floor(Math.random() * colors.length)];
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshLambertMaterial({ color: col })
+  );
+  body.castShadow = true;
+  group.add(body);
+
+  // Warning stripes (black)
+  const stripeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  for (let i = 0; i < 3; i++) {
+    const s = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, h + 0.02, 0.04),
+      stripeMat
+    );
+    s.position.set(-w * 0.3 + i * w * 0.3, 0, d / 2 + 0.01);
+    group.add(s);
+  }
+  return group;
 }
 
 function spawnObstacle() {
   const r = Math.random();
 
   if (r < 0.18) {
-    // Overhead bar
-    const def = OBS_DEFS[4];
-    const mesh = makeMesh(def);
-    mesh.position.set(0, def.yBot + def.h / 2, SPAWN_Z);
-    three.scene.add(mesh);
-    obstacles.push({ mesh, lane:-1, w:def.w, yBot:def.yBot, yTop:def.yBot + def.h });
+    // Overhead bar (metal beam across all lanes)
+    const group = new THREE.Group();
+    const beam = new THREE.Mesh(
+      new THREE.BoxGeometry(14, 0.45, 0.65),
+      new THREE.MeshLambertMaterial({ color: 0x556677 })
+    );
+    beam.castShadow = true;
+    group.add(beam);
+    // Warning stripes on beam
+    const wMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+    [-5, -2.5, 0, 2.5, 5].forEach(x => {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.47, 0.02), wMat);
+      s.position.set(x, 0, 0.34);
+      group.add(s);
+    });
+    const yBot = 1.45;
+    const h    = 0.45;
+    group.position.set(0, yBot + h / 2, SPAWN_Z);
+    three.scene.add(group);
+    obstacles.push({ mesh: group, lane: -1, w: 14, yBot, yTop: yBot + h });
     return;
   }
 
   if (r < 0.38) {
-    // Double train — two lanes blocked, one open
-    const def = r < 0.28 ? OBS_DEFS[0] : OBS_DEFS[1];
+    // Double train: two lanes blocked
+    const h = 3.0, w = 2.6, d = 0.9;
     const open = Math.floor(Math.random() * 3);
     [0, 1, 2].filter(l => l !== open).forEach(l => {
-      const mesh = makeMesh(def);
-      mesh.position.set(LANE_X[l], def.yBot + def.h / 2, SPAWN_Z);
+      const mesh = makeTrainMesh(w, h, d);
+      mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
       three.scene.add(mesh);
-      obstacles.push({ mesh, lane:l, w:def.w * 0.88, yBot:def.yBot, yTop:def.yBot + def.h });
+      obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
     });
     return;
   }
 
   // Single obstacle
-  const def = OBS_DEFS[Math.floor(Math.random() * 4)];
-  const l   = Math.floor(Math.random() * 3);
-  const mesh = makeMesh(def);
-  mesh.position.set(LANE_X[l], def.yBot + def.h / 2, SPAWN_Z);
-  three.scene.add(mesh);
-  obstacles.push({ mesh, lane:l, w:def.w * 0.88, yBot:def.yBot, yTop:def.yBot + def.h });
+  if (Math.random() < 0.55) {
+    // Train
+    const h = 3.0, w = 2.6, d = 0.9;
+    const l = Math.floor(Math.random() * 3);
+    const mesh = makeTrainMesh(w, h, d);
+    mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
+    three.scene.add(mesh);
+    obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
+  } else {
+    // Barrier (low — must jump)
+    const h = 0.68, w = 2.2, d = 0.7;
+    const l = Math.floor(Math.random() * 3);
+    const mesh = makeBarrierMesh(w, h, d);
+    mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
+    three.scene.add(mesh);
+    obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
+  }
 }
 
 function spawnCoin() {
   const l = Math.floor(Math.random() * 3);
   const y = 0.7 + Math.random() * 1.0;
+  // Coin: flat disc shape
   const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.26, 10, 7),
+    new THREE.CylinderGeometry(0.26, 0.26, 0.12, 12),
     new THREE.MeshLambertMaterial({ color: 0xffcc00, emissive: new THREE.Color(0xaa6600) })
   );
   mesh.position.set(LANE_X[l], y, SPAWN_Z);
+  mesh.rotation.z = Math.PI / 2; // face player
   three.scene.add(mesh);
-  coins.push({ mesh, lane:l, y });
+  coins.push({ mesh, lane: l, y });
 }
 
 // ── Update ───────────────────────────────────────────────────────────────────
@@ -333,7 +466,8 @@ function update(dt) {
     const bob = Math.abs(Math.sin(t)) * 0.04;
     playerObj.meshes.torso.position.y = 1.10 + bob;
     playerObj.meshes.head.position.y  = 1.74 + bob;
-    playerObj.meshes.hair.position.y  = 2.03 + bob;
+    playerObj.meshes.cap.position.y   = 2.06 + bob;
+    playerObj.meshes.capBrim.position.y = 1.96 + bob;
   } else {
     playerObj.meshes.legL.rotation.x = -0.45;
     playerObj.meshes.legR.rotation.x =  0.45;
@@ -349,9 +483,9 @@ function update(dt) {
   coinT += dt;
   if (coinT > 0.65) { coinT = 0; spawnCoin(); }
 
-  // Player bounding values
-  const pX   = playerObj.group.position.x;
-  const pHW  = 0.38;
+  // Bounding values
+  const pX    = playerObj.group.position.x;
+  const pHW   = 0.38;
   const pYBot = playerY;
   const pYTop = playerY + 2.2 * playerObj.group.scale.y;
 
@@ -369,7 +503,6 @@ function update(dt) {
     if (o.mesh.position.z > -2.5 && o.mesh.position.z < 2.5) {
       let hit = false;
       if (o.lane === -1) {
-        // Overhead bar — hits if head doesn't clear
         if (pYTop > o.yBot + 0.08) hit = true;
       } else {
         const xOk = Math.abs(pX - LANE_X[o.lane]) < pHW + o.w / 2;
@@ -384,7 +517,7 @@ function update(dt) {
   for (let i = coins.length - 1; i >= 0; i--) {
     const c = coins[i];
     c.mesh.position.z += speed * dt;
-    c.mesh.rotation.y += dt * 3.5;
+    c.mesh.rotation.x += dt * 4; // spin coin
 
     if (c.mesh.position.z > DESPAWN_Z) {
       three.scene.remove(c.mesh);
@@ -405,19 +538,19 @@ function update(dt) {
     }
   }
 
-  // Recycle ground tiles
+  // Recycle ground tiles + sleepers
   envTiles.forEach(t => {
     t.position.z += speed * dt;
-    if (t.position.z > 14) t.position.z -= 8 * 24;
+    if (t.position.z > 14) t.position.z -= TILE_PERIOD;
   });
 
-  // Recycle buildings & arches (all non-tile env objects)
+  // Recycle buildings / graffiti / clouds
   envBuildings.forEach(b => {
     b.position.z += speed * dt;
     if (b.position.z > 14) b.position.z -= 14 * 18;
   });
 
-  // Camera smooth follow
+  // Camera smooth follow player lane
   const camTX = playerObj.group.position.x * 0.22;
   three.camera.position.x += (camTX - three.camera.position.x) * Math.min(dt * 9, 1);
 }
@@ -523,18 +656,15 @@ document.addEventListener('keydown', e => {
     case 'ArrowDown':  doCrouch();  break;
   }
 });
-document.addEventListener('keyup', e => {
-  if (e.key === 'ArrowDown') endCrouch();
-});
+document.addEventListener('keyup', e => { if (e.key === 'ArrowDown') endCrouch(); });
 
-document.getElementById('runner-left')  ?.addEventListener('click',       moveLeft);
-document.getElementById('runner-right') ?.addEventListener('click',       moveRight);
-document.getElementById('runner-jump')  ?.addEventListener('click',       doJump);
-document.getElementById('runner-crouch')?.addEventListener('pointerdown', doCrouch);
-document.getElementById('runner-crouch')?.addEventListener('pointerup',   endCrouch);
+document.getElementById('runner-left')  ?.addEventListener('click',         moveLeft);
+document.getElementById('runner-right') ?.addEventListener('click',         moveRight);
+document.getElementById('runner-jump')  ?.addEventListener('click',         doJump);
+document.getElementById('runner-crouch')?.addEventListener('pointerdown',   doCrouch);
+document.getElementById('runner-crouch')?.addEventListener('pointerup',     endCrouch);
 document.getElementById('runner-crouch')?.addEventListener('pointercancel', endCrouch);
 
-// Swipe
 let tx0 = 0, ty0 = 0;
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
@@ -548,11 +678,9 @@ canvas.addEventListener('touchend', e => {
   const dy = e.changedTouches[0].clientY - ty0;
   if (state !== 'playing') { begin(); return; }
   if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx < -25) moveLeft();
-    else if (dx > 25) moveRight();
+    if (dx < -25) moveLeft(); else if (dx > 25) moveRight();
   } else {
-    if (dy < -25) doJump();
-    else if (dy > 25) { doCrouch(); setTimeout(endCrouch, 600); }
+    if (dy < -25) doJump(); else if (dy > 25) { doCrouch(); setTimeout(endCrouch, 600); }
   }
 }, { passive: false });
 
