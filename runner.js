@@ -51,23 +51,19 @@ bestEl.textContent = best;
 // ── Toon helpers ─────────────────────────────────────────────────────────────
 function makeToonGrad() {
   const c = document.createElement('canvas');
-  c.width = 4; c.height = 1;
+  c.width = 3; c.height = 1;
   const x = c.getContext('2d');
-  x.fillStyle = '#555'; x.fillRect(0, 0, 1, 1);
-  x.fillStyle = '#aaa'; x.fillRect(1, 0, 1, 1);
-  x.fillStyle = '#fff'; x.fillRect(2, 0, 2, 1);
+  // sombra clara (70%) → highlight (100%) — cores aparecem vivas mesmo na sombra
+  x.fillStyle = '#b4b4b4'; x.fillRect(0, 0, 1, 1);
+  x.fillStyle = '#ffffff'; x.fillRect(1, 0, 2, 1);
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
   t.minFilter = THREE.NearestFilter;
   return t;
 }
 
-function toon(color, emissive = 0x000000) {
-  return new THREE.MeshToonMaterial({
-    color,
-    emissive: new THREE.Color(emissive),
-    gradientMap: gradMap,
-  });
+function toon(color) {
+  return new THREE.MeshToonMaterial({ color, gradientMap: gradMap });
 }
 
 // Adiciona contorno preto (backface trick — cel-shading outline)
@@ -113,11 +109,11 @@ function initThree() {
 }
 
 function setupLights(scene) {
-  // Toon precisa de ambient baixo para sombras duras ficarem visíveis
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  // Ambient alto = cores vivas em todas as faces
+  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
-  const sun = new THREE.DirectionalLight(0xfff8d0, 4.5);
-  sun.position.set(10, 28, 18);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+  sun.position.set(8, 20, 14);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.left   = -20;
@@ -126,19 +122,14 @@ function setupLights(scene) {
   sun.shadow.camera.bottom =  -6;
   sun.shadow.camera.far    =  75;
   scene.add(sun);
-
-  // Fill light azul suave
-  const fill = new THREE.DirectionalLight(0xaaddff, 0.6);
-  fill.position.set(-10, 15, -15);
-  scene.add(fill);
 }
 
 // ── Environment ───────────────────────────────────────────────────────────────
 function buildEnvironment(scene) {
 
-  // Pista — verde grama com listras
-  const groundMat  = toon(0x55cc44, 0x115500);
-  const groundMat2 = toon(0x44bb33);
+  // Pista — verde grama vivo
+  const groundMat  = toon(0x44dd22);
+  const groundMat2 = toon(0x33cc11);
   const tileGeo    = new THREE.BoxGeometry(14, 0.5, 24);
   for (let i = 0; i < 8; i++) {
     const m = new THREE.Mesh(tileGeo, i % 2 === 0 ? groundMat : groundMat2);
@@ -148,8 +139,8 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // Faixas da calçada/pista (concreto cinza entre trilhos)
-  const concMat = toon(0xccccbb);
+  // Pista central (cinza-claro, bem visível)
+  const concMat = toon(0xddddcc);
   const concGeo = new THREE.BoxGeometry(7.8, 0.52, 24);
   for (let i = 0; i < 8; i++) {
     const m = new THREE.Mesh(concGeo, concMat);
@@ -160,7 +151,7 @@ function buildEnvironment(scene) {
   }
 
   // Dormentes (madeira escura)
-  const sleeperMat = toon(0x5c3010);
+  const sleeperMat = toon(0x8b5a2b);  // castanho claro
   const sleeperGeo = new THREE.BoxGeometry(7.4, 0.22, 0.60);
   for (let i = 0; i < 55; i++) {
     const m = new THREE.Mesh(sleeperGeo, sleeperMat);
@@ -171,7 +162,7 @@ function buildEnvironment(scene) {
   }
 
   // Trilhos metálicos
-  const railMat = toon(0xddddcc, 0x222200);
+  const railMat = toon(0xddddcc);
   [-1.8, 1.8].forEach(x => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.26, 400), railMat);
     m.position.set(x, 0.28, -195);
@@ -197,7 +188,7 @@ function buildEnvironment(scene) {
 
   // Postes de luz cartoon
   const poleMat = toon(0x888888);
-  const lampMat = toon(0xffff88, 0xaaaa00);
+  const lampMat = toon(0xffff88);
   for (let i = 0; i < 12; i++) {
     [-1, 1].forEach(side => {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.12, 5, 8), poleMat);
@@ -213,8 +204,9 @@ function buildEnvironment(scene) {
   }
 
   // Prédios cartoon (3 tipos, cores primárias vivas + contornos)
-  const bCols = [0xff4444, 0xffaa00, 0x44cc44, 0x4488ff, 0xcc44cc, 0xff6622, 0x22cccc, 0xddcc00];
-  const winCol = toon(0xeeffff, 0x004488);
+  // Cores de prédio super saturadas, cartoon
+  const bCols = [0xff2222, 0xff8800, 0x22cc00, 0x0066ff, 0xcc00cc, 0xff4400, 0x00cccc, 0xeecc00];
+  const winCol = toon(0xeeffff);
 
   for (let i = 0; i < 14; i++) {
     [-1, 1].forEach(side => {
@@ -264,7 +256,7 @@ function buildEnvironment(scene) {
         const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, h * 0.3, 6), toon(0x888888));
         ant.position.set(bx, h + h * 0.15, bz);
         scene.add(ant); envBuildings.push(ant);
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), toon(0xff3333, 0x880000));
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), toon(0xff3333));
         tip.position.set(bx, h + h * 0.3, bz);
         scene.add(tip); envBuildings.push(tip); outline(tip, 1.15);
         for (let r = 0; r < 5; r++) {
@@ -277,7 +269,7 @@ function buildEnvironment(scene) {
   }
 
   // Nuvens cartoon (esferas brancas agrupadas)
-  const cloudMat = toon(0xffffff, 0x8888aa);
+  const cloudMat = toon(0xffffff);
   [[-12,26,-40],[9,23,-85],[-6,29,-135],[16,25,-175],[-20,27,-210]].forEach(([cx,cy,cz]) => {
     [0,2.5,-2.5,1.2,-1.2].forEach((ox, i) => {
       const r = 1.6 + Math.random() * 1.2;
@@ -300,13 +292,13 @@ function buildEnvironment(scene) {
 function buildPlayer(scene) {
   const group = new THREE.Group();
 
-  const skin   = toon(0xffcc88, 0x221100);
-  const hoodie = toon(0xff5500, 0x220000);
-  const pants  = toon(0x2255cc, 0x000822);
-  const capM   = toon(0xffdd00, 0x443300);
-  const shoe   = toon(0xfafafa, 0x111111);
-  const dark   = toon(0x111111);
-  const red    = toon(0xee2222, 0x220000);
+  const skin   = toon(0xffddaa);  // pele clara/quente
+  const hoodie = toon(0xff3300);  // vermelho-laranja vivo
+  const pants  = toon(0x1166ff);  // azul-brilhante
+  const capM   = toon(0xffee00);  // amarelo neon
+  const shoe   = toon(0xffffff);  // branco puro
+  const dark   = toon(0x222222);
+  const red    = toon(0xff1111);  // vermelho puro
 
   function add(geo, mat, px, py, pz) {
     const m = new THREE.Mesh(geo, mat);
@@ -399,7 +391,7 @@ function makeTrainMesh(w, h, d) {
   [-w * 0.22, w * 0.22].forEach(wx => {
     const win = new THREE.Mesh(
       new THREE.BoxGeometry(w * 0.28, h * 0.28, 0.07),
-      toon(0xd4f4ff, 0x002244)
+      toon(0xd4f4ff)
     );
     win.position.set(wx, h * 0.22, d / 2 + 0.02);
     group.add(win);
@@ -460,7 +452,7 @@ function spawnOverheadBeam() {
   beam.castShadow = true;
   group.add(beam);
   outline(beam, 1.04);
-  const wMat = toon(0xffcc00, 0x442200);
+  const wMat = toon(0xffcc00);
   [-5, -2.5, 0, 2.5, 5].forEach(x => {
     const s = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.52, 0.06), wMat);
     s.position.set(x, 0, 0.36);
@@ -538,7 +530,7 @@ function spawnCoin() {
   const y = 0.7 + Math.random() * 1.0;
   const mesh = new THREE.Mesh(
     new THREE.TorusGeometry(0.28, 0.09, 8, 18),
-    toon(0xffcc00, 0x885500)
+    toon(0xffcc00)
   );
   mesh.position.set(LANE_X[l], y, SPAWN_Z);
   mesh.rotation.x = Math.PI / 2;
