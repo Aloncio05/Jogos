@@ -1,37 +1,41 @@
 'use strict';
 /* global THREE */
 
-// ── Corrida do Aloncinho 3D — Subway Surfers style ───────────────────────────
+// ── Corrida do Aloncinho 3D — Cartoon Style ──────────────────────────────────
 
 const W = 360, H = 600;
-const LANE_X     = [-3, 0, 3];
-const SPAWN_Z    = -130;
-const DESPAWN_Z  = 12;
-const BASE_SPEED = 22;
-const MAX_SPEED  = 70;
-const SPEED_INC  = 1.5;   // incremento por tick
-const SPEED_TICK = 5;     // segundos entre incrementos
-const GRAVITY    = -30;
-const JUMP_V     = 13;
-const GROUND_Y   = 0;
-const CROUCH_S   = 0.5;
-const TILE_PERIOD = 8 * 24; // recycle period for ground objects
+const LANE_X      = [-3, 0, 3];
+const SPAWN_Z     = -130;
+const DESPAWN_Z   = 12;
+const BASE_SPEED  = 22;
+const MAX_SPEED   = 70;
+const SPEED_INC   = 1.5;
+const SPEED_TICK  = 5;
+const GRAV_UP     = -28;   // gravidade subindo (mais suave)
+const GRAV_DOWN   = -54;   // gravidade descendo (queda rápida)
+const JUMP_V      = 14;
+const GROUND_Y    = 0;
+const CROUCH_S    = 0.5;
+const TILE_PERIOD = 8 * 24;
 
 // ── State ────────────────────────────────────────────────────────────────────
 let three = {};
 let playerObj = {};
 let obstacles = [], coins = [];
 let envTiles = [], envBuildings = [];
+let gradMap;  // toon gradient texture
 
-let state      = 'idle';
-let score      = 0;
-let best       = parseInt(localStorage.getItem('runner-best') || '0');
-let speed      = BASE_SPEED;
-let targetLane = 1;
-let playerY    = GROUND_Y;
-let playerVY   = 0;
-let crouching  = false;
-let animFrame  = 0;
+let state       = 'idle';
+let score       = 0;
+let best        = parseInt(localStorage.getItem('runner-best') || '0');
+let speed       = BASE_SPEED;
+let targetLane  = 1;
+let playerY     = GROUND_Y;
+let playerVY    = 0;
+let crouching   = false;
+let wasOnGround = true;
+let laneLean    = 0;
+let animFrame   = 0;
 let spawnT = 0, coinT = 0, scoreT = 0, speedT = 0;
 
 // ── DOM ──────────────────────────────────────────────────────────────────────
@@ -44,14 +48,54 @@ const powersEl = document.getElementById('runner-powers');
 
 bestEl.textContent = best;
 
-// ── Three.js init ────────────────────────────────────────────────────────────
-function initThree() {
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87ceeb); // daytime sky blue
-  scene.fog = new THREE.Fog(0xc8e8ff, 55, 200);
+// ── Toon helpers ─────────────────────────────────────────────────────────────
+function makeToonGrad() {
+  const c = document.createElement('canvas');
+  c.width = 4; c.height = 1;
+  const x = c.getContext('2d');
+  x.fillStyle = '#555'; x.fillRect(0, 0, 1, 1);
+  x.fillStyle = '#aaa'; x.fillRect(1, 0, 1, 1);
+  x.fillStyle = '#fff'; x.fillRect(2, 0, 2, 1);
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  return t;
+}
 
-  const camera = new THREE.PerspectiveCamera(62, W / H, 0.1, 260);
-  camera.position.set(0, 5, 10);
+function toon(color, emissive = 0x000000) {
+  return new THREE.MeshToonMaterial({
+    color,
+    emissive: new THREE.Color(emissive),
+    gradientMap: gradMap,
+  });
+}
+
+// Adiciona contorno preto (backface trick — cel-shading outline)
+function outline(mesh, scale = 1.10) {
+  const o = new THREE.Mesh(
+    mesh.geometry,
+    new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide })
+  );
+  o.scale.setScalar(scale);
+  mesh.add(o);
+}
+
+function outlineGroup(group, scale = 1.10) {
+  group.traverse(child => {
+    if (child.isMesh && !child._isOutline) outline(child, scale);
+  });
+}
+
+// ── Three.js init ─────────────────────────────────────────────────────────────
+function initThree() {
+  gradMap = makeToonGrad();
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x4dd8fa); // cartoon sky blue
+  scene.fog = new THREE.Fog(0x99eaff, 60, 210);
+
+  const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 260);
+  camera.position.set(0, 5.5, 11);
   camera.lookAt(0, 1.5, -30);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -69,249 +113,200 @@ function initThree() {
 }
 
 function setupLights(scene) {
-  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  // Toon precisa de ambient baixo para sombras duras ficarem visíveis
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
-  const sun = new THREE.DirectionalLight(0xfff5d0, 3.2);
-  sun.position.set(12, 32, 18);
+  const sun = new THREE.DirectionalLight(0xfff8d0, 4.5);
+  sun.position.set(10, 28, 18);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left   = -18;
-  sun.shadow.camera.right  =  18;
-  sun.shadow.camera.top    =  18;
-  sun.shadow.camera.bottom =  -5;
-  sun.shadow.camera.far    =  70;
+  sun.shadow.camera.left   = -20;
+  sun.shadow.camera.right  =  20;
+  sun.shadow.camera.top    =  20;
+  sun.shadow.camera.bottom =  -6;
+  sun.shadow.camera.far    =  75;
   scene.add(sun);
 
-  // Sky fill (blue-ish, from opposite side)
-  const skyFill = new THREE.DirectionalLight(0x9ac8e8, 0.9);
-  skyFill.position.set(-8, 18, -12);
-  scene.add(skyFill);
+  // Fill light azul suave
+  const fill = new THREE.DirectionalLight(0xaaddff, 0.6);
+  fill.position.set(-10, 15, -15);
+  scene.add(fill);
 }
 
-// ── Environment ──────────────────────────────────────────────────────────────
+// ── Environment ───────────────────────────────────────────────────────────────
 function buildEnvironment(scene) {
 
-  // ── Ground platform (concrete) ─────────────────────────────────────────────
-  const concreteMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-  const tileGeo     = new THREE.BoxGeometry(14, 0.4, 24);
+  // Pista — verde grama com listras
+  const groundMat  = toon(0x55cc44, 0x115500);
+  const groundMat2 = toon(0x44bb33);
+  const tileGeo    = new THREE.BoxGeometry(14, 0.5, 24);
   for (let i = 0; i < 8; i++) {
-    const m = new THREE.Mesh(tileGeo, concreteMat);
-    m.position.set(0, -0.2, -i * 24 + 12);
+    const m = new THREE.Mesh(tileGeo, i % 2 === 0 ? groundMat : groundMat2);
+    m.position.set(0, -0.25, -i * 24 + 12);
     m.receiveShadow = true;
     scene.add(m);
     envTiles.push(m);
   }
 
-  // ── Railroad sleepers (dark wood, across track) ────────────────────────────
-  const sleeperMat = new THREE.MeshLambertMaterial({ color: 0x3d2200 });
-  const sleeperGeo = new THREE.BoxGeometry(11.5, 0.18, 0.55);
-  const sleeperCount = 55;
-  for (let i = 0; i < sleeperCount; i++) {
+  // Faixas da calçada/pista (concreto cinza entre trilhos)
+  const concMat = toon(0xccccbb);
+  const concGeo = new THREE.BoxGeometry(7.8, 0.52, 24);
+  for (let i = 0; i < 8; i++) {
+    const m = new THREE.Mesh(concGeo, concMat);
+    m.position.set(0, -0.24, -i * 24 + 12);
+    m.receiveShadow = true;
+    scene.add(m);
+    envTiles.push(m);
+  }
+
+  // Dormentes (madeira escura)
+  const sleeperMat = toon(0x5c3010);
+  const sleeperGeo = new THREE.BoxGeometry(7.4, 0.22, 0.60);
+  for (let i = 0; i < 55; i++) {
     const m = new THREE.Mesh(sleeperGeo, sleeperMat);
-    m.position.set(0, 0.09, 12 - i * (TILE_PERIOD / sleeperCount));
+    m.position.set(0, 0.11, 12 - i * (TILE_PERIOD / 55));
     m.receiveShadow = true;
     scene.add(m);
     envTiles.push(m);
   }
 
-  // ── Steel rails — material metálico brilhante ─────────────────────────────
-  const railMat = new THREE.MeshPhongMaterial({ color: 0xdddddd, shininess: 150 });
-  const railGeo = new THREE.BoxGeometry(0.2, 0.22, 400);
+  // Trilhos metálicos
+  const railMat = toon(0xddddcc, 0x222200);
   [-1.8, 1.8].forEach(x => {
-    const m = new THREE.Mesh(railGeo, railMat);
-    m.position.set(x, 0.26, -195);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.26, 400), railMat);
+    m.position.set(x, 0.28, -195);
     scene.add(m);
   });
 
-  // Outer rail edges of the platform
-  const edgeGeo = new THREE.BoxGeometry(0.2, 0.22, 400);
-  [-6.0, 6.0].forEach(x => {
-    const m = new THREE.Mesh(edgeGeo, railMat.clone());
-    m.position.set(x, 0.26, -195);
+  // Calçada lateral (cor cartoon laranja/vermelho — like SS)
+  const sidewalkMat = toon(0xff8844);
+  [-1, 1].forEach(side => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.55, 400), sidewalkMat);
+    m.position.set(side * 5.3, -0.22, -195);
     scene.add(m);
   });
 
-  // ── Postes de luz cilíndricos (reciclados) ────────────────────────────────
-  const poleMat = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 50 });
-  const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+  // Muros baixos com contorno
+  const wallMat = toon(0xffeedd);
+  [-1, 1].forEach(side => {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.6, 400), wallMat);
+    wall.position.set(side * 6.5, 0.8, -195);
+    scene.add(wall);
+    outline(wall);
+  });
+
+  // Postes de luz cartoon
+  const poleMat = toon(0x888888);
+  const lampMat = toon(0xffff88, 0xaaaa00);
   for (let i = 0; i < 12; i++) {
     [-1, 1].forEach(side => {
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 4.5, 8), poleMat);
-      pole.position.set(side * 6.0, 2.25, -i * 22);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.12, 5, 8), poleMat);
+      pole.position.set(side * 6.2, 2.5, -i * 22);
       scene.add(pole);
       envBuildings.push(pole);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), lampMat);
-      lamp.position.set(side * 6.0, 4.7, -i * 22);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), lampMat);
+      lamp.position.set(side * 6.2, 5.2, -i * 22);
       scene.add(lamp);
+      outline(lamp);
       envBuildings.push(lamp);
     });
   }
 
-  // ── Low platform walls / fences ───────────────────────────────────────────
-  const fenceH   = 1.8;
-  const fenceMat = new THREE.MeshLambertMaterial({ color: 0x999999 });
-  const fenceGeo = new THREE.BoxGeometry(0.35, fenceH, 400);
-  [-6.4, 6.4].forEach(x => {
-    const m = new THREE.Mesh(fenceGeo, fenceMat);
-    m.position.set(x, fenceH / 2, -195);
-    scene.add(m);
-  });
-
-  // Fence horizontal bars
-  const barMat = new THREE.MeshBasicMaterial({ color: 0xbbbbbb });
-  [0.5, 1.2].forEach(y => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(400, 0.08, 0.08), barMat);
-    m.position.set(-6.4, y, -195);
-    scene.add(m);
-    const m2 = new THREE.Mesh(new THREE.BoxGeometry(400, 0.08, 0.08), barMat);
-    m2.position.set(6.4, y, -195);
-    scene.add(m2);
-  });
-
-  // ── Graffiti on fences / walls ────────────────────────────────────────────
-  const grafColors = [0xff2244, 0x44aaff, 0xffcc00, 0x44ff88, 0xff6622, 0xcc44ff, 0xff44cc, 0x22ffcc];
-  for (let i = 0; i < 40; i++) {
-    const col  = grafColors[Math.floor(Math.random() * grafColors.length)];
-    const w2   = 0.6 + Math.random() * 2.2;
-    const h2   = 0.25 + Math.random() * 0.9;
-    const side = Math.random() < 0.5 ? -1 : 1;
-    const m = new THREE.Mesh(
-      new THREE.BoxGeometry(0.04, h2, w2),
-      new THREE.MeshBasicMaterial({ color: col })
-    );
-    m.position.set(side * 6.38, 0.3 + Math.random() * 1.2, -5 - Math.random() * 220);
-    scene.add(m);
-    envBuildings.push(m);
-  }
-
-  // ── City buildings — mix de geometrias ────────────────────────────────────
-  const bPalette = [0xf5a623, 0x7b9fba, 0xc0392b, 0x27ae60, 0x8e44ad, 0x2980b9, 0xe67e22, 0xd4a800];
-  const winMat  = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+  // Prédios cartoon (3 tipos, cores primárias vivas + contornos)
+  const bCols = [0xff4444, 0xffaa00, 0x44cc44, 0x4488ff, 0xcc44cc, 0xff6622, 0x22cccc, 0xddcc00];
+  const winCol = toon(0xeeffff, 0x004488);
 
   for (let i = 0; i < 14; i++) {
     [-1, 1].forEach(side => {
-      const bx   = side * (10 + Math.random() * 5);
-      const bz   = -i * 18;
-      const col  = bPalette[Math.floor(Math.random() * bPalette.length)];
-      const mat  = new THREE.MeshPhongMaterial({ color: col, shininess: 20 });
-      const h    = 7 + Math.random() * 22;
-      const type = Math.random();
+      const bx  = side * (10.5 + Math.random() * 4.5);
+      const bz  = -i * 18;
+      const col = bCols[Math.floor(Math.random() * bCols.length)];
+      const mat = toon(col);
+      const h   = 8 + Math.random() * 20;
+      const t   = Math.random();
 
-      let base;
-
-      if (type < 0.35) {
-        // Prédio retangular clássico
-        const w = 3.5 + Math.random() * 4;
-        const d = 2.5 + Math.random() * 3;
-        base = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-        base.position.set(bx, h / 2, bz);
-
-        // Janelas em faixas
-        for (let wr = 0; wr < 4; wr++) {
-          const row = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.28, 0.06), winMat);
-          row.position.set(bx, h * 0.2 + wr * h * 0.18, bz + d / 2 + 0.02);
-          scene.add(row);
-          envBuildings.push(row);
+      if (t < 0.33) {
+        // Prédio retangular + topo diferente
+        const w = 4 + Math.random() * 4, d = 3 + Math.random() * 3;
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        b.position.set(bx, h / 2, bz);
+        b.castShadow = true;
+        scene.add(b); envBuildings.push(b); outline(b, 1.04);
+        // Janelas
+        for (let r = 0; r < 4; r++) {
+          const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.65, 0.4, 0.07), winCol);
+          win.position.set(bx, h * 0.18 + r * h * 0.18, bz + d / 2 + 0.02);
+          scene.add(win); envBuildings.push(win);
         }
-        // Topo plano com bordas
-        const top = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3),
-          new THREE.MeshPhongMaterial({ color: 0x555555 }));
-        top.position.set(bx, h + 0.17, bz);
-        scene.add(top);
-        envBuildings.push(top);
+        // Teto plano colorido
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.55, d + 0.5), toon(0x333333));
+        roof.position.set(bx, h + 0.27, bz);
+        scene.add(roof); envBuildings.push(roof);
 
-      } else if (type < 0.65) {
-        // Torre cilíndrica
-        const r = 1.6 + Math.random() * 1.8;
-        base = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.85, r, h, 12), mat);
-        base.position.set(bx, h / 2, bz);
-
-        // Cúpula no topo
-        const dome = new THREE.Mesh(new THREE.SphereGeometry(r * 0.88, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+      } else if (t < 0.66) {
+        // Torre redonda com cúpula
+        const r = 1.8 + Math.random() * 1.8;
+        const b = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.88, r, h, 14), mat);
+        b.position.set(bx, h / 2, bz);
+        b.castShadow = true;
+        scene.add(b); envBuildings.push(b); outline(b, 1.04);
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(r * 0.92, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon(0xff4444));
         dome.position.set(bx, h, bz);
-        scene.add(dome);
-        envBuildings.push(dome);
-
-        // Janelas em anel
-        for (let wr = 0; wr < 3; wr++) {
-          const ring = new THREE.Mesh(new THREE.TorusGeometry(r + 0.04, 0.1, 4, 12), winMat);
-          ring.rotation.x = Math.PI / 2;
-          ring.position.set(bx, h * 0.25 + wr * h * 0.22, bz);
-          scene.add(ring);
-          envBuildings.push(ring);
-        }
+        scene.add(dome); envBuildings.push(dome); outline(dome, 1.06);
 
       } else {
         // Arranha-céu fino com antena
-        const w = 2.5 + Math.random() * 2;
-        const d = 2 + Math.random() * 2;
-        base = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-        base.position.set(bx, h / 2, bz);
-
-        // Antena cilíndrica
-        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, h * 0.28, 6),
-          new THREE.MeshPhongMaterial({ color: 0x888888 }));
-        ant.position.set(bx, h + h * 0.14, bz);
-        scene.add(ant);
-        envBuildings.push(ant);
-
-        // Ponta da antena
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6),
-          new THREE.MeshBasicMaterial({ color: 0xff3333 }));
-        tip.position.set(bx, h + h * 0.28, bz);
-        scene.add(tip);
-        envBuildings.push(tip);
-
-        // Janelas
-        for (let wr = 0; wr < 5; wr++) {
-          const row = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 0.22, 0.06), winMat);
-          row.position.set(bx, h * 0.15 + wr * h * 0.15, bz + d / 2 + 0.02);
-          scene.add(row);
-          envBuildings.push(row);
+        const w = 2.8 + Math.random() * 2, d = 2.2 + Math.random() * 2;
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        b.position.set(bx, h / 2, bz);
+        b.castShadow = true;
+        scene.add(b); envBuildings.push(b); outline(b, 1.04);
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, h * 0.3, 6), toon(0x888888));
+        ant.position.set(bx, h + h * 0.15, bz);
+        scene.add(ant); envBuildings.push(ant);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), toon(0xff3333, 0x880000));
+        tip.position.set(bx, h + h * 0.3, bz);
+        scene.add(tip); envBuildings.push(tip); outline(tip, 1.15);
+        for (let r = 0; r < 5; r++) {
+          const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 0.32, 0.07), winCol);
+          win.position.set(bx, h * 0.14 + r * h * 0.16, bz + d / 2 + 0.02);
+          scene.add(win); envBuildings.push(win);
         }
       }
-
-      base.castShadow = true;
-      scene.add(base);
-      envBuildings.push(base);
     });
   }
 
-  // ── Clouds ────────────────────────────────────────────────────────────────
-  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const cloudPositions = [
-    [-12, 25, -40], [8, 22, -80], [-5, 28, -130], [15, 24, -170], [-18, 26, -200],
-  ];
-  cloudPositions.forEach(([cx, cy, cz]) => {
-    [0, 2, -2, 1, -1].forEach((ox, i) => {
-      const r = 1.4 + Math.random() * 1.2;
-      const c = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), cloudMat);
-      c.position.set(cx + ox * 2.2, cy + (i % 2 === 0 ? 0 : -0.8), cz);
+  // Nuvens cartoon (esferas brancas agrupadas)
+  const cloudMat = toon(0xffffff, 0x8888aa);
+  [[-12,26,-40],[9,23,-85],[-6,29,-135],[16,25,-175],[-20,27,-210]].forEach(([cx,cy,cz]) => {
+    [0,2.5,-2.5,1.2,-1.2].forEach((ox, i) => {
+      const r = 1.6 + Math.random() * 1.2;
+      const c = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 7), cloudMat);
+      c.position.set(cx + ox * 1.8, cy + (i % 2 ? -0.7 : 0), cz);
       scene.add(c);
       envBuildings.push(c);
     });
   });
 
-  // ── Sun disc ──────────────────────────────────────────────────────────────
-  const sunDisc = new THREE.Mesh(
-    new THREE.CircleGeometry(5, 16),
-    new THREE.MeshBasicMaterial({ color: 0xffee88, side: THREE.DoubleSide })
-  );
-  sunDisc.position.set(18, 32, -210);
-  scene.add(sunDisc);
+  // Sol cartoon
+  const sunGeo = new THREE.CircleGeometry(5.5, 20);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffee44, side: THREE.DoubleSide });
+  const sun2d  = new THREE.Mesh(sunGeo, sunMat);
+  sun2d.position.set(18, 35, -215);
+  scene.add(sun2d);
 }
 
-// ── Player (Jake-inspired, formas arredondadas) ──────────────────────────────
+// ── Player ────────────────────────────────────────────────────────────────────
 function buildPlayer(scene) {
   const group = new THREE.Group();
 
-  const skin   = new THREE.MeshPhongMaterial({ color: 0xffcc99, shininess: 40 });
-  const hoodie = new THREE.MeshPhongMaterial({ color: 0xff5500, shininess: 25 });
-  const pants  = new THREE.MeshPhongMaterial({ color: 0x224499, shininess: 20 });
-  const capM   = new THREE.MeshPhongMaterial({ color: 0xffcc00, shininess: 35 });
-  const shoe   = new THREE.MeshPhongMaterial({ color: 0xfafafa, shininess: 70 });
-  const dark   = new THREE.MeshPhongMaterial({ color: 0x111111 });
-  const accent = new THREE.MeshBasicMaterial({ color: 0xee2222 });
+  const skin   = toon(0xffcc88, 0x221100);
+  const hoodie = toon(0xff5500, 0x220000);
+  const pants  = toon(0x2255cc, 0x000822);
+  const capM   = toon(0xffdd00, 0x443300);
+  const shoe   = toon(0xfafafa, 0x111111);
+  const dark   = toon(0x111111);
+  const red    = toon(0xee2222, 0x220000);
 
   function add(geo, mat, px, py, pz) {
     const m = new THREE.Mesh(geo, mat);
@@ -321,100 +316,111 @@ function buildPlayer(scene) {
     return m;
   }
 
-  // Cabeça — esfera
-  const head = add(new THREE.SphereGeometry(0.27, 14, 10), skin, 0, 1.76, 0);
+  // Cabeça grande (proporção cartoon)
+  const head = add(new THREE.SphereGeometry(0.32, 16, 12), skin, 0, 1.80, 0);
+  outline(head);
 
-  // Olhos
-  add(new THREE.SphereGeometry(0.058, 6, 5), dark, -0.105, 1.83, 0.25);
-  add(new THREE.SphereGeometry(0.058, 6, 5), dark,  0.105, 1.83, 0.25);
+  // Olhos grandes expressivos
+  add(new THREE.SphereGeometry(0.080, 8, 6), dark, -0.12, 1.88, -0.29);
+  add(new THREE.SphereGeometry(0.080, 8, 6), dark,  0.12, 1.88, -0.29);
+  // Brilho nos olhos
+  add(new THREE.SphereGeometry(0.030, 6, 4), toon(0xffffff), -0.10, 1.91, -0.31);
+  add(new THREE.SphereGeometry(0.030, 6, 4), toon(0xffffff),  0.14, 1.91, -0.31);
 
-  // Boné — cilindro + aba
-  const cap = add(new THREE.CylinderGeometry(0.30, 0.28, 0.15, 12), capM, 0, 2.09, 0);
-  add(new THREE.BoxGeometry(0.64, 0.07, 0.30), capM, 0, 1.99, 0.22);
+  // Boné
+  const cap = add(new THREE.CylinderGeometry(0.33, 0.31, 0.16, 14), capM, 0, 2.14, 0);
+  outline(cap);
+  add(new THREE.BoxGeometry(0.70, 0.08, 0.34), capM, 0, 2.03, -0.25);
 
   // Torso
-  const torso = add(new THREE.BoxGeometry(0.60, 0.80, 0.38), hoodie, 0, 1.10, 0);
+  const torso = add(new THREE.BoxGeometry(0.64, 0.82, 0.42), hoodie, 0, 1.10, 0);
+  outline(torso, 1.06);
 
-  // Braços — cilindros
-  const armGeo = new THREE.CylinderGeometry(0.10, 0.09, 0.56, 8);
-  const armL = add(armGeo, hoodie, -0.46, 1.10, 0);
-  const armR = add(armGeo, hoodie,  0.46, 1.10, 0);
+  // Braços (cilindros)
+  const armGeo = new THREE.CylinderGeometry(0.11, 0.10, 0.58, 10);
+  const armL = add(armGeo, hoodie, -0.48, 1.10, 0);
+  const armR = add(armGeo, hoodie,  0.48, 1.10, 0);
+  outline(armL); outline(armR);
 
-  // Pernas — cilindros
-  const legGeo = new THREE.CylinderGeometry(0.12, 0.10, 0.54, 8);
-  const legL = add(legGeo, pants, -0.20, 0.47, 0);
-  const legR = add(legGeo, pants,  0.20, 0.47, 0);
+  // Pernas (cilindros mais grossos)
+  const legGeo = new THREE.CylinderGeometry(0.13, 0.11, 0.58, 10);
+  const legL = add(legGeo, pants, -0.21, 0.46, 0);
+  const legR = add(legGeo, pants,  0.21, 0.46, 0);
+  outline(legL); outline(legR);
 
   // Tênis
-  add(new THREE.BoxGeometry(0.30, 0.18, 0.43), shoe,  -0.20, 0.10, 0.04);
-  add(new THREE.BoxGeometry(0.30, 0.18, 0.43), shoe,   0.20, 0.10, 0.04);
-  // Listra colorida no tênis
-  add(new THREE.BoxGeometry(0.31, 0.05, 0.44), accent, -0.20, 0.19, 0.04);
-  add(new THREE.BoxGeometry(0.31, 0.05, 0.44), accent,  0.20, 0.19, 0.04);
+  add(new THREE.BoxGeometry(0.32, 0.20, 0.46), shoe, -0.21, 0.09, 0.04);
+  add(new THREE.BoxGeometry(0.32, 0.20, 0.46), shoe,  0.21, 0.09, 0.04);
+  add(new THREE.BoxGeometry(0.33, 0.06, 0.47), red,  -0.21, 0.19, 0.04);
+  add(new THREE.BoxGeometry(0.33, 0.06, 0.47), red,   0.21, 0.19, 0.04);
 
   group.position.set(LANE_X[1], 0, 0);
-  group.rotation.y = Math.PI; // costas para a câmera
+  group.rotation.y = Math.PI;
   scene.add(group);
   playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap } };
 }
 
-// ── Obstacles ────────────────────────────────────────────────────────────────
+// ── Obstacles ─────────────────────────────────────────────────────────────────
 const TRAIN_COLORS = [
-  { body: 0xee2222, stripe: 0xffd700 },  // red + gold
-  { body: 0x2266ee, stripe: 0xffffff },  // blue + white
-  { body: 0x22aa44, stripe: 0xffee22 },  // green + yellow
-  { body: 0xee8800, stripe: 0xffffff },  // orange + white
+  { body: 0xff2222, stripe: 0xffee00 },
+  { body: 0x2255ff, stripe: 0xffffff },
+  { body: 0x22bb44, stripe: 0xffee22 },
+  { body: 0xff8800, stripe: 0xffffff },
+  { body: 0xcc22cc, stripe: 0xffaaff },
 ];
 
 function makeTrainMesh(w, h, d) {
   const tc    = TRAIN_COLORS[Math.floor(Math.random() * TRAIN_COLORS.length)];
   const group = new THREE.Group();
 
-  // Corpo principal — MeshPhong para brilho metálico
-  const bodyMat = new THREE.MeshPhongMaterial({ color: tc.body, shininess: 60 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), toon(tc.body));
   body.castShadow = true;
   group.add(body);
+  outline(body, 1.05);
 
-  // Nariz arredondado (frente do trem)
-  const noseMat = new THREE.MeshPhongMaterial({ color: tc.body, shininess: 80 });
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(w * 0.38, 10, 8, 0, Math.PI), noseMat);
+  // Nariz arredondado
+  const nose = new THREE.Mesh(
+    new THREE.SphereGeometry(w * 0.40, 12, 8, 0, Math.PI),
+    toon(tc.body)
+  );
   nose.rotation.y = -Math.PI / 2;
   nose.position.set(0, 0, d / 2);
   group.add(nose);
 
-  // Faixa horizontal decorativa
+  // Faixa
   const stripe = new THREE.Mesh(
-    new THREE.BoxGeometry(w + 0.02, 0.30, d + 0.04),
-    new THREE.MeshBasicMaterial({ color: tc.stripe })
+    new THREE.BoxGeometry(w + 0.04, 0.32, d + 0.06),
+    toon(tc.stripe)
   );
-  stripe.position.set(0, h * 0.14, 0);
+  stripe.position.set(0, h * 0.13, 0);
   group.add(stripe);
 
-  // Janelas (arredondadas com CylinderGeometry lateral)
-  const winMat = new THREE.MeshPhongMaterial({ color: 0xd4f4ff, shininess: 120 });
+  // Janelas
   [-w * 0.22, w * 0.22].forEach(wx => {
-    const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.26, h * 0.26, 0.06), winMat);
+    const win = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.28, h * 0.28, 0.07),
+      toon(0xd4f4ff, 0x002244)
+    );
     win.position.set(wx, h * 0.22, d / 2 + 0.02);
     group.add(win);
   });
 
-  // Faróis circulares
-  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffbb });
-  [-w * 0.3, w * 0.3].forEach(lx => {
-    const l = new THREE.Mesh(new THREE.CircleGeometry(0.13, 10), lightMat);
-    l.position.set(lx, -h * 0.30, d / 2 + 0.52);
+  // Faróis
+  [-w * 0.30, w * 0.30].forEach(lx => {
+    const l = new THREE.Mesh(new THREE.CircleGeometry(0.15, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffffbb }));
+    l.position.set(lx, -h * 0.30, d / 2 + 0.55);
     group.add(l);
   });
 
-  // Rodas (cilindros horizontais)
-  const wheelMat = new THREE.MeshPhongMaterial({ color: 0x222222, shininess: 30 });
-  [-w * 0.3, w * 0.3].forEach(wx => {
-    [-d * 0.3, d * 0.3].forEach(wz => {
-      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.12, 12), wheelMat);
-      wheel.rotation.z = Math.PI / 2;
-      wheel.position.set(wx, -h / 2 + 0.06, wz);
-      group.add(wheel);
+  // Rodas
+  const wheelMat = toon(0x222222);
+  [-w * 0.28, w * 0.28].forEach(wx => {
+    [-d * 0.28, d * 0.28].forEach(wz => {
+      const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.14, 12), wheelMat);
+      wh.rotation.z = Math.PI / 2;
+      wh.position.set(wx, -h / 2 + 0.08, wz);
+      group.add(wh);
     });
   });
 
@@ -423,30 +429,24 @@ function makeTrainMesh(w, h, d) {
 
 function makeBarrierMesh(w, h, d) {
   const group = new THREE.Group();
-  const colors = [0xffaa00, 0xff5500, 0xffdd00];
-  const col = colors[Math.floor(Math.random() * colors.length)];
+  const cols  = [0xffaa00, 0xff5500, 0xffdd00];
+  const col   = cols[Math.floor(Math.random() * cols.length)];
 
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshLambertMaterial({ color: col })
-  );
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), toon(col));
   body.castShadow = true;
   group.add(body);
+  outline(body, 1.08);
 
-  // Warning stripes (black)
-  const stripeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const stripeMat = toon(0x111111);
   for (let i = 0; i < 3; i++) {
-    const s = new THREE.Mesh(
-      new THREE.BoxGeometry(0.18, h + 0.02, 0.04),
-      stripeMat
-    );
-    s.position.set(-w * 0.3 + i * w * 0.3, 0, d / 2 + 0.01);
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.20, h + 0.04, 0.06), stripeMat);
+    s.position.set(-w * 0.3 + i * w * 0.3, 0, d / 2 + 0.02);
     group.add(s);
   }
   return group;
 }
 
-// ── Dificuldade (tier 0-5) ────────────────────────────────────────────────────
+// ── Dificuldade ───────────────────────────────────────────────────────────────
 function getDiff() {
   return Math.min(5, Math.floor((speed - BASE_SPEED) / ((MAX_SPEED - BASE_SPEED) / 6)));
 }
@@ -454,25 +454,26 @@ function getDiff() {
 function spawnOverheadBeam() {
   const group = new THREE.Group();
   const beam  = new THREE.Mesh(
-    new THREE.BoxGeometry(14, 0.45, 0.65),
-    new THREE.MeshLambertMaterial({ color: 0x556677 })
+    new THREE.BoxGeometry(14, 0.50, 0.70),
+    toon(0x445566)
   );
   beam.castShadow = true;
   group.add(beam);
-  const wMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+  outline(beam, 1.04);
+  const wMat = toon(0xffcc00, 0x442200);
   [-5, -2.5, 0, 2.5, 5].forEach(x => {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.47, 0.02), wMat);
-    s.position.set(x, 0, 0.34);
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.52, 0.06), wMat);
+    s.position.set(x, 0, 0.36);
     group.add(s);
   });
-  const yBot = 1.45, h = 0.45;
+  const yBot = 1.45, h = 0.50;
   group.position.set(0, yBot + h / 2, SPAWN_Z);
   three.scene.add(group);
   obstacles.push({ mesh: group, lane: -1, w: 14, yBot, yTop: yBot + h });
 }
 
 function spawnSingleTrain(laneOverride) {
-  const h = 3.0, w = 2.6, d = 0.9;
+  const h = 3.0, w = 2.6, d = 0.95;
   const l = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
   const mesh = makeTrainMesh(w, h, d);
   mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
@@ -483,20 +484,16 @@ function spawnSingleTrain(laneOverride) {
 function spawnObstacle() {
   const diff = getDiff();
   const r    = Math.random();
-
-  // Probabilidades escalam com a dificuldade
-  const overheadP = 0.10 + diff * 0.04;          // 10% → 30%
-  const doubleP   = overheadP + 0.15 + diff * 0.05; // 25% → 55% cumulative
+  const overheadP = 0.10 + diff * 0.04;
+  const doubleP   = overheadP + 0.15 + diff * 0.05;
 
   if (r < overheadP) {
     spawnOverheadBeam();
-
-    // Diff 3+: barra + barreira na mesma faixa (combo)
     if (diff >= 3 && Math.random() < 0.45) {
       const h = 0.68, w = 2.2, d = 0.7;
       const l = Math.floor(Math.random() * 3);
       const mesh = makeBarrierMesh(w, h, d);
-      mesh.position.set(LANE_X[l], h / 2, SPAWN_Z - 6);
+      mesh.position.set(LANE_X[l], h / 2, SPAWN_Z - 7);
       three.scene.add(mesh);
       obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
     }
@@ -504,8 +501,7 @@ function spawnObstacle() {
   }
 
   if (r < doubleP) {
-    // Dois trens (duas faixas bloqueadas)
-    const h = 3.0, w = 2.6, d = 0.9;
+    const h = 3.0, w = 2.6, d = 0.95;
     const open = Math.floor(Math.random() * 3);
     [0, 1, 2].filter(l => l !== open).forEach(l => {
       const mesh = makeTrainMesh(w, h, d);
@@ -513,19 +509,16 @@ function spawnObstacle() {
       three.scene.add(mesh);
       obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
     });
-
-    // Diff 4+: coloca barreira na faixa livre logo atrás
     if (diff >= 4 && Math.random() < 0.5) {
       const bh = 0.68, bw = 2.2, bd = 0.7;
       const mesh = makeBarrierMesh(bw, bh, bd);
-      mesh.position.set(LANE_X[open], bh / 2, SPAWN_Z - 8);
+      mesh.position.set(LANE_X[open], bh / 2, SPAWN_Z - 9);
       three.scene.add(mesh);
       obstacles.push({ mesh, lane: open, w: bw * 0.88, yBot: 0, yTop: bh });
     }
     return;
   }
 
-  // Obstáculo simples
   if (Math.random() < 0.55) {
     spawnSingleTrain();
   } else {
@@ -537,27 +530,23 @@ function spawnObstacle() {
     obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
   }
 
-  // Diff 5: spawn imediato de segundo obstáculo em outra faixa
-  if (diff >= 5 && Math.random() < 0.4) {
-    spawnSingleTrain();
-  }
+  if (diff >= 5 && Math.random() < 0.4) spawnSingleTrain();
 }
 
 function spawnCoin() {
   const l = Math.floor(Math.random() * 3);
   const y = 0.7 + Math.random() * 1.0;
-  // Torus giratório — igual às moedas do Subway Surfers
   const mesh = new THREE.Mesh(
-    new THREE.TorusGeometry(0.26, 0.085, 8, 18),
-    new THREE.MeshPhongMaterial({ color: 0xffcc00, emissive: new THREE.Color(0x885500), shininess: 100 })
+    new THREE.TorusGeometry(0.28, 0.09, 8, 18),
+    toon(0xffcc00, 0x885500)
   );
   mesh.position.set(LANE_X[l], y, SPAWN_Z);
-  mesh.rotation.x = Math.PI / 2; // anel de frente para o jogador
+  mesh.rotation.x = Math.PI / 2;
   three.scene.add(mesh);
   coins.push({ mesh, lane: l, y });
 }
 
-// ── Update ───────────────────────────────────────────────────────────────────
+// ── Update (física) ───────────────────────────────────────────────────────────
 function update(dt) {
   animFrame++;
 
@@ -566,20 +555,14 @@ function update(dt) {
   if (speedT > SPEED_TICK) {
     speedT = 0;
     const prevDiff = getDiff();
-    speed  = Math.min(speed + SPEED_INC, MAX_SPEED);
-    const mult = (Math.round((speed / BASE_SPEED) * 10) / 10).toFixed(1);
-    speedEl.textContent = mult + '×';
-
-    // Flash no indicador de velocidade
-    speedEl.style.color     = '#ff6600';
+    speed = Math.min(speed + SPEED_INC, MAX_SPEED);
+    speedEl.textContent = (Math.round((speed / BASE_SPEED) * 10) / 10).toFixed(1) + '×';
+    speedEl.style.color = '#ff6600';
     speedEl.style.transform = 'scale(1.5)';
-    speedEl.style.transition = 'all 0.4s';
     setTimeout(() => { speedEl.style.color = ''; speedEl.style.transform = ''; }, 500);
-
-    // Notificação quando sobe de tier
     if (getDiff() > prevDiff && powersEl) {
-      const TIER_LABELS = ['', '🔥 MAIS RÁPIDO!', '🔥🔥 VELOZ!', '⚡ ULTRA!', '⚡⚡ INSANO!', '💥 MAX!'];
-      const label = TIER_LABELS[getDiff()] || '💥 MAX!';
+      const LABELS = ['','🔥 MAIS RÁPIDO!','🔥🔥 VELOZ!','⚡ ULTRA!','⚡⚡ INSANO!','💥 MAX!'];
+      const label = LABELS[getDiff()] || '💥 MAX!';
       powersEl.innerHTML = `<span class="runner-power-chip" style="background:#ff4400;color:#fff;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.9rem;">${label}</span>`;
       setTimeout(() => { if (powersEl) powersEl.innerHTML = ''; }, 1800);
     }
@@ -588,60 +571,72 @@ function update(dt) {
   // Score
   scoreT += dt;
   if (scoreT > 0.08) {
-    scoreT = 0;
-    score++;
+    scoreT = 0; score++;
     scoreEl.textContent = score;
-    if (score > best) {
-      best = score;
-      bestEl.textContent = best;
-      localStorage.setItem('runner-best', best);
-    }
+    if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('runner-best', best); }
   }
 
   // Lane transition
   const tX = LANE_X[targetLane];
-  playerObj.group.position.x += (tX - playerObj.group.position.x) * Math.min(dt * 13, 1);
+  playerObj.group.position.x += (tX - playerObj.group.position.x) * Math.min(dt * 14, 1);
 
-  // Jump / gravity
-  playerVY += GRAVITY * dt;
+  // ── Física do pulo (gravidade variável) ───────────────────────────────────
+  const rising = playerVY > 0;
+  playerVY += (rising ? GRAV_UP : GRAV_DOWN) * dt;
   playerY  += playerVY * dt;
-  if (playerY <= GROUND_Y) { playerY = GROUND_Y; playerVY = 0; }
+
+  const onGround = playerY <= GROUND_Y + 0.01;
+
+  // Landing squash
+  if (!wasOnGround && onGround && playerVY < -2) {
+    playerObj.group.scale.set(1.40, 0.60, 1.40);
+  }
+  wasOnGround = onGround;
+  if (onGround) { playerY = GROUND_Y; playerVY = 0; }
   playerObj.group.position.y = playerY;
 
-  // Crouch scale
-  const csTarget = (crouching && playerY <= 0.02) ? CROUCH_S : 1;
-  playerObj.group.scale.y += (csTarget - playerObj.group.scale.y) * Math.min(dt * 20, 1);
+  // ── Squash & stretch spring ───────────────────────────────────────────────
+  const tSY  = (crouching && onGround) ? CROUCH_S : 1.0;
+  const sSpd = Math.min(dt * 18, 1);
+  playerObj.group.scale.x += (1.0 - playerObj.group.scale.x) * sSpd;
+  playerObj.group.scale.z += (1.0 - playerObj.group.scale.z) * sSpd;
+  playerObj.group.scale.y += (tSY  - playerObj.group.scale.y) * sSpd;
 
-  // Running animation
-  const t = animFrame * 0.16;
-  if (playerY <= 0.05) {
-    const leg = Math.sin(t) * 0.65;
+  // ── Lean na mudança de faixa ─────────────────────────────────────────────
+  const leanTarget = (playerObj.group.position.x - tX) * 0.07;
+  laneLean += (leanTarget - laneLean) * Math.min(dt * 10, 1);
+  playerObj.group.rotation.z = laneLean;
+
+  // ── Animação de corrida ───────────────────────────────────────────────────
+  const t = animFrame * 0.18;
+  if (onGround && !crouching) {
+    const leg = Math.sin(t) * 0.70;
     playerObj.meshes.legL.rotation.x =  leg;
     playerObj.meshes.legR.rotation.x = -leg;
     playerObj.meshes.armL.rotation.x = -leg * 0.65;
     playerObj.meshes.armR.rotation.x =  leg * 0.65;
-    const bob = Math.abs(Math.sin(t)) * 0.04;
+    const bob = Math.abs(Math.sin(t)) * 0.05;
     playerObj.meshes.torso.position.y = 1.10 + bob;
-    playerObj.meshes.head.position.y  = 1.76 + bob;
-    playerObj.meshes.cap.position.y   = 2.09 + bob;
-  } else {
-    playerObj.meshes.legL.rotation.x = -0.45;
-    playerObj.meshes.legR.rotation.x =  0.45;
-    playerObj.meshes.armL.rotation.x = -0.9;
-    playerObj.meshes.armR.rotation.x =  0.9;
+    playerObj.meshes.head.position.y  = 1.80 + bob;
+    playerObj.meshes.cap.position.y   = 2.14 + bob;
+  } else if (!onGround) {
+    // Abre as pernas no ar
+    playerObj.meshes.legL.rotation.x = -0.55;
+    playerObj.meshes.legR.rotation.x =  0.55;
+    playerObj.meshes.armL.rotation.x = -1.0;
+    playerObj.meshes.armR.rotation.x =  1.0;
   }
 
-  // Spawn — intervalo cai com velocidade e dificuldade
+  // ── Spawn ─────────────────────────────────────────────────────────────────
   spawnT += dt;
   const diff     = getDiff();
   const interval = Math.max(0.50, 2.5 - speed / 17 - diff * 0.06);
   if (spawnT > interval) { spawnT = 0; spawnObstacle(); }
 
   coinT += dt;
-  const coinInterval = Math.max(0.45, 0.70 - diff * 0.04); // moedas mais frequentes no caos
-  if (coinT > coinInterval) { coinT = 0; spawnCoin(); }
+  if (coinT > Math.max(0.45, 0.70 - diff * 0.04)) { coinT = 0; spawnCoin(); }
 
-  // Bounding values
+  // ── Bounding ──────────────────────────────────────────────────────────────
   const pX    = playerObj.group.position.x;
   const pHW   = 0.38;
   const pYBot = playerY;
@@ -651,21 +646,13 @@ function update(dt) {
   for (let i = obstacles.length - 1; i >= 0; i--) {
     const o = obstacles[i];
     o.mesh.position.z += speed * dt;
-
-    if (o.mesh.position.z > DESPAWN_Z) {
-      three.scene.remove(o.mesh);
-      obstacles.splice(i, 1);
-      continue;
-    }
-
+    if (o.mesh.position.z > DESPAWN_Z) { three.scene.remove(o.mesh); obstacles.splice(i, 1); continue; }
     if (o.mesh.position.z > -2.5 && o.mesh.position.z < 2.5) {
       let hit = false;
       if (o.lane === -1) {
         if (pYTop > o.yBot + 0.08) hit = true;
       } else {
-        const xOk = Math.abs(pX - LANE_X[o.lane]) < pHW + o.w / 2;
-        const yOk = pYBot < o.yTop && pYTop > o.yBot + 0.08;
-        if (xOk && yOk) hit = true;
+        if (Math.abs(pX - LANE_X[o.lane]) < pHW + o.w / 2 && pYBot < o.yTop && pYTop > o.yBot + 0.08) hit = true;
       }
       if (hit) { die(); return; }
     }
@@ -675,45 +662,24 @@ function update(dt) {
   for (let i = coins.length - 1; i >= 0; i--) {
     const c = coins[i];
     c.mesh.position.z += speed * dt;
-    c.mesh.rotation.y += dt * 4; // spin coin
-
-    if (c.mesh.position.z > DESPAWN_Z) {
-      three.scene.remove(c.mesh);
-      coins.splice(i, 1);
-      continue;
-    }
-
+    c.mesh.rotation.y += dt * 4;
+    if (c.mesh.position.z > DESPAWN_Z) { three.scene.remove(c.mesh); coins.splice(i, 1); continue; }
     if (c.mesh.position.z > -2.5 && c.mesh.position.z < 2.5) {
-      const dx = Math.abs(pX - LANE_X[c.lane]);
-      const dy = Math.abs(playerY + 1.0 - c.y);
-      if (dx < 1.5 && dy < 1.3) {
-        three.scene.remove(c.mesh);
-        coins.splice(i, 1);
-        score += 5;
-        scoreEl.textContent = score;
-        i--;
+      if (Math.abs(pX - LANE_X[c.lane]) < 1.5 && Math.abs(playerY + 1.0 - c.y) < 1.3) {
+        three.scene.remove(c.mesh); coins.splice(i, 1); score += 5; scoreEl.textContent = score; i--;
       }
     }
   }
 
-  // Recycle ground tiles + sleepers
-  envTiles.forEach(t => {
-    t.position.z += speed * dt;
-    if (t.position.z > 14) t.position.z -= TILE_PERIOD;
-  });
+  // Recycle tiles
+  envTiles.forEach(t => { t.position.z += speed * dt; if (t.position.z > 14) t.position.z -= TILE_PERIOD; });
+  envBuildings.forEach(b => { b.position.z += speed * dt; if (b.position.z > 14) b.position.z -= 14 * 18; });
 
-  // Recycle buildings / graffiti / clouds
-  envBuildings.forEach(b => {
-    b.position.z += speed * dt;
-    if (b.position.z > 14) b.position.z -= 14 * 18;
-  });
-
-  // Camera smooth follow player lane
-  const camTX = playerObj.group.position.x * 0.22;
-  three.camera.position.x += (camTX - three.camera.position.x) * Math.min(dt * 9, 1);
+  // Camera lean
+  three.camera.position.x += (playerObj.group.position.x * 0.22 - three.camera.position.x) * Math.min(dt * 9, 1);
 }
 
-// ── Game loop ────────────────────────────────────────────────────────────────
+// ── Game loop ─────────────────────────────────────────────────────────────────
 function gameLoop() {
   requestAnimationFrame(gameLoop);
   const dt = Math.min(three.clock.getDelta(), 0.05);
@@ -721,26 +687,20 @@ function gameLoop() {
   three.renderer.render(three.scene, three.camera);
 }
 
-// ── Start / Die ──────────────────────────────────────────────────────────────
+// ── Start / Die ───────────────────────────────────────────────────────────────
 function begin() {
   if (state === 'playing') return;
-
   score = 0; speed = BASE_SPEED; targetLane = 1;
   playerY = GROUND_Y; playerVY = 0; crouching = false;
+  wasOnGround = true; laneLean = 0;
   animFrame = 0; spawnT = 0; coinT = 0; scoreT = 0; speedT = 0;
-
-  scoreEl.textContent = '0';
-  speedEl.textContent = '1×';
-
+  scoreEl.textContent = '0'; speedEl.textContent = '1.0×';
   playerObj.group.position.set(LANE_X[1], 0, 0);
   playerObj.group.rotation.set(0, Math.PI, 0);
   playerObj.group.scale.set(1, 1, 1);
-
   obstacles.forEach(o => three.scene.remove(o.mesh));
   coins.forEach(c => three.scene.remove(c.mesh));
-  obstacles = [];
-  coins = [];
-
+  obstacles = []; coins = [];
   state = 'playing';
   hideOverlay();
   lockScroll();
@@ -749,57 +709,44 @@ function begin() {
 function die() {
   if (state !== 'playing') return;
   state = 'dead';
-  playerObj.group.rotation.z = 0.55;
+  playerObj.group.rotation.z = 0.6;
+  playerObj.group.scale.set(1.3, 0.5, 1.3);
   unlockScroll();
-  setTimeout(() => showOverlay(true), 450);
+  setTimeout(() => showOverlay(true), 500);
 }
 
-// ── Overlay ──────────────────────────────────────────────────────────────────
+// ── Overlay ───────────────────────────────────────────────────────────────────
 function showOverlay(dead) {
   if (!overlay) return;
   overlay.hidden = false;
-  if (dead) {
-    overlay.innerHTML = `
-      <p class="ro-label">Game Over</p>
-      <p class="ro-score">${score}</p>
-      <p class="ro-sub">Recorde: ${best}</p>
-      <p class="ro-hint">Toque ou espaço para jogar de novo</p>`;
-  } else {
-    overlay.innerHTML = `
-      <p class="ro-title">Corrida do<br>Aloncinho</p>
-      <p class="ro-controls">← → faixa &nbsp;·&nbsp; ↑ pular &nbsp;·&nbsp; ↓ agachar</p>
-      <p class="ro-hint">Toque ou pressione espaço para começar</p>`;
-  }
+  overlay.innerHTML = dead
+    ? `<p class="ro-label">Game Over</p><p class="ro-score">${score}</p><p class="ro-sub">Recorde: ${best}</p><p class="ro-hint">Toque ou espaço para jogar de novo</p>`
+    : `<p class="ro-title">Corrida do<br>Aloncinho</p><p class="ro-controls">← → faixa &nbsp;·&nbsp; ↑ pular &nbsp;·&nbsp; ↓ agachar</p><p class="ro-hint">Toque ou pressione espaço para começar</p>`;
 }
+function hideOverlay() { if (overlay) overlay.hidden = true; }
 
-function hideOverlay() {
-  if (overlay) overlay.hidden = true;
-}
-
-// ── Scroll lock ───────────────────────────────────────────────────────────────
+// ── Scroll lock ────────────────────────────────────────────────────────────────
 function lockScroll() {
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overflow = 'hidden';
   canvas.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
-
 function unlockScroll() {
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';
 }
 
-// ── Input ────────────────────────────────────────────────────────────────────
-function moveLeft()  {
-  if (state !== 'playing') { begin(); return; }
-  if (targetLane > 0) targetLane--;
-}
-function moveRight() {
-  if (state !== 'playing') { begin(); return; }
-  if (targetLane < 2) targetLane++;
-}
+// ── Input ──────────────────────────────────────────────────────────────────────
+function moveLeft()  { if (state !== 'playing') { begin(); return; } if (targetLane > 0) targetLane--; }
+function moveRight() { if (state !== 'playing') { begin(); return; } if (targetLane < 2) targetLane++; }
 function doJump() {
   if (state !== 'playing') { begin(); return; }
-  if (playerY <= 0.02) { playerVY = JUMP_V; crouching = false; }
+  if (playerY <= 0.02) {
+    playerVY = JUMP_V;
+    crouching = false;
+    // Stretch no pulo
+    playerObj.group.scale.set(0.78, 1.38, 0.78);
+  }
 }
 function doCrouch()  { if (state === 'playing') crouching = true; }
 function endCrouch() { crouching = false; }
@@ -809,9 +756,8 @@ document.addEventListener('keydown', e => {
   switch (e.key) {
     case 'ArrowLeft':  moveLeft();  break;
     case 'ArrowRight': moveRight(); break;
-    case 'ArrowUp':
-    case ' ':          doJump();    break;
-    case 'ArrowDown':  doCrouch();  break;
+    case 'ArrowUp': case ' ': doJump(); break;
+    case 'ArrowDown': doCrouch(); break;
   }
 });
 document.addEventListener('keyup', e => { if (e.key === 'ArrowDown') endCrouch(); });
@@ -825,11 +771,8 @@ document.getElementById('runner-crouch')?.addEventListener('pointercancel', endC
 
 let tx0 = 0, ty0 = 0;
 canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  tx0 = e.touches[0].clientX;
-  ty0 = e.touches[0].clientY;
+  e.preventDefault(); tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY;
 }, { passive: false });
-
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
   const dx = e.changedTouches[0].clientX - tx0;
@@ -845,7 +788,7 @@ canvas.addEventListener('touchend', e => {
 canvas.addEventListener('click', () => { if (state !== 'playing') begin(); });
 overlay?.addEventListener('click', () => { if (state !== 'playing') begin(); });
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Boot ───────────────────────────────────────────────────────────────────────
 initThree();
 showOverlay(false);
 gameLoop();
