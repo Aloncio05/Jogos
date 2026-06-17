@@ -139,8 +139,8 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // Pista central (cinza-claro, bem visível)
-  const concMat = toon(0xddddcc);
+  // Asfalto escuro (pista central)
+  const concMat = toon(0x444444);
   const concGeo = new THREE.BoxGeometry(7.8, 0.52, 24);
   for (let i = 0; i < 8; i++) {
     const m = new THREE.Mesh(concGeo, concMat);
@@ -150,22 +150,31 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // Dormentes (madeira escura)
-  const sleeperMat = toon(0x8b5a2b);  // castanho claro
-  const sleeperGeo = new THREE.BoxGeometry(7.4, 0.22, 0.60);
-  for (let i = 0; i < 55; i++) {
-    const m = new THREE.Mesh(sleeperGeo, sleeperMat);
-    m.position.set(0, 0.11, 12 - i * (TILE_PERIOD / 55));
-    m.receiveShadow = true;
+  // Faixas amarelas de faixa de pedestre / linhas de pista
+  const lineMatY = toon(0xffee00);
+  const lineGeo  = new THREE.BoxGeometry(2.2, 0.06, 0.55);
+  for (let i = 0; i < 40; i++) {
+    [-1, 0, 1].forEach(lx => {
+      if (lx !== 0) {   // linhas divisórias nas bordas das faixas
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 24), toon(0xffee00));
+        if (i === 0) {
+          m.position.set(lx * 2.6, 0.02, -i * (TILE_PERIOD / 40));
+          scene.add(m);
+          envTiles.push(m);
+        }
+      }
+    });
+    // Faixa central tracejada
+    const m = new THREE.Mesh(lineGeo, lineMatY);
+    m.position.set(0, 0.02, 10 - i * (TILE_PERIOD / 40));
     scene.add(m);
     envTiles.push(m);
   }
 
-  // Trilhos metálicos
-  const railMat = toon(0xddddcc);
-  [-1.8, 1.8].forEach(x => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.26, 400), railMat);
-    m.position.set(x, 0.28, -195);
+  // Linhas laterais brancas
+  [-3.6, 3.6].forEach(x => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 400), toon(0xffffff));
+    m.position.set(x, 0.02, -195);
     scene.add(m);
   });
 
@@ -353,88 +362,156 @@ function buildPlayer(scene) {
 }
 
 // ── Obstacles ─────────────────────────────────────────────────────────────────
-const TRAIN_COLORS = [
-  { body: 0xff2222, stripe: 0xffee00 },
-  { body: 0x2255ff, stripe: 0xffffff },
-  { body: 0x22bb44, stripe: 0xffee22 },
-  { body: 0xff8800, stripe: 0xffffff },
-  { body: 0xcc22cc, stripe: 0xffaaff },
-];
+// ── Obstáculos de rua ─────────────────────────────────────────────────────────
 
-function makeTrainMesh(w, h, d) {
-  const tc    = TRAIN_COLORS[Math.floor(Math.random() * TRAIN_COLORS.length)];
+const CAR_COLORS = [0xff2222, 0x2255ff, 0x22bb44, 0xff8800, 0xcc22cc, 0xffee00, 0x00cccc];
+
+function makeCarMesh() {
+  const col   = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
   const group = new THREE.Group();
+  const darkM = toon(0x222222);
+  const glassM = toon(0x88ddff);
 
-  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), toon(tc.body));
-  body.castShadow = true;
-  group.add(body);
-  outline(body, 1.05);
+  // Carroceria baixa
+  const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.55, 1.0), toon(col));
+  chassis.position.y = 0.28;
+  chassis.castShadow = true;
+  group.add(chassis); outline(chassis, 1.05);
 
-  // Nariz arredondado
-  const nose = new THREE.Mesh(
-    new THREE.SphereGeometry(w * 0.40, 12, 8, 0, Math.PI),
-    toon(tc.body)
-  );
-  nose.rotation.y = -Math.PI / 2;
-  nose.position.set(0, 0, d / 2);
-  group.add(nose);
+  // Cabine (teto arredondado simulado com box menor)
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.55, 0.9), toon(col));
+  cabin.position.set(0, 0.83, 0.02);
+  cabin.castShadow = true;
+  group.add(cabin); outline(cabin, 1.05);
 
-  // Faixa
-  const stripe = new THREE.Mesh(
-    new THREE.BoxGeometry(w + 0.04, 0.32, d + 0.06),
-    toon(tc.stripe)
-  );
-  stripe.position.set(0, h * 0.13, 0);
-  group.add(stripe);
+  // Para-brisas dianteiro e traseiro
+  const windF = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.38, 0.06), glassM);
+  windF.position.set(0, 0.80, 0.48);
+  group.add(windF);
+  const windR = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.38, 0.06), glassM);
+  windR.position.set(0, 0.80, -0.48);
+  group.add(windR);
 
-  // Janelas
-  [-w * 0.22, w * 0.22].forEach(wx => {
-    const win = new THREE.Mesh(
-      new THREE.BoxGeometry(w * 0.28, h * 0.28, 0.07),
-      toon(0xd4f4ff)
-    );
-    win.position.set(wx, h * 0.22, d / 2 + 0.02);
-    group.add(win);
+  // Rodas
+  [[-0.85, -0.38], [0.85, -0.38], [-0.85, 0.38], [0.85, 0.38]].forEach(([wx, wz]) => {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 12), darkM);
+    w.rotation.z = Math.PI / 2;
+    w.position.set(wx, 0.22, wz);
+    group.add(w);
   });
 
   // Faróis
-  [-w * 0.30, w * 0.30].forEach(lx => {
-    const l = new THREE.Mesh(new THREE.CircleGeometry(0.15, 10),
-      new THREE.MeshBasicMaterial({ color: 0xffffbb }));
-    l.position.set(lx, -h * 0.30, d / 2 + 0.55);
+  [-0.60, 0.60].forEach(lx => {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.06),
+      new THREE.MeshBasicMaterial({ color: 0xffffaa }));
+    l.position.set(lx, 0.28, 0.53);
     group.add(l);
-  });
-
-  // Rodas
-  const wheelMat = toon(0x222222);
-  [-w * 0.28, w * 0.28].forEach(wx => {
-    [-d * 0.28, d * 0.28].forEach(wz => {
-      const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.14, 12), wheelMat);
-      wh.rotation.z = Math.PI / 2;
-      wh.position.set(wx, -h / 2 + 0.08, wz);
-      group.add(wh);
-    });
   });
 
   return group;
 }
 
-function makeBarrierMesh(w, h, d) {
+function makeMotorcycleMesh() {
+  const col   = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
   const group = new THREE.Group();
-  const cols  = [0xffaa00, 0xff5500, 0xffdd00];
-  const col   = cols[Math.floor(Math.random() * cols.length)];
+  const darkM = toon(0x111111);
+  const chromeM = toon(0xcccccc);
 
-  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), toon(col));
+  // Corpo da moto
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 1.0), toon(col));
+  body.position.y = 0.60;
   body.castShadow = true;
-  group.add(body);
-  outline(body, 1.08);
+  group.add(body); outline(body, 1.08);
 
-  const stripeMat = toon(0x111111);
-  for (let i = 0; i < 3; i++) {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.20, h + 0.04, 0.06), stripeMat);
-    s.position.set(-w * 0.3 + i * w * 0.3, 0, d / 2 + 0.02);
+  // Tanque
+  const tank = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.38, 0.55), toon(col));
+  tank.position.set(0, 0.94, 0.12);
+  group.add(tank);
+
+  // Guidão
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.08, 0.08), chromeM);
+  bar.position.set(0, 1.0, 0.42);
+  group.add(bar);
+
+  // Rodas (grandes, visíveis de cima)
+  [-0.44, 0.44].forEach(wz => {
+    const w = new THREE.Mesh(new THREE.TorusGeometry(0.30, 0.09, 8, 14), darkM);
+    w.rotation.x = Math.PI / 2;
+    w.position.set(0, 0.30, wz);
+    group.add(w);
+  });
+
+  // Piloto (capacete + corpo simples)
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), toon(0x222222));
+  helmet.position.set(0, 1.28, 0.10);
+  group.add(helmet); outline(helmet, 1.10);
+
+  const rider = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.40, 0.45), toon(0x333344));
+  rider.position.set(0, 0.98, 0.06);
+  group.add(rider);
+
+  return group;
+}
+
+function makePotholeMesh() {
+  const group = new THREE.Group();
+  // Buraco escuro elíptico no chão
+  const hole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.9, 0.9, 0.15, 16),
+    toon(0x111111)
+  );
+  hole.position.y = 0.05;
+  group.add(hole); outline(hole, 1.04);
+
+  // Borda do buraco (mais clara)
+  const rim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.9, 0.14, 6, 16),
+    toon(0x666666)
+  );
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.12;
+  group.add(rim);
+
+  return group;
+}
+
+function makeTrafficConeMesh() {
+  const group = new THREE.Group();
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.28, 0.90, 10),
+    toon(0xff4400)
+  );
+  cone.position.y = 0.45;
+  cone.castShadow = true;
+  group.add(cone); outline(cone, 1.10);
+
+  // Faixa branca
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.22, 0.12, 10), toon(0xffffff));
+  band.position.y = 0.55;
+  group.add(band);
+
+  // Base
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.10, 0.65), toon(0x222222));
+  base.position.y = 0.05;
+  group.add(base);
+
+  return group;
+}
+
+function makeLowBarrierMesh() {
+  const group = new THREE.Group();
+  // Barreira de concreto (tipo New Jersey)
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.70, 0.55), toon(0xcccccc));
+  body.position.y = 0.35;
+  body.castShadow = true;
+  group.add(body); outline(body, 1.05);
+
+  // Listras laranjas de aviso
+  [0.55, -0.55].forEach(x => {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.72, 0.08), toon(0xff6600));
+    s.position.set(x, 0.35, 0.28);
     group.add(s);
-  }
+  });
   return group;
 }
 
@@ -443,86 +520,94 @@ function getDiff() {
   return Math.min(5, Math.floor((speed - BASE_SPEED) / ((MAX_SPEED - BASE_SPEED) / 6)));
 }
 
-function spawnOverheadBeam() {
+function spawnLowBridge() {
+  // Viaduto baixo — player precisa abaixar
   const group = new THREE.Group();
-  const beam  = new THREE.Mesh(
-    new THREE.BoxGeometry(14, 0.50, 0.70),
-    toon(0x445566)
-  );
+  const beam  = new THREE.Mesh(new THREE.BoxGeometry(14, 0.45, 0.80), toon(0x886644));
   beam.castShadow = true;
-  group.add(beam);
-  outline(beam, 1.04);
-  const wMat = toon(0xffcc00);
-  [-5, -2.5, 0, 2.5, 5].forEach(x => {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.52, 0.06), wMat);
-    s.position.set(x, 0, 0.36);
-    group.add(s);
-  });
-  const yBot = 1.45, h = 0.50;
-  group.position.set(0, yBot + h / 2, SPAWN_Z);
+  group.add(beam); outline(beam, 1.03);
+  const yBot = 1.40;
+  group.position.set(0, yBot + 0.225, SPAWN_Z);
   three.scene.add(group);
-  obstacles.push({ mesh: group, lane: -1, w: 14, yBot, yTop: yBot + h });
+  obstacles.push({ mesh: group, lane: -1, w: 14, yBot, yTop: yBot + 0.45 });
 }
 
-function spawnSingleTrain(laneOverride) {
-  const h = 3.0, w = 2.6, d = 0.95;
-  const l = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
-  const mesh = makeTrainMesh(w, h, d);
-  mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
+function spawnCar(laneOverride) {
+  const l    = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
+  const mesh = makeCarMesh();
+  // Car height: carroceria top = 0.55 + 0.55 = 1.10
+  mesh.position.set(LANE_X[l], 0, SPAWN_Z);
   three.scene.add(mesh);
-  obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
+  obstacles.push({ mesh, lane: l, w: 1.80, yBot: 0, yTop: 1.15 });
+}
+
+function spawnMoto(laneOverride) {
+  const l    = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
+  const mesh = makeMotorcycleMesh();
+  mesh.position.set(LANE_X[l], 0, SPAWN_Z);
+  three.scene.add(mesh);
+  obstacles.push({ mesh, lane: l, w: 0.85, yBot: 0, yTop: 1.55 });
+}
+
+function spawnPothole(laneOverride) {
+  const l    = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
+  const mesh = makePotholeMesh();
+  mesh.position.set(LANE_X[l], 0, SPAWN_Z);
+  three.scene.add(mesh);
+  // Buraco baixo — player deve pular para evitar
+  obstacles.push({ mesh, lane: l, w: 1.60, yBot: 0, yTop: 0.25 });
+}
+
+function spawnCones(laneOverride) {
+  const l = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
+  // Grupo de 3 cones em linha
+  for (let i = 0; i < 3; i++) {
+    const mesh = makeTrafficConeMesh();
+    mesh.position.set(LANE_X[l] + (i - 1) * 0.65, 0, SPAWN_Z - i * 0.4);
+    three.scene.add(mesh);
+    obstacles.push({ mesh, lane: l, w: 1.80, yBot: 0, yTop: 0.95 });
+  }
+}
+
+function spawnBarrier(laneOverride) {
+  const l    = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
+  const mesh = makeLowBarrierMesh();
+  mesh.position.set(LANE_X[l], 0, SPAWN_Z);
+  three.scene.add(mesh);
+  obstacles.push({ mesh, lane: l, w: 1.95, yBot: 0, yTop: 0.72 });
 }
 
 function spawnObstacle() {
   const diff = getDiff();
   const r    = Math.random();
-  const overheadP = 0.10 + diff * 0.04;
-  const doubleP   = overheadP + 0.15 + diff * 0.05;
 
-  if (r < overheadP) {
-    spawnOverheadBeam();
-    if (diff >= 3 && Math.random() < 0.45) {
-      const h = 0.68, w = 2.2, d = 0.7;
-      const l = Math.floor(Math.random() * 3);
-      const mesh = makeBarrierMesh(w, h, d);
-      mesh.position.set(LANE_X[l], h / 2, SPAWN_Z - 7);
-      three.scene.add(mesh);
-      obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
-    }
+  // Chance de viaduto baixo (abaixar) aumenta com dificuldade
+  const bridgeP = 0.08 + diff * 0.03;
+  if (r < bridgeP) {
+    spawnLowBridge();
+    if (diff >= 3 && Math.random() < 0.4) spawnPothole();
     return;
   }
 
+  // Dois carros bloqueando, uma faixa livre
+  const doubleP = bridgeP + 0.18 + diff * 0.04;
   if (r < doubleP) {
-    const h = 3.0, w = 2.6, d = 0.95;
     const open = Math.floor(Math.random() * 3);
-    [0, 1, 2].filter(l => l !== open).forEach(l => {
-      const mesh = makeTrainMesh(w, h, d);
-      mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
-      three.scene.add(mesh);
-      obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
-    });
-    if (diff >= 4 && Math.random() < 0.5) {
-      const bh = 0.68, bw = 2.2, bd = 0.7;
-      const mesh = makeBarrierMesh(bw, bh, bd);
-      mesh.position.set(LANE_X[open], bh / 2, SPAWN_Z - 9);
-      three.scene.add(mesh);
-      obstacles.push({ mesh, lane: open, w: bw * 0.88, yBot: 0, yTop: bh });
-    }
+    [0, 1, 2].filter(l => l !== open).forEach(l => spawnCar(l));
+    if (diff >= 4 && Math.random() < 0.5) spawnBarrier(open);
     return;
   }
 
-  if (Math.random() < 0.55) {
-    spawnSingleTrain();
-  } else {
-    const h = 0.68, w = 2.2, d = 0.7;
-    const l = Math.floor(Math.random() * 3);
-    const mesh = makeBarrierMesh(w, h, d);
-    mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
-    three.scene.add(mesh);
-    obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
-  }
+  // Obstáculos simples sorteados por tipo
+  const pick = Math.random();
+  if      (pick < 0.30) spawnCar();
+  else if (pick < 0.52) spawnMoto();
+  else if (pick < 0.68) spawnPothole();
+  else if (pick < 0.82) spawnCones();
+  else                  spawnBarrier();
 
-  if (diff >= 5 && Math.random() < 0.4) spawnSingleTrain();
+  // Em dificuldade máxima spawna um extra
+  if (diff >= 5 && Math.random() < 0.4) spawnCar();
 }
 
 function spawnCoin() {
