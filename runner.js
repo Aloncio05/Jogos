@@ -7,9 +7,9 @@ const W = 360, H = 600;
 const LANE_X     = [-3, 0, 3];
 const SPAWN_Z    = -130;
 const DESPAWN_Z  = 12;
-const BASE_SPEED = 15;
-const MAX_SPEED  = 38;
-const SPEED_INC  = 0.5;
+const BASE_SPEED = 22;
+const MAX_SPEED  = 58;
+const SPEED_INC  = 1.0;
 const GRAVITY    = -30;
 const JUMP_V     = 13;
 const GROUND_Y   = 0;
@@ -112,8 +112,8 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // ── Steel rails ───────────────────────────────────────────────────────────
-  const railMat = new THREE.MeshLambertMaterial({ color: 0xbbbbbb });
+  // ── Steel rails — material metálico brilhante ─────────────────────────────
+  const railMat = new THREE.MeshPhongMaterial({ color: 0xdddddd, shininess: 150 });
   const railGeo = new THREE.BoxGeometry(0.2, 0.22, 400);
   [-1.8, 1.8].forEach(x => {
     const m = new THREE.Mesh(railGeo, railMat);
@@ -128,6 +128,22 @@ function buildEnvironment(scene) {
     m.position.set(x, 0.26, -195);
     scene.add(m);
   });
+
+  // ── Postes de luz cilíndricos (reciclados) ────────────────────────────────
+  const poleMat = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 50 });
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+  for (let i = 0; i < 12; i++) {
+    [-1, 1].forEach(side => {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 4.5, 8), poleMat);
+      pole.position.set(side * 6.0, 2.25, -i * 22);
+      scene.add(pole);
+      envBuildings.push(pole);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), lampMat);
+      lamp.position.set(side * 6.0, 4.7, -i * 22);
+      scene.add(lamp);
+      envBuildings.push(lamp);
+    });
+  }
 
   // ── Low platform walls / fences ───────────────────────────────────────────
   const fenceH   = 1.8;
@@ -228,43 +244,60 @@ function buildEnvironment(scene) {
   scene.add(sunDisc);
 }
 
-// ── Player (Jake-inspired) ───────────────────────────────────────────────────
+// ── Player (Jake-inspired, formas arredondadas) ──────────────────────────────
 function buildPlayer(scene) {
   const group = new THREE.Group();
 
-  const skin   = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
-  const hoodie = new THREE.MeshLambertMaterial({ color: 0xff5500 });
-  const pants  = new THREE.MeshLambertMaterial({ color: 0x224499 });
-  const capM   = new THREE.MeshLambertMaterial({ color: 0xffcc00 });
-  const shoe   = new THREE.MeshLambertMaterial({ color: 0xffffff });
-  const lace   = new THREE.MeshLambertMaterial({ color: 0xdd3333 });
+  const skin   = new THREE.MeshPhongMaterial({ color: 0xffcc99, shininess: 40 });
+  const hoodie = new THREE.MeshPhongMaterial({ color: 0xff5500, shininess: 25 });
+  const pants  = new THREE.MeshPhongMaterial({ color: 0x224499, shininess: 20 });
+  const capM   = new THREE.MeshPhongMaterial({ color: 0xffcc00, shininess: 35 });
+  const shoe   = new THREE.MeshPhongMaterial({ color: 0xfafafa, shininess: 70 });
+  const dark   = new THREE.MeshPhongMaterial({ color: 0x111111 });
+  const accent = new THREE.MeshBasicMaterial({ color: 0xee2222 });
 
-  function box(w, h, d, mat, px, py, pz) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  function add(geo, mat, px, py, pz) {
+    const m = new THREE.Mesh(geo, mat);
     m.position.set(px, py, pz);
     m.castShadow = true;
     group.add(m);
     return m;
   }
 
-  const meshes = {
-    head:     box(0.52, 0.52, 0.52, skin,   0,      1.74,  0),
-    cap:      box(0.60, 0.14, 0.60, capM,   0,      2.06,  0),
-    capBrim:  box(0.70, 0.08, 0.32, capM,   0,      1.96,  0.24),
-    torso:    box(0.66, 0.76, 0.42, hoodie, 0,      1.10,  0),
-    armL:     box(0.24, 0.58, 0.28, hoodie,-0.48,   1.10,  0),
-    armR:     box(0.24, 0.58, 0.28, hoodie, 0.48,   1.10,  0),
-    legL:     box(0.29, 0.56, 0.32, pants, -0.20,   0.47,  0),
-    legR:     box(0.29, 0.56, 0.32, pants,  0.20,   0.47,  0),
-    shoeL:    box(0.32, 0.20, 0.42, shoe,  -0.20,   0.10,  0.04),
-    shoeR:    box(0.32, 0.20, 0.42, shoe,   0.20,   0.10,  0.04),
-    laceL:    box(0.20, 0.06, 0.20, lace,  -0.20,   0.21,  0.14),
-    laceR:    box(0.20, 0.06, 0.20, lace,   0.20,   0.21,  0.14),
-  };
+  // Cabeça — esfera
+  const head = add(new THREE.SphereGeometry(0.27, 14, 10), skin, 0, 1.76, 0);
+
+  // Olhos
+  add(new THREE.SphereGeometry(0.058, 6, 5), dark, -0.105, 1.83, 0.25);
+  add(new THREE.SphereGeometry(0.058, 6, 5), dark,  0.105, 1.83, 0.25);
+
+  // Boné — cilindro + aba
+  const cap = add(new THREE.CylinderGeometry(0.30, 0.28, 0.15, 12), capM, 0, 2.09, 0);
+  add(new THREE.BoxGeometry(0.64, 0.07, 0.30), capM, 0, 1.99, 0.22);
+
+  // Torso
+  const torso = add(new THREE.BoxGeometry(0.60, 0.80, 0.38), hoodie, 0, 1.10, 0);
+
+  // Braços — cilindros
+  const armGeo = new THREE.CylinderGeometry(0.10, 0.09, 0.56, 8);
+  const armL = add(armGeo, hoodie, -0.46, 1.10, 0);
+  const armR = add(armGeo, hoodie,  0.46, 1.10, 0);
+
+  // Pernas — cilindros
+  const legGeo = new THREE.CylinderGeometry(0.12, 0.10, 0.54, 8);
+  const legL = add(legGeo, pants, -0.20, 0.47, 0);
+  const legR = add(legGeo, pants,  0.20, 0.47, 0);
+
+  // Tênis
+  add(new THREE.BoxGeometry(0.30, 0.18, 0.43), shoe,  -0.20, 0.10, 0.04);
+  add(new THREE.BoxGeometry(0.30, 0.18, 0.43), shoe,   0.20, 0.10, 0.04);
+  // Listra colorida no tênis
+  add(new THREE.BoxGeometry(0.31, 0.05, 0.44), accent, -0.20, 0.19, 0.04);
+  add(new THREE.BoxGeometry(0.31, 0.05, 0.44), accent,  0.20, 0.19, 0.04);
 
   group.position.set(LANE_X[1], 0, 0);
   scene.add(group);
-  playerObj = { group, meshes };
+  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap } };
 }
 
 // ── Obstacles ────────────────────────────────────────────────────────────────
@@ -276,42 +309,55 @@ const TRAIN_COLORS = [
 ];
 
 function makeTrainMesh(w, h, d) {
-  const tc   = TRAIN_COLORS[Math.floor(Math.random() * TRAIN_COLORS.length)];
+  const tc    = TRAIN_COLORS[Math.floor(Math.random() * TRAIN_COLORS.length)];
   const group = new THREE.Group();
 
-  // Body
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshLambertMaterial({ color: tc.body })
-  );
+  // Corpo principal — MeshPhong para brilho metálico
+  const bodyMat = new THREE.MeshPhongMaterial({ color: tc.body, shininess: 60 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
   body.castShadow = true;
   group.add(body);
 
-  // Front face stripe
+  // Nariz arredondado (frente do trem)
+  const noseMat = new THREE.MeshPhongMaterial({ color: tc.body, shininess: 80 });
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(w * 0.38, 10, 8, 0, Math.PI), noseMat);
+  nose.rotation.y = -Math.PI / 2;
+  nose.position.set(0, 0, d / 2);
+  group.add(nose);
+
+  // Faixa horizontal decorativa
   const stripe = new THREE.Mesh(
-    new THREE.BoxGeometry(w * 0.88, 0.28, 0.04),
+    new THREE.BoxGeometry(w + 0.02, 0.30, d + 0.04),
     new THREE.MeshBasicMaterial({ color: tc.stripe })
   );
-  stripe.position.set(0, h * 0.12, d / 2 + 0.02);
+  stripe.position.set(0, h * 0.14, 0);
   group.add(stripe);
 
-  // Windows (2 per lane face)
-  const winMat = new THREE.MeshBasicMaterial({ color: 0xd4f4ff });
+  // Janelas (arredondadas com CylinderGeometry lateral)
+  const winMat = new THREE.MeshPhongMaterial({ color: 0xd4f4ff, shininess: 120 });
   [-w * 0.22, w * 0.22].forEach(wx => {
-    const win = new THREE.Mesh(
-      new THREE.BoxGeometry(w * 0.28, h * 0.28, 0.04),
-      winMat
-    );
-    win.position.set(wx, h * 0.2, d / 2 + 0.02);
+    const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.26, h * 0.26, 0.06), winMat);
+    win.position.set(wx, h * 0.22, d / 2 + 0.02);
     group.add(win);
   });
 
-  // Headlights
-  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+  // Faróis circulares
+  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffbb });
   [-w * 0.3, w * 0.3].forEach(lx => {
-    const l = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.04), lightMat);
-    l.position.set(lx, -h * 0.28, d / 2 + 0.02);
+    const l = new THREE.Mesh(new THREE.CircleGeometry(0.13, 10), lightMat);
+    l.position.set(lx, -h * 0.30, d / 2 + 0.52);
     group.add(l);
+  });
+
+  // Rodas (cilindros horizontais)
+  const wheelMat = new THREE.MeshPhongMaterial({ color: 0x222222, shininess: 30 });
+  [-w * 0.3, w * 0.3].forEach(wx => {
+    [-d * 0.3, d * 0.3].forEach(wz => {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.12, 12), wheelMat);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(wx, -h / 2 + 0.06, wz);
+      group.add(wheel);
+    });
   });
 
   return group;
@@ -405,13 +451,13 @@ function spawnObstacle() {
 function spawnCoin() {
   const l = Math.floor(Math.random() * 3);
   const y = 0.7 + Math.random() * 1.0;
-  // Coin: flat disc shape
+  // Torus giratório — igual às moedas do Subway Surfers
   const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.26, 0.26, 0.12, 12),
-    new THREE.MeshLambertMaterial({ color: 0xffcc00, emissive: new THREE.Color(0xaa6600) })
+    new THREE.TorusGeometry(0.26, 0.085, 8, 18),
+    new THREE.MeshPhongMaterial({ color: 0xffcc00, emissive: new THREE.Color(0x885500), shininess: 100 })
   );
   mesh.position.set(LANE_X[l], y, SPAWN_Z);
-  mesh.rotation.z = Math.PI / 2; // face player
+  mesh.rotation.x = Math.PI / 2; // anel de frente para o jogador
   three.scene.add(mesh);
   coins.push({ mesh, lane: l, y });
 }
@@ -465,9 +511,8 @@ function update(dt) {
     playerObj.meshes.armR.rotation.x =  leg * 0.65;
     const bob = Math.abs(Math.sin(t)) * 0.04;
     playerObj.meshes.torso.position.y = 1.10 + bob;
-    playerObj.meshes.head.position.y  = 1.74 + bob;
-    playerObj.meshes.cap.position.y   = 2.06 + bob;
-    playerObj.meshes.capBrim.position.y = 1.96 + bob;
+    playerObj.meshes.head.position.y  = 1.76 + bob;
+    playerObj.meshes.cap.position.y   = 2.09 + bob;
   } else {
     playerObj.meshes.legL.rotation.x = -0.45;
     playerObj.meshes.legR.rotation.x =  0.45;
@@ -517,7 +562,7 @@ function update(dt) {
   for (let i = coins.length - 1; i >= 0; i--) {
     const c = coins[i];
     c.mesh.position.z += speed * dt;
-    c.mesh.rotation.x += dt * 4; // spin coin
+    c.mesh.rotation.y += dt * 4; // spin coin
 
     if (c.mesh.position.z > DESPAWN_Z) {
       three.scene.remove(c.mesh);
