@@ -8,8 +8,9 @@ const LANE_X     = [-3, 0, 3];
 const SPAWN_Z    = -130;
 const DESPAWN_Z  = 12;
 const BASE_SPEED = 22;
-const MAX_SPEED  = 58;
-const SPEED_INC  = 1.0;
+const MAX_SPEED  = 70;
+const SPEED_INC  = 1.5;   // incremento por tick
+const SPEED_TICK = 5;     // segundos entre incrementos
 const GRAVITY    = -30;
 const JUMP_V     = 13;
 const GROUND_Y   = 0;
@@ -39,6 +40,7 @@ const scoreEl  = document.getElementById('runner-score');
 const bestEl   = document.getElementById('runner-best');
 const speedEl  = document.getElementById('runner-speed');
 const overlay  = document.getElementById('runner-overlay');
+const powersEl = document.getElementById('runner-powers');
 
 bestEl.textContent = best;
 
@@ -444,35 +446,65 @@ function makeBarrierMesh(w, h, d) {
   return group;
 }
 
-function spawnObstacle() {
-  const r = Math.random();
+// ── Dificuldade (tier 0-5) ────────────────────────────────────────────────────
+function getDiff() {
+  return Math.min(5, Math.floor((speed - BASE_SPEED) / ((MAX_SPEED - BASE_SPEED) / 6)));
+}
 
-  if (r < 0.18) {
-    // Overhead bar (metal beam across all lanes)
-    const group = new THREE.Group();
-    const beam = new THREE.Mesh(
-      new THREE.BoxGeometry(14, 0.45, 0.65),
-      new THREE.MeshLambertMaterial({ color: 0x556677 })
-    );
-    beam.castShadow = true;
-    group.add(beam);
-    // Warning stripes on beam
-    const wMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
-    [-5, -2.5, 0, 2.5, 5].forEach(x => {
-      const s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.47, 0.02), wMat);
-      s.position.set(x, 0, 0.34);
-      group.add(s);
-    });
-    const yBot = 1.45;
-    const h    = 0.45;
-    group.position.set(0, yBot + h / 2, SPAWN_Z);
-    three.scene.add(group);
-    obstacles.push({ mesh: group, lane: -1, w: 14, yBot, yTop: yBot + h });
+function spawnOverheadBeam() {
+  const group = new THREE.Group();
+  const beam  = new THREE.Mesh(
+    new THREE.BoxGeometry(14, 0.45, 0.65),
+    new THREE.MeshLambertMaterial({ color: 0x556677 })
+  );
+  beam.castShadow = true;
+  group.add(beam);
+  const wMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+  [-5, -2.5, 0, 2.5, 5].forEach(x => {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.47, 0.02), wMat);
+    s.position.set(x, 0, 0.34);
+    group.add(s);
+  });
+  const yBot = 1.45, h = 0.45;
+  group.position.set(0, yBot + h / 2, SPAWN_Z);
+  three.scene.add(group);
+  obstacles.push({ mesh: group, lane: -1, w: 14, yBot, yTop: yBot + h });
+}
+
+function spawnSingleTrain(laneOverride) {
+  const h = 3.0, w = 2.6, d = 0.9;
+  const l = laneOverride !== undefined ? laneOverride : Math.floor(Math.random() * 3);
+  const mesh = makeTrainMesh(w, h, d);
+  mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
+  three.scene.add(mesh);
+  obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
+}
+
+function spawnObstacle() {
+  const diff = getDiff();
+  const r    = Math.random();
+
+  // Probabilidades escalam com a dificuldade
+  const overheadP = 0.10 + diff * 0.04;          // 10% → 30%
+  const doubleP   = overheadP + 0.15 + diff * 0.05; // 25% → 55% cumulative
+
+  if (r < overheadP) {
+    spawnOverheadBeam();
+
+    // Diff 3+: barra + barreira na mesma faixa (combo)
+    if (diff >= 3 && Math.random() < 0.45) {
+      const h = 0.68, w = 2.2, d = 0.7;
+      const l = Math.floor(Math.random() * 3);
+      const mesh = makeBarrierMesh(w, h, d);
+      mesh.position.set(LANE_X[l], h / 2, SPAWN_Z - 6);
+      three.scene.add(mesh);
+      obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
+    }
     return;
   }
 
-  if (r < 0.38) {
-    // Double train: two lanes blocked
+  if (r < doubleP) {
+    // Dois trens (duas faixas bloqueadas)
     const h = 3.0, w = 2.6, d = 0.9;
     const open = Math.floor(Math.random() * 3);
     [0, 1, 2].filter(l => l !== open).forEach(l => {
@@ -481,26 +513,33 @@ function spawnObstacle() {
       three.scene.add(mesh);
       obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
     });
+
+    // Diff 4+: coloca barreira na faixa livre logo atrás
+    if (diff >= 4 && Math.random() < 0.5) {
+      const bh = 0.68, bw = 2.2, bd = 0.7;
+      const mesh = makeBarrierMesh(bw, bh, bd);
+      mesh.position.set(LANE_X[open], bh / 2, SPAWN_Z - 8);
+      three.scene.add(mesh);
+      obstacles.push({ mesh, lane: open, w: bw * 0.88, yBot: 0, yTop: bh });
+    }
     return;
   }
 
-  // Single obstacle
+  // Obstáculo simples
   if (Math.random() < 0.55) {
-    // Train
-    const h = 3.0, w = 2.6, d = 0.9;
-    const l = Math.floor(Math.random() * 3);
-    const mesh = makeTrainMesh(w, h, d);
-    mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
-    three.scene.add(mesh);
-    obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
+    spawnSingleTrain();
   } else {
-    // Barrier (low — must jump)
     const h = 0.68, w = 2.2, d = 0.7;
     const l = Math.floor(Math.random() * 3);
     const mesh = makeBarrierMesh(w, h, d);
     mesh.position.set(LANE_X[l], h / 2, SPAWN_Z);
     three.scene.add(mesh);
     obstacles.push({ mesh, lane: l, w: w * 0.88, yBot: 0, yTop: h });
+  }
+
+  // Diff 5: spawn imediato de segundo obstáculo em outra faixa
+  if (diff >= 5 && Math.random() < 0.4) {
+    spawnSingleTrain();
   }
 }
 
@@ -524,10 +563,26 @@ function update(dt) {
 
   // Speed ramp
   speedT += dt;
-  if (speedT > 6) {
+  if (speedT > SPEED_TICK) {
     speedT = 0;
+    const prevDiff = getDiff();
     speed  = Math.min(speed + SPEED_INC, MAX_SPEED);
-    speedEl.textContent = (Math.round((speed / BASE_SPEED) * 10) / 10) + '×';
+    const mult = (Math.round((speed / BASE_SPEED) * 10) / 10).toFixed(1);
+    speedEl.textContent = mult + '×';
+
+    // Flash no indicador de velocidade
+    speedEl.style.color     = '#ff6600';
+    speedEl.style.transform = 'scale(1.5)';
+    speedEl.style.transition = 'all 0.4s';
+    setTimeout(() => { speedEl.style.color = ''; speedEl.style.transform = ''; }, 500);
+
+    // Notificação quando sobe de tier
+    if (getDiff() > prevDiff && powersEl) {
+      const TIER_LABELS = ['', '🔥 MAIS RÁPIDO!', '🔥🔥 VELOZ!', '⚡ ULTRA!', '⚡⚡ INSANO!', '💥 MAX!'];
+      const label = TIER_LABELS[getDiff()] || '💥 MAX!';
+      powersEl.innerHTML = `<span class="runner-power-chip" style="background:#ff4400;color:#fff;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.9rem;">${label}</span>`;
+      setTimeout(() => { if (powersEl) powersEl.innerHTML = ''; }, 1800);
+    }
   }
 
   // Score
@@ -576,13 +631,15 @@ function update(dt) {
     playerObj.meshes.armR.rotation.x =  0.9;
   }
 
-  // Spawn
+  // Spawn — intervalo cai com velocidade e dificuldade
   spawnT += dt;
-  const interval = Math.max(0.85, 2.4 - speed / 20);
+  const diff     = getDiff();
+  const interval = Math.max(0.50, 2.5 - speed / 17 - diff * 0.06);
   if (spawnT > interval) { spawnT = 0; spawnObstacle(); }
 
   coinT += dt;
-  if (coinT > 0.65) { coinT = 0; spawnCoin(); }
+  const coinInterval = Math.max(0.45, 0.70 - diff * 0.04); // moedas mais frequentes no caos
+  if (coinT > coinInterval) { coinT = 0; spawnCoin(); }
 
   // Bounding values
   const pX    = playerObj.group.position.x;
