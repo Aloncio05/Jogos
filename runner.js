@@ -150,30 +150,24 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // Faixas amarelas de faixa de pedestre / linhas de pista
-  const lineMatY = toon(0xffee00);
-  const lineGeo  = new THREE.BoxGeometry(2.2, 0.06, 0.55);
-  for (let i = 0; i < 40; i++) {
-    [-1, 0, 1].forEach(lx => {
-      if (lx !== 0) {   // linhas divisórias nas bordas das faixas
-        const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 24), toon(0xffee00));
-        if (i === 0) {
-          m.position.set(lx * 2.6, 0.02, -i * (TILE_PERIOD / 40));
-          scene.add(m);
-          envTiles.push(m);
-        }
+  // Divisórias tracejadas amarelas — x=-1.5 e x=1.5 (entre as 3 faixas)
+  // 5 traços por tile de 24u = espaçamento 4.8u cada
+  const dashGeo = new THREE.BoxGeometry(0.18, 0.06, 1.6);
+  const dashMat = toon(0xffee00);
+  [-1.5, 1.5].forEach(dx => {
+    for (let i = 0; i < 8; i++) {
+      for (let d = 0; d < 5; d++) {
+        const m = new THREE.Mesh(dashGeo, dashMat);
+        m.position.set(dx, 0.02, 10 - i * 24 - d * 4.8);
+        scene.add(m);
+        envTiles.push(m);
       }
-    });
-    // Faixa central tracejada
-    const m = new THREE.Mesh(lineGeo, lineMatY);
-    m.position.set(0, 0.02, 10 - i * (TILE_PERIOD / 40));
-    scene.add(m);
-    envTiles.push(m);
-  }
+    }
+  });
 
-  // Linhas laterais brancas
-  [-3.6, 3.6].forEach(x => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 400), toon(0xffffff));
+  // Bordas brancas sólidas (estáticas, 400u)
+  [-3.75, 3.75].forEach(x => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.06, 400), toon(0xffffff));
     m.position.set(x, 0.02, -195);
     scene.add(m);
   });
@@ -789,7 +783,7 @@ function die() {
   playerObj.group.rotation.z = 0.6;
   playerObj.group.scale.set(1.3, 0.5, 1.3);
   unlockScroll();
-  setTimeout(() => showOverlay(true), 500);
+  setTimeout(() => { if (state === 'dead') showOverlay(true); }, 500);
 }
 
 // ── Overlay ───────────────────────────────────────────────────────────────────
