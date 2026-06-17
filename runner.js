@@ -182,41 +182,96 @@ function buildEnvironment(scene) {
     envBuildings.push(m);
   }
 
-  // ── City buildings (behind the fence) ─────────────────────────────────────
-  const buildingPalette = [
-    0xf5a623, 0x7b9fba, 0xc0392b, 0x27ae60,
-    0x8e44ad, 0x2980b9, 0xe67e22, 0xd4a800,
-  ];
+  // ── City buildings — mix de geometrias ────────────────────────────────────
+  const bPalette = [0xf5a623, 0x7b9fba, 0xc0392b, 0x27ae60, 0x8e44ad, 0x2980b9, 0xe67e22, 0xd4a800];
+  const winMat  = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+
   for (let i = 0; i < 14; i++) {
     [-1, 1].forEach(side => {
-      const h = 7 + Math.random() * 22;
-      const w = 3.5 + Math.random() * 5;
-      const d = 3 + Math.random() * 3;
-      const col = buildingPalette[Math.floor(Math.random() * buildingPalette.length)];
-      const m = new THREE.Mesh(
-        new THREE.BoxGeometry(w, h, d),
-        new THREE.MeshLambertMaterial({ color: col })
-      );
-      m.position.set(side * (10 + Math.random() * 5), h / 2, -i * 18);
-      m.castShadow = true;
-      scene.add(m);
-      envBuildings.push(m);
+      const bx   = side * (10 + Math.random() * 5);
+      const bz   = -i * 18;
+      const col  = bPalette[Math.floor(Math.random() * bPalette.length)];
+      const mat  = new THREE.MeshPhongMaterial({ color: col, shininess: 20 });
+      const h    = 7 + Math.random() * 22;
+      const type = Math.random();
 
-      // Window rows (light yellow)
-      const winMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
-      for (let wr = 0; wr < 3; wr++) {
-        const wRow = new THREE.Mesh(
-          new THREE.BoxGeometry(w * 0.55, 0.3, 0.05),
-          winMat
-        );
-        wRow.position.set(
-          side * (10 + Math.random() * 5),
-          h * 0.25 + wr * h * 0.2,
-          -i * 18 + d / 2 + 0.01
-        );
-        scene.add(wRow);
-        envBuildings.push(wRow);
+      let base;
+
+      if (type < 0.35) {
+        // Prédio retangular clássico
+        const w = 3.5 + Math.random() * 4;
+        const d = 2.5 + Math.random() * 3;
+        base = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        base.position.set(bx, h / 2, bz);
+
+        // Janelas em faixas
+        for (let wr = 0; wr < 4; wr++) {
+          const row = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.28, 0.06), winMat);
+          row.position.set(bx, h * 0.2 + wr * h * 0.18, bz + d / 2 + 0.02);
+          scene.add(row);
+          envBuildings.push(row);
+        }
+        // Topo plano com bordas
+        const top = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3),
+          new THREE.MeshPhongMaterial({ color: 0x555555 }));
+        top.position.set(bx, h + 0.17, bz);
+        scene.add(top);
+        envBuildings.push(top);
+
+      } else if (type < 0.65) {
+        // Torre cilíndrica
+        const r = 1.6 + Math.random() * 1.8;
+        base = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.85, r, h, 12), mat);
+        base.position.set(bx, h / 2, bz);
+
+        // Cúpula no topo
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(r * 0.88, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+        dome.position.set(bx, h, bz);
+        scene.add(dome);
+        envBuildings.push(dome);
+
+        // Janelas em anel
+        for (let wr = 0; wr < 3; wr++) {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(r + 0.04, 0.1, 4, 12), winMat);
+          ring.rotation.x = Math.PI / 2;
+          ring.position.set(bx, h * 0.25 + wr * h * 0.22, bz);
+          scene.add(ring);
+          envBuildings.push(ring);
+        }
+
+      } else {
+        // Arranha-céu fino com antena
+        const w = 2.5 + Math.random() * 2;
+        const d = 2 + Math.random() * 2;
+        base = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        base.position.set(bx, h / 2, bz);
+
+        // Antena cilíndrica
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, h * 0.28, 6),
+          new THREE.MeshPhongMaterial({ color: 0x888888 }));
+        ant.position.set(bx, h + h * 0.14, bz);
+        scene.add(ant);
+        envBuildings.push(ant);
+
+        // Ponta da antena
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0xff3333 }));
+        tip.position.set(bx, h + h * 0.28, bz);
+        scene.add(tip);
+        envBuildings.push(tip);
+
+        // Janelas
+        for (let wr = 0; wr < 5; wr++) {
+          const row = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 0.22, 0.06), winMat);
+          row.position.set(bx, h * 0.15 + wr * h * 0.15, bz + d / 2 + 0.02);
+          scene.add(row);
+          envBuildings.push(row);
+        }
       }
+
+      base.castShadow = true;
+      scene.add(base);
+      envBuildings.push(base);
     });
   }
 
@@ -296,6 +351,7 @@ function buildPlayer(scene) {
   add(new THREE.BoxGeometry(0.31, 0.05, 0.44), accent,  0.20, 0.19, 0.04);
 
   group.position.set(LANE_X[1], 0, 0);
+  group.rotation.y = Math.PI; // costas para a câmera
   scene.add(group);
   playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap } };
 }
@@ -620,7 +676,7 @@ function begin() {
   speedEl.textContent = '1×';
 
   playerObj.group.position.set(LANE_X[1], 0, 0);
-  playerObj.group.rotation.set(0, 0, 0);
+  playerObj.group.rotation.set(0, Math.PI, 0);
   playerObj.group.scale.set(1, 1, 1);
 
   obstacles.forEach(o => three.scene.remove(o.mesh));
