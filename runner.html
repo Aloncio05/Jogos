@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Corrida do Aloncinho — Jogos do Aloncinho</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
 </head>
 <body class="game-page runner-page">
   <header>
@@ -46,7 +47,10 @@
 
       <div id="runner-powers" class="runner-powers" aria-live="polite"></div>
 
-      <canvas id="runner-canvas" width="360" height="600" tabindex="0" aria-label="Jogo de corrida"></canvas>
+      <div class="runner-canvas-wrap">
+        <canvas id="runner-canvas" width="360" height="600" tabindex="0" aria-label="Jogo de corrida"></canvas>
+        <div id="runner-overlay" class="runner-overlay"></div>
+      </div>
 
       <div class="runner-mobile-controls">
         <div class="runner-btn-row">
