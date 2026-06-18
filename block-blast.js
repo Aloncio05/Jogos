@@ -1,38 +1,24 @@
 'use strict';
 
 const GRID = 8;
+const DRAG_THRESHOLD = 6;
 
 // ===== Piece definitions =====
 const PIECE_DEFS = [
-  // 1-cell
   { cells: [[0,0]], color: '#fbbf24' },
-
-  // 2-cell
   { cells: [[0,0],[0,1]], color: '#34d399' },
   { cells: [[0,0],[1,0]], color: '#34d399' },
-
-  // 3-cell straight
   { cells: [[0,0],[0,1],[0,2]], color: '#22d3ee' },
   { cells: [[0,0],[1,0],[2,0]], color: '#22d3ee' },
-
-  // 3-cell L/corner
   { cells: [[0,0],[1,0],[1,1]], color: '#f472b6' },
   { cells: [[0,0],[0,1],[1,0]], color: '#f472b6' },
   { cells: [[0,0],[0,1],[1,1]], color: '#f472b6' },
   { cells: [[0,1],[1,0],[1,1]], color: '#f472b6' },
-
-  // 2x2 square
   { cells: [[0,0],[0,1],[1,0],[1,1]], color: '#fb923c' },
-
-  // 4-cell straight
   { cells: [[0,0],[0,1],[0,2],[0,3]], color: '#818cf8' },
   { cells: [[0,0],[1,0],[2,0],[3,0]], color: '#818cf8' },
-
-  // 5-cell straight
   { cells: [[0,0],[0,1],[0,2],[0,3],[0,4]], color: '#60a5fa' },
   { cells: [[0,0],[1,0],[2,0],[3,0],[4,0]], color: '#60a5fa' },
-
-  // L shapes 4-cell (all 4 rotations)
   { cells: [[0,0],[1,0],[2,0],[2,1]], color: '#c084fc' },
   { cells: [[0,1],[1,1],[2,0],[2,1]], color: '#c084fc' },
   { cells: [[0,0],[0,1],[0,2],[1,0]], color: '#c084fc' },
@@ -41,47 +27,33 @@ const PIECE_DEFS = [
   { cells: [[0,0],[0,1],[1,1],[2,1]], color: '#c084fc' },
   { cells: [[0,0],[1,0],[1,1],[1,2]], color: '#c084fc' },
   { cells: [[0,2],[1,0],[1,1],[1,2]], color: '#c084fc' },
-
-  // T shapes
   { cells: [[0,0],[0,1],[0,2],[1,1]], color: '#f87171' },
   { cells: [[0,0],[1,0],[1,1],[2,0]], color: '#f87171' },
   { cells: [[0,1],[1,0],[1,1],[1,2]], color: '#f87171' },
   { cells: [[0,0],[0,1],[1,0],[2,0]], color: '#f87171' },
-
-  // S/Z
   { cells: [[0,1],[0,2],[1,0],[1,1]], color: '#4ade80' },
   { cells: [[0,0],[0,1],[1,1],[1,2]], color: '#4ade80' },
-
-  // 3x3 square
   { cells: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]], color: '#ef4444' },
-
-  // 2x3 and 3x2 rectangles
   { cells: [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]], color: '#f97316' },
   { cells: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]], color: '#f97316' },
-
-  // Big L (5-cell)
   { cells: [[0,0],[1,0],[2,0],[3,0],[3,1]], color: '#a78bfa' },
   { cells: [[0,0],[0,1],[0,2],[0,3],[1,0]], color: '#a78bfa' },
   { cells: [[0,0],[0,1],[1,0],[2,0],[3,0]], color: '#a78bfa' },
   { cells: [[0,3],[1,0],[1,1],[1,2],[1,3]], color: '#a78bfa' },
 ];
 
-// ===== State =====
-let grid;
-let currentPieces;
-let selectedIdx;
-let score;
-let hiScore;
-let gameOver;
-let animating;
-let cellEls;
-let hoverR, hoverC;
+// ===== Game state =====
+let grid, currentPieces, selectedIdx, score, hiScore, gameOver, animating, cellEls, hoverR, hoverC;
 
-function rnd(n) { return Math.floor(Math.random() * n); }
-function randomPiece() { return { ...PIECE_DEFS[rnd(PIECE_DEFS.length)] }; }
-function flatIdx(r, c) { return r * GRID + c; }
+// ===== Drag state =====
+let dragIdx    = null;
+let dragEl     = null;
+let dragStartX = 0;
+let dragStartY = 0;
+let wasDragging = false;
+let dragIsTouch = false;
 
-// ===== DOM refs =====
+// ===== DOM =====
 const gridEl     = document.getElementById('bb-grid');
 const scoreEl    = document.getElementById('bb-score');
 const hiScoreEl  = document.getElementById('bb-hiscore');
@@ -93,9 +65,33 @@ const finalScEl  = document.getElementById('bb-final-score');
 const finalHiEl  = document.getElementById('bb-final-hi');
 const restartBtn = document.getElementById('bb-restart');
 
+function rnd(n) { return Math.floor(Math.random() * n); }
+function randomPiece() { return { ...PIECE_DEFS[rnd(PIECE_DEFS.length)] }; }
+function flatIdx(r, c) { return r * GRID + c; }
+
+// ===== Grid geometry helpers =====
+function getGridInfo() {
+  const r0 = cellEls[0].getBoundingClientRect();
+  const r1 = cellEls[1].getBoundingClientRect();
+  const rG = cellEls[GRID].getBoundingClientRect();
+  return {
+    left:    r0.left,
+    top:     r0.top,
+    cellW:   r0.width,
+    cellH:   r0.height,
+    hStride: r1.left - r0.left,   // cell width + gap
+    vStride: rG.top  - r0.top,    // cell height + gap
+  };
+}
+
+function pieceSize(piece) {
+  const maxR = Math.max(...piece.cells.map(([r]) => r));
+  const maxC = Math.max(...piece.cells.map(([,c]) => c));
+  return { rows: maxR + 1, cols: maxC + 1 };
+}
+
 // ===== Init / New Game =====
 function init() {
-  // Build 64 cells
   gridEl.innerHTML = '';
   cellEls = [];
   for (let r = 0; r < GRID; r++) {
@@ -110,19 +106,10 @@ function init() {
     }
   }
 
-  gridEl.addEventListener('mouseover', onGridHover);
-  gridEl.addEventListener('mouseleave', () => { hoverR = hoverC = null; clearGhost(); });
-  gridEl.addEventListener('click', onGridClick);
-  gridEl.addEventListener('touchend', onGridTouch, { passive: true });
-
-  piecesRow.addEventListener('click', onPieceRowClick);
-  piecesRow.addEventListener('touchend', onPieceRowClick, { passive: true });
-
-  restartBtn.addEventListener('click', newGame);
-
   hiScore = parseInt(localStorage.getItem('bb-hi') || '0', 10);
   hiScoreEl.textContent = hiScore;
 
+  initEvents();
   newGame();
 }
 
@@ -133,6 +120,8 @@ function newGame() {
   animating = false;
   selectedIdx = null;
   hoverR = hoverC = null;
+  dragIdx = null;
+  if (dragEl) { dragEl.remove(); dragEl = null; }
   currentPieces = [randomPiece(), randomPiece(), randomPiece()];
 
   comboEl.textContent = '';
@@ -157,8 +146,9 @@ function renderGrid() {
 }
 
 function applyGhost() {
-  if (selectedIdx === null || hoverR === null || hoverC === null) return;
-  const piece = currentPieces[selectedIdx];
+  const si = dragEl ? dragIdx : selectedIdx;
+  if (si === null || hoverR === null || hoverC === null) return;
+  const piece = currentPieces[si];
   if (!piece) return;
   const valid = canPlace(piece, hoverR, hoverC);
   piece.cells.forEach(([dr, dc]) => {
@@ -185,23 +175,21 @@ function renderPieces() {
   const slots = piecesRow.querySelectorAll('.bb-piece-slot');
   slots.forEach((slot, idx) => {
     slot.innerHTML = '';
-    slot.classList.toggle('selected', idx === selectedIdx);
+    slot.classList.toggle('selected', idx === selectedIdx && !dragEl);
     slot.classList.toggle('used', !currentPieces[idx]);
-    slot.setAttribute('aria-pressed', idx === selectedIdx ? 'true' : 'false');
+    slot.setAttribute('aria-pressed', (idx === selectedIdx && !dragEl) ? 'true' : 'false');
 
     const piece = currentPieces[idx];
     if (!piece) return;
 
-    const maxR = Math.max(...piece.cells.map(([r]) => r));
-    const maxC = Math.max(...piece.cells.map(([, c]) => c));
-
+    const { rows, cols } = pieceSize(piece);
     const mini = document.createElement('div');
     mini.className = 'bb-mini-grid';
-    mini.style.gridTemplateColumns = `repeat(${maxC + 1}, 1fr)`;
-    mini.style.gridTemplateRows = `repeat(${maxR + 1}, 1fr)`;
+    mini.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    mini.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
-    for (let r = 0; r <= maxR; r++) {
-      for (let c = 0; c <= maxC; c++) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
         const cell = document.createElement('div');
         cell.className = 'bb-mini-cell';
         if (piece.cells.some(([pr, pc]) => pr === r && pc === c)) {
@@ -215,46 +203,182 @@ function renderPieces() {
   });
 }
 
-// ===== Events =====
-function onPieceRowClick(e) {
-  const slot = e.target.closest('.bb-piece-slot');
-  if (!slot || gameOver || animating) return;
-  const idx = +slot.dataset.idx;
-  if (!currentPieces[idx]) return;
-  selectedIdx = selectedIdx === idx ? null : idx;
+// ===== Drag: build floating element =====
+function buildDragEl(piece) {
+  const { cellW, cellH, hStride, vStride } = getGridInfo();
+  const { rows, cols } = pieceSize(piece);
+
+  const el = document.createElement('div');
+  el.style.cssText = [
+    'position:fixed', 'pointer-events:none', 'z-index:9999',
+    'display:grid',
+    `grid-template-columns:repeat(${cols},${cellW}px)`,
+    `grid-template-rows:repeat(${rows},${cellH}px)`,
+    `gap:${hStride - cellW}px`,
+    'opacity:0.88',
+  ].join(';');
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = document.createElement('div');
+      if (piece.cells.some(([pr, pc]) => pr === r && pc === c)) {
+        cell.style.cssText = `background:${piece.color};border-radius:5px;`
+          + 'box-shadow:inset 0 -3px 0 rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.15);';
+      }
+      el.appendChild(cell);
+    }
+  }
+  return el;
+}
+
+// ===== Drag: compute position from cursor =====
+function computeDragLayout(clientX, clientY) {
+  const { left, top, cellW, cellH, hStride, vStride } = getGridInfo();
+  const piece = currentPieces[dragIdx];
+  const { rows, cols } = pieceSize(piece);
+
+  const pW = cols * cellW + (cols - 1) * (hStride - cellW);
+  const pH = rows * cellH + (rows - 1) * (vStride - cellH);
+
+  // Floating element position (smooth, follows cursor)
+  const elLeft = clientX - pW / 2;
+  const elTop  = dragIsTouch ? clientY - pH - 18 : clientY - pH / 2;
+
+  // Snap to nearest grid cell (top-left of piece)
+  const snapCol = Math.round((elLeft - left) / hStride);
+  const snapRow = Math.round((elTop  - top)  / vStride);
+
+  return { elLeft, elTop, snapRow, snapCol };
+}
+
+// ===== Drag: start =====
+function onDragStart(idx, clientX, clientY, touch) {
+  if (!currentPieces[idx] || gameOver || animating) return;
+  dragIdx    = idx;
+  dragIsTouch = touch;
+  dragStartX = clientX;
+  dragStartY = clientY;
+  selectedIdx = idx;
   renderPieces();
-  clearGhost();
-  applyGhost();
 }
 
-function onGridHover(e) {
-  if (gameOver || animating || selectedIdx === null) return;
-  const cell = e.target.closest('.bb-cell');
-  if (!cell) return;
-  const r = +cell.dataset.r, c = +cell.dataset.c;
-  if (r === hoverR && c === hoverC) return;
-  hoverR = r; hoverC = c;
-  clearGhost();
-  applyGhost();
+// ===== Drag: move =====
+function onDragMove(clientX, clientY) {
+  if (dragIdx === null) return;
+  const dx = clientX - dragStartX, dy = clientY - dragStartY;
+
+  if (!dragEl && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+    dragEl = buildDragEl(currentPieces[dragIdx]);
+    document.body.appendChild(dragEl);
+    renderPieces(); // hide "selected" highlight while dragging
+  }
+
+  if (!dragEl) return;
+
+  const { elLeft, elTop, snapRow, snapCol } = computeDragLayout(clientX, clientY);
+  dragEl.style.left = elLeft + 'px';
+  dragEl.style.top  = elTop  + 'px';
+
+  if (snapRow !== hoverR || snapCol !== hoverC) {
+    hoverR = snapRow;
+    hoverC = snapCol;
+    clearGhost();
+    applyGhost();
+  }
 }
 
-function onGridClick(e) {
-  if (gameOver || animating || selectedIdx === null) return;
-  const cell = e.target.closest('.bb-cell');
-  if (!cell) return;
-  tryPlace(+cell.dataset.r, +cell.dataset.c);
+// ===== Drag: end =====
+function onDragEnd(clientX, clientY) {
+  if (dragIdx === null) return;
+
+  if (dragEl) {
+    wasDragging = true;
+    dragEl.remove();
+    dragEl = null;
+
+    const piece = currentPieces[dragIdx];
+    const canDrop = piece && hoverR !== null && canPlace(piece, hoverR, hoverC);
+
+    if (canDrop) {
+      tryPlace(hoverR, hoverC);
+    } else {
+      selectedIdx = null;
+      hoverR = hoverC = null;
+      clearGhost();
+      renderPieces();
+    }
+  }
+
+  dragIdx = null;
 }
 
-function onGridTouch(e) {
-  if (gameOver || animating || selectedIdx === null) return;
-  const t = e.changedTouches[0];
-  const el = document.elementFromPoint(t.clientX, t.clientY);
-  const cell = el && el.closest('.bb-cell');
-  if (!cell) return;
-  tryPlace(+cell.dataset.r, +cell.dataset.c);
+// ===== Events =====
+function initEvents() {
+  // --- Piece slot: start drag ---
+  piecesRow.addEventListener('mousedown', e => {
+    const slot = e.target.closest('.bb-piece-slot');
+    if (slot) onDragStart(+slot.dataset.idx, e.clientX, e.clientY, false);
+  });
+  piecesRow.addEventListener('touchstart', e => {
+    const slot = e.target.closest('.bb-piece-slot');
+    if (slot) onDragStart(+slot.dataset.idx, e.touches[0].clientX, e.touches[0].clientY, true);
+  }, { passive: true });
+
+  // --- Piece slot: click to select (fallback for tap without drag) ---
+  piecesRow.addEventListener('click', e => {
+    if (wasDragging) { wasDragging = false; return; }
+    const slot = e.target.closest('.bb-piece-slot');
+    if (!slot || gameOver || animating || !currentPieces[+slot.dataset.idx]) return;
+    const idx = +slot.dataset.idx;
+    selectedIdx = selectedIdx === idx ? null : idx;
+    hoverR = hoverC = null;
+    clearGhost();
+    renderPieces();
+    applyGhost();
+  });
+
+  // --- Document: drag move ---
+  document.addEventListener('mousemove', e => onDragMove(e.clientX, e.clientY));
+  document.addEventListener('touchmove', e => {
+    if (dragIdx === null) return;
+    e.preventDefault();
+    onDragMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+
+  // --- Document: drag end ---
+  document.addEventListener('mouseup',  e => onDragEnd(e.clientX, e.clientY));
+  document.addEventListener('touchend', e => {
+    onDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  }, { passive: true });
+
+  // --- Grid: hover ghost (click-to-place workflow) ---
+  gridEl.addEventListener('mouseover', e => {
+    if (dragEl || dragIdx !== null || gameOver || animating || selectedIdx === null) return;
+    const cell = e.target.closest('.bb-cell');
+    if (!cell) return;
+    const r = +cell.dataset.r, c = +cell.dataset.c;
+    if (r === hoverR && c === hoverC) return;
+    hoverR = r; hoverC = c;
+    clearGhost(); applyGhost();
+  });
+  gridEl.addEventListener('mouseleave', () => {
+    if (dragEl) return;
+    hoverR = hoverC = null; clearGhost();
+  });
+
+  // --- Grid: click to place (click-to-place workflow) ---
+  gridEl.addEventListener('click', e => {
+    if (wasDragging) { wasDragging = false; return; }
+    if (gameOver || animating || selectedIdx === null) return;
+    const cell = e.target.closest('.bb-cell');
+    if (!cell) return;
+    tryPlace(+cell.dataset.r, +cell.dataset.c);
+  });
+
+  restartBtn.addEventListener('click', newGame);
 }
 
-// ===== Game logic =====
+// ===== Placement =====
 function canPlace(piece, row, col) {
   return piece.cells.every(([dr, dc]) => {
     const r = row + dr, c = col + dc;
@@ -263,13 +387,13 @@ function canPlace(piece, row, col) {
 }
 
 function tryPlace(row, col) {
-  const piece = currentPieces[selectedIdx];
+  const piece = currentPieces[selectedIdx !== null ? selectedIdx : dragIdx];
+  const si = selectedIdx !== null ? selectedIdx : dragIdx;
   if (!piece || !canPlace(piece, row, col)) return;
 
   animating = true;
   hoverR = hoverC = null;
 
-  // Fill cells
   piece.cells.forEach(([dr, dc]) => {
     const r = row + dr, c = col + dc;
     grid[r][c] = piece.color;
@@ -280,11 +404,11 @@ function tryPlace(row, col) {
   });
 
   score += piece.cells.length;
-  currentPieces[selectedIdx] = null;
+  currentPieces[si] = null;
   selectedIdx = null;
   renderPieces();
 
-  // Find full rows and columns
+  // Find full rows and cols
   const fullRows = [], fullCols = [];
   for (let r = 0; r < GRID; r++) {
     if (grid[r].every(v => v !== null)) fullRows.push(r);
@@ -302,7 +426,6 @@ function tryPlace(row, col) {
 
     toClear.forEach(i => cellEls[i].classList.add('clearing'));
 
-    // Score: cells cleared + combo bonus
     const bonus = toClear.size + (lineCount > 1 ? lineCount * 15 : 0);
     score += bonus;
 
@@ -349,7 +472,6 @@ function updateScore() {
   scoreEl.classList.remove('bb-score-pop');
   scoreEl.offsetWidth;
   scoreEl.classList.add('bb-score-pop');
-
   if (score > hiScore) {
     hiScore = score;
     localStorage.setItem('bb-hi', hiScore);
@@ -365,5 +487,4 @@ function showGameOver() {
   screenOver.classList.add('active');
 }
 
-// ===== Start =====
 init();
