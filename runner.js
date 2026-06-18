@@ -42,6 +42,7 @@ let spawnT = 0, coinT = 0, scoreT = 0, speedT = 0, powerUpT = 0, keyT = 0;
 // ── Power-ups ─────────────────────────────────────────────────────────────────
 let powerUps = [];
 let magnetActive = 0, shieldActive = 0, multiplierActive = 0, jetpackActive = 0;
+let invincibleT  = 0;
 
 // ── Progressão ───────────────────────────────────────────────────────────────
 let coinBank       = parseInt(localStorage.getItem('runner-coins') || '0');
@@ -1281,6 +1282,14 @@ function update(dt) {
   keyT += dt;
   if (!hasKey && keyT > Math.max(14, 22 - diff * 1.5)) { keyT = 0; spawnKey(); }
 
+  // ── Invencibilidade pós-escudo ────────────────────────────────────────────
+  if (invincibleT > 0) {
+    invincibleT -= dt;
+    // Piscar o personagem: visível nos frames pares, invisível nos ímpares
+    playerObj.group.visible = (Math.floor(invincibleT * 10) % 2 === 0);
+    if (invincibleT <= 0) { invincibleT = 0; playerObj.group.visible = true; }
+  }
+
   // ── Bounding ──────────────────────────────────────────────────────────────
   const pX    = playerObj.group.position.x;
   const pHW   = 0.38;
@@ -1299,7 +1308,7 @@ function update(dt) {
       } else {
         if (Math.abs(pX - LANE_X[o.lane]) < pHW + o.w / 2 && pYBot < o.yTop && pYTop > o.yBot + 0.08) hit = true;
       }
-      if (hit) { die(); return; }
+      if (hit && invincibleT <= 0) { die(); return; }
     }
   }
 
@@ -1462,7 +1471,8 @@ function begin() {
   wasOnGround = true; laneLean = 0;
   animFrame = 0; spawnT = 0; coinT = 0; scoreT = 0; speedT = 0; keyT = 0;
   scoreEl.textContent = '0'; speedEl.textContent = '1.0×';
-  magnetActive = 0; shieldActive = 0; multiplierActive = 0; jetpackActive = 0; powerUpT = 0;
+  magnetActive = 0; shieldActive = 0; multiplierActive = 0; jetpackActive = 0; invincibleT = 0; powerUpT = 0;
+  playerObj.group.visible = true;
   coinsThisRun = 0; distance = 0; runTime = 0;
   hasKey = false; revivedThisRun = false; jumpCount = 0; powerUpsUsed = 0;
   coinStreak = 0; coinStreakT = 0;
@@ -1490,10 +1500,18 @@ function die() {
   // Escudo absorve o impacto
   if (shieldActive > 0) {
     shieldActive = 0;
+    invincibleT  = 1.8; // 1.8s de invencibilidade pós-escudo
     sfxShieldHit();
     flashScreen('rgba(34,197,94,0.55)', 300);
     if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
     if (playerObj.shieldRing)   playerObj.shieldRing.visible   = false;
+    // Remove obstáculos que estavam na zona de colisão para evitar double-hit
+    for (let j = obstacles.length - 1; j >= 0; j--) {
+      if (obstacles[j].mesh.position.z > -5 && obstacles[j].mesh.position.z < 3) {
+        three.scene.remove(obstacles[j].mesh);
+        obstacles.splice(j, 1);
+      }
+    }
     return;
   }
   state = 'dead';
