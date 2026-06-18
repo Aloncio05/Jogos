@@ -36,7 +36,11 @@ let crouching   = false;
 let wasOnGround = true;
 let laneLean    = 0;
 let animFrame   = 0;
-let spawnT = 0, coinT = 0, scoreT = 0, speedT = 0;
+let spawnT = 0, coinT = 0, scoreT = 0, speedT = 0, powerUpT = 0;
+
+// ── Power-ups ─────────────────────────────────────────────────────────────────
+let powerUps = [];
+let magnetActive = 0, shieldActive = 0, multiplierActive = 0;
 
 // ── DOM ──────────────────────────────────────────────────────────────────────
 const canvas   = document.getElementById('runner-canvas');
@@ -79,6 +83,8 @@ function sfxSpeed() {
   _tone(440, 0, 0.07, 'square', 0.07);
   setTimeout(() => _tone(660, 0, 0.09, 'square', 0.07), 70);
 }
+function sfxPower()     { _tone(500, 1100, 0.28, 'sine', 0.13); }
+function sfxShieldHit() { _tone(350, 80,  0.35, 'sawtooth', 0.14); }
 
 // ── HUD helpers ───────────────────────────────────────────────────────────────
 function coinPop() {
@@ -95,6 +101,34 @@ function coinPop() {
   wrap.appendChild(div);
   requestAnimationFrame(() => { div.style.top = '30%'; div.style.opacity = '0'; });
   setTimeout(() => div.remove(), 700);
+}
+
+function updatePowerHUD() {
+  if (!powersEl) return;
+  let html = '';
+  if (magnetActive     > 0) html += `<span class="runner-power-chip" style="background:#3b82f6">🧲 ${Math.ceil(magnetActive)}s</span>`;
+  if (shieldActive     > 0) html += `<span class="runner-power-chip" style="background:#22c55e">🛡️ ${Math.ceil(shieldActive)}s</span>`;
+  if (multiplierActive > 0) html += `<span class="runner-power-chip" style="background:#a855f7">2× ${Math.ceil(multiplierActive)}s</span>`;
+  powersEl.innerHTML = html;
+}
+
+function showPowerNotif(text, color) {
+  const wrap = canvas.parentElement;
+  const div  = document.createElement('div');
+  div.textContent = text;
+  Object.assign(div.style, {
+    position:'absolute', left:'50%', top:'42%',
+    transform:'translateX(-50%) scale(1)', color:'#fff',
+    fontWeight:'900', fontSize:'1.2rem',
+    background:color, borderRadius:'20px',
+    padding:'5px 18px',
+    textShadow:'0 2px 8px #000',
+    pointerEvents:'none', zIndex:'10', whiteSpace:'nowrap',
+    transition:'all 0.75s ease-out',
+  });
+  wrap.appendChild(div);
+  requestAnimationFrame(() => { div.style.top = '26%'; div.style.opacity = '0'; });
+  setTimeout(() => div.remove(), 850);
 }
 
 function flashScreen(color, ms) {
@@ -423,10 +457,18 @@ function buildPlayer(scene) {
   shadowMesh.position.y = 0.01;
   group.add(shadowMesh);
 
+  // Bolha de escudo (visível só quando shieldActive > 0)
+  const shieldBubble = new THREE.Mesh(
+    new THREE.SphereGeometry(1.35, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.22, side: THREE.FrontSide })
+  );
+  shieldBubble.visible = false;
+  group.add(shieldBubble);
+
   group.position.set(LANE_X[1], 0, 0);
   group.rotation.y = Math.PI;
   scene.add(group);
-  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap }, shadowMesh };
+  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap }, shadowMesh, shieldBubble };
 }
 
 // ── Obstacles ─────────────────────────────────────────────────────────────────
@@ -595,6 +637,40 @@ function makeLowBarrierMesh() {
   return group;
 }
 
+// ── Power-up meshes ───────────────────────────────────────────────────────────
+function makeMagnetMesh() {
+  const g = new THREE.Group();
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.13, 8, 14, Math.PI), toon(0x3b82f6));
+  arc.rotation.z = -Math.PI / 2;
+  g.add(arc); outline(arc, 1.08);
+  [-0.38, 0.38].forEach((x, i) => {
+    const prong = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.34, 8), toon(i === 0 ? 0xff3333 : 0xaaaaaa));
+    prong.position.set(x, -0.17, 0);
+    g.add(prong); outline(prong, 1.08);
+  });
+  return g;
+}
+
+function makeShieldMesh() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.44), toon(0x22c55e));
+  g.add(body); outline(body, 1.10);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 6, 14), toon(0x86efac));
+  ring.rotation.x = Math.PI / 2;
+  g.add(ring);
+  return g;
+}
+
+function makeMultiplierMesh() {
+  const g = new THREE.Group();
+  const star = new THREE.Mesh(new THREE.IcosahedronGeometry(0.44), toon(0xa855f7));
+  g.add(star); outline(star, 1.10);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.07, 6, 14), toon(0xd8b4fe));
+  ring.rotation.x = Math.PI / 2;
+  g.add(ring);
+  return g;
+}
+
 // ── Dificuldade ───────────────────────────────────────────────────────────────
 function getDiff() {
   return Math.min(5, Math.floor((speed - BASE_SPEED) / ((MAX_SPEED - BASE_SPEED) / 6)));
@@ -703,6 +779,33 @@ function spawnCoin() {
   coins.push({ mesh, lane: l, y });
 }
 
+function spawnPowerUp() {
+  const types = ['magnet', 'shield', 'multiplier'];
+  const type  = types[Math.floor(Math.random() * types.length)];
+  const l     = Math.floor(Math.random() * 3);
+  const mesh  = type === 'magnet' ? makeMagnetMesh() : type === 'shield' ? makeShieldMesh() : makeMultiplierMesh();
+  mesh.position.set(LANE_X[l], 1.3, SPAWN_Z);
+  three.scene.add(mesh);
+  powerUps.push({ mesh, lane: l, type });
+}
+
+function activatePowerUp(type) {
+  sfxPower();
+  if (type === 'magnet') {
+    magnetActive = 10;
+    flashScreen('rgba(59,130,246,0.28)', 350);
+    showPowerNotif('🧲 ÍMÃ DE MOEDAS!', '#3b82f6');
+  } else if (type === 'shield') {
+    shieldActive = 10;
+    flashScreen('rgba(34,197,94,0.28)', 350);
+    showPowerNotif('🛡️ ESCUDO ATIVO!', '#22c55e');
+  } else {
+    multiplierActive = 10;
+    flashScreen('rgba(168,85,247,0.28)', 350);
+    showPowerNotif('2× PONTUAÇÃO!', '#a855f7');
+  }
+}
+
 // ── Update (física) ───────────────────────────────────────────────────────────
 function update(dt) {
   animFrame++;
@@ -727,12 +830,29 @@ function update(dt) {
     }
   }
 
-  // Score
+  // Score (distância + multiplicador)
   scoreT += dt;
   if (scoreT > 0.08) {
-    scoreT = 0; score++;
+    scoreT = 0;
+    score += multiplierActive > 0 ? 2 : 1;
     scoreEl.textContent = score;
     if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('runner-best', best); }
+  }
+
+  // Power-up timers
+  if (magnetActive     > 0) magnetActive     = Math.max(0, magnetActive     - dt);
+  if (shieldActive     > 0) shieldActive     = Math.max(0, shieldActive     - dt);
+  if (multiplierActive > 0) multiplierActive = Math.max(0, multiplierActive - dt);
+  updatePowerHUD();
+
+  // Escudo: bolha visual
+  if (playerObj.shieldBubble) {
+    playerObj.shieldBubble.visible = shieldActive > 0;
+    if (shieldActive > 0) {
+      playerObj.shieldBubble.rotation.y += dt * 1.8;
+      const p = 1 + Math.sin(animFrame * 0.18) * 0.05;
+      playerObj.shieldBubble.scale.setScalar(p);
+    }
   }
 
   // Lane transition
@@ -804,6 +924,9 @@ function update(dt) {
   coinT += dt;
   if (coinT > Math.max(0.45, 0.70 - diff * 0.04)) { coinT = 0; spawnCoin(); }
 
+  powerUpT += dt;
+  if (powerUpT > Math.max(8, 15 - diff * 1.2)) { powerUpT = 0; spawnPowerUp(); }
+
   // ── Bounding ──────────────────────────────────────────────────────────────
   const pX    = playerObj.group.position.x;
   const pHW   = 0.38;
@@ -832,11 +955,36 @@ function update(dt) {
     c.mesh.position.z += speed * dt;
     c.mesh.rotation.y += dt * 4;
     if (c.mesh.position.z > DESPAWN_Z) { three.scene.remove(c.mesh); coins.splice(i, 1); continue; }
-    if (c.mesh.position.z > -2.5 && c.mesh.position.z < 2.5) {
-      if (Math.abs(pX - LANE_X[c.lane]) < 1.5 && Math.abs(playerY + 1.0 - c.y) < 1.3) {
+
+    // Ímã: puxa moeda em direção ao player
+    if (magnetActive > 0 && c.mesh.position.z > -40) {
+      c.mesh.position.x += (pX - c.mesh.position.x) * Math.min(dt * 7, 1);
+      c.mesh.position.y += (playerY + 1.0 - c.mesh.position.y) * Math.min(dt * 4, 1);
+    }
+
+    const collectR = magnetActive > 0 ? 3.0 : 1.5;
+    if (c.mesh.position.z > -3.5 && c.mesh.position.z < 2.5) {
+      if (Math.abs(pX - c.mesh.position.x) < collectR && Math.abs(playerY + 1.0 - c.mesh.position.y) < collectR) {
         three.scene.remove(c.mesh); coins.splice(i, 1);
-        score += 5; scoreEl.textContent = score;
-        sfxCoin(); coinPop(); i--;
+        const coinVal = multiplierActive > 0 ? 10 : 5;
+        score += coinVal; scoreEl.textContent = score;
+        if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('runner-best', best); }
+        sfxCoin(); coinPop();
+      }
+    }
+  }
+
+  // Move & collect power-ups
+  for (let i = powerUps.length - 1; i >= 0; i--) {
+    const p = powerUps[i];
+    p.mesh.position.z += speed * dt;
+    p.mesh.rotation.y += dt * 2.5;
+    p.mesh.position.y = 1.3 + Math.sin(animFrame * 0.12 + i) * 0.18; // flutuação
+    if (p.mesh.position.z > DESPAWN_Z) { three.scene.remove(p.mesh); powerUps.splice(i, 1); continue; }
+    if (p.mesh.position.z > -2.5 && p.mesh.position.z < 2.5) {
+      if (Math.abs(pX - LANE_X[p.lane]) < 1.6 && playerY < 2.8) {
+        three.scene.remove(p.mesh); powerUps.splice(i, 1);
+        activatePowerUp(p.type);
       }
     }
   }
@@ -877,6 +1025,10 @@ function begin() {
   wasOnGround = true; laneLean = 0;
   animFrame = 0; spawnT = 0; coinT = 0; scoreT = 0; speedT = 0;
   scoreEl.textContent = '0'; speedEl.textContent = '1.0×';
+  magnetActive = 0; shieldActive = 0; multiplierActive = 0; powerUpT = 0;
+  powerUps.forEach(p => three.scene.remove(p.mesh)); powerUps = [];
+  if (powersEl) powersEl.innerHTML = '';
+  if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
   playerObj.group.position.set(LANE_X[1], 0, 0);
   playerObj.group.rotation.set(0, Math.PI, 0);
   playerObj.group.scale.set(1, 1, 1);
@@ -890,6 +1042,14 @@ function begin() {
 
 function die() {
   if (state !== 'playing') return;
+  // Escudo absorve o impacto
+  if (shieldActive > 0) {
+    shieldActive = 0;
+    sfxShieldHit();
+    flashScreen('rgba(34,197,94,0.55)', 300);
+    if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
+    return;
+  }
   state = 'dead';
   playerObj.group.rotation.z = 0.6;
   playerObj.group.scale.set(1.3, 0.5, 1.3);
