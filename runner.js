@@ -187,8 +187,8 @@ function initThree() {
   gradMap = makeToonGrad();
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x4dd8fa); // cartoon sky blue
-  scene.fog = new THREE.Fog(0x99eaff, 60, 210);
+  scene.background = new THREE.Color(0x22aaff); // azul cartoon saturado
+  scene.fog = new THREE.Fog(0x55ccff, 80, 220);
 
   const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 260);
   camera.position.set(0, 5.5, 11);
@@ -227,16 +227,29 @@ function setupLights(scene) {
 // ── Environment ───────────────────────────────────────────────────────────────
 function buildEnvironment(scene) {
 
-  // Pista — verde grama vivo
-  const groundMat  = toon(0x44dd22);
-  const groundMat2 = toon(0x33cc11);
-  const tileGeo    = new THREE.BoxGeometry(14, 0.5, 24);
+  // Grama cartoon — alternância verde/amarelo-limão bem saturada
+  const grassCols = [toon(0x44ee11), toon(0x88ee00), toon(0x22dd44), toon(0x66ff22)];
+  const tileGeo   = new THREE.BoxGeometry(14, 0.5, 24);
   for (let i = 0; i < 8; i++) {
-    const m = new THREE.Mesh(tileGeo, i % 2 === 0 ? groundMat : groundMat2);
+    const m = new THREE.Mesh(tileGeo, grassCols[i % grassCols.length]);
     m.position.set(0, -0.25, -i * 24 + 12);
     m.receiveShadow = true;
     scene.add(m);
     envTiles.push(m);
+  }
+  // Flores/estrelas coloridas na grama
+  const flowerCols = [0xff2255, 0xffee00, 0xff8800, 0xcc44ff, 0xff4499];
+  for (let i = 0; i < 30; i++) {
+    const fc = flowerCols[i % flowerCols.length];
+    const stem  = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.30, 6), toon(0x33aa22));
+    const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.20, 8, 6), toon(fc));
+    const fx = (i % 2 === 0 ? -1 : 1) * (4.5 + (i % 5) * 0.6);
+    const fz = -i * 6.4;
+    stem.position.set(fx, 0.15, fz);
+    bloom.position.set(fx, 0.42, fz);
+    scene.add(stem); scene.add(bloom);
+    outline(bloom, 1.20);
+    envTiles.push(stem); envTiles.push(bloom);
   }
 
   // Asfalto escuro (pista central) — azul-escuro subway style
@@ -259,12 +272,14 @@ function buildEnvironment(scene) {
     scene.add(tie);
     envTiles.push(tie);
   }
-  // Rails (segmentos de 192u = TILE_PERIOD, reciclam junto com os tiles)
+  // Rails — 2 segmentos de 192u por trilho, desfasados 96u (sem lacunas)
   [-1.7, -0.5, 0.5, 1.7].forEach(rx => {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 192), railMat);
-    rail.position.set(rx, 0.07, 10 - 96);  // cobre z = -182..10
-    scene.add(rail);
-    envTiles.push(rail);
+    [-86, 10].forEach(rz => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 192), railMat);
+      rail.position.set(rx, 0.07, rz);
+      scene.add(rail);
+      envTiles.push(rail);
+    });
   });
 
   // Bordas brancas sólidas (estáticas, 400u)
@@ -282,13 +297,13 @@ function buildEnvironment(scene) {
     scene.add(m);
   });
 
-  // Muros baixos com contorno
-  const wallMat = toon(0xffeedd);
+  // Muros brancos cartoon com contorno grosso
+  const wallMat = toon(0xffffff);
   [-1, 1].forEach(side => {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.6, 400), wallMat);
-    wall.position.set(side * 6.5, 0.8, -195);
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.8, 400), wallMat);
+    wall.position.set(side * 6.5, 0.9, -195);
     scene.add(wall);
-    outline(wall);
+    outline(wall, 1.14);
   });
 
   // Grafites nas paredes (cor e vida ao cenário)
@@ -342,17 +357,18 @@ function buildEnvironment(scene) {
         const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
         b.position.set(bx, h / 2, bz);
         b.castShadow = true;
-        scene.add(b); envBuildings.push(b); outline(b, 1.04);
-        // Janelas
+        scene.add(b); envBuildings.push(b); outline(b, 1.08);
+        // Janelas grandes cartoon
         for (let r = 0; r < 4; r++) {
-          const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.65, 0.4, 0.07), winCol);
-          win.position.set(bx, h * 0.18 + r * h * 0.18, bz + d / 2 + 0.02);
-          scene.add(win); envBuildings.push(win);
+          const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.55, 0.7, 0.10), winCol);
+          win.position.set(bx, h * 0.15 + r * h * 0.20, bz + d / 2 + 0.04);
+          scene.add(win); envBuildings.push(win); outline(win, 1.10);
         }
-        // Teto plano colorido
-        const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.55, d + 0.5), toon(0x333333));
-        roof.position.set(bx, h + 0.27, bz);
-        scene.add(roof); envBuildings.push(roof);
+        // Teto cartoon colorido (não cinza)
+        const roofCols2 = [0xff4444, 0xff8800, 0x44aaff, 0xcc44ff];
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.70, d + 0.8), toon(roofCols2[i % roofCols2.length]));
+        roof.position.set(bx, h + 0.35, bz);
+        scene.add(roof); envBuildings.push(roof); outline(roof, 1.08);
 
       } else if (t < 0.66) {
         // Torre redonda com cúpula
@@ -360,10 +376,11 @@ function buildEnvironment(scene) {
         const b = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.88, r, h, 14), mat);
         b.position.set(bx, h / 2, bz);
         b.castShadow = true;
-        scene.add(b); envBuildings.push(b); outline(b, 1.04);
-        const dome = new THREE.Mesh(new THREE.SphereGeometry(r * 0.92, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon(0xff4444));
+        scene.add(b); envBuildings.push(b); outline(b, 1.08);
+        const domeCols = [0xff4444, 0xffee00, 0x44ddff, 0xff88cc];
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(r * 0.95, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon(domeCols[i % domeCols.length]));
         dome.position.set(bx, h, bz);
-        scene.add(dome); envBuildings.push(dome); outline(dome, 1.06);
+        scene.add(dome); envBuildings.push(dome); outline(dome, 1.10);
 
       } else {
         // Arranha-céu fino com antena
@@ -371,40 +388,55 @@ function buildEnvironment(scene) {
         const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
         b.position.set(bx, h / 2, bz);
         b.castShadow = true;
-        scene.add(b); envBuildings.push(b); outline(b, 1.04);
-        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, h * 0.3, 6), toon(0x888888));
+        scene.add(b); envBuildings.push(b); outline(b, 1.08);
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.14, h * 0.3, 6), toon(0xaaaaaa));
         ant.position.set(bx, h + h * 0.15, bz);
         scene.add(ant); envBuildings.push(ant);
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), toon(0xff3333));
+        const tipCols = [0xff3333, 0xffee00, 0x44ffaa, 0xff88ff];
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), toon(tipCols[i % tipCols.length]));
         tip.position.set(bx, h + h * 0.3, bz);
-        scene.add(tip); envBuildings.push(tip); outline(tip, 1.15);
+        scene.add(tip); envBuildings.push(tip); outline(tip, 1.18);
         for (let r = 0; r < 5; r++) {
-          const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 0.32, 0.07), winCol);
-          win.position.set(bx, h * 0.14 + r * h * 0.16, bz + d / 2 + 0.02);
-          scene.add(win); envBuildings.push(win);
+          const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.55, 0.55, 0.10), winCol);
+          win.position.set(bx, h * 0.12 + r * h * 0.17, bz + d / 2 + 0.04);
+          scene.add(win); envBuildings.push(win); outline(win, 1.10);
         }
       }
     });
   }
 
-  // Nuvens cartoon (esferas brancas agrupadas)
+  // Nuvens cartoon grandes com contorno
   const cloudMat = toon(0xffffff);
-  [[-12,26,-40],[9,23,-85],[-6,29,-135],[16,25,-175],[-20,27,-210]].forEach(([cx,cy,cz]) => {
-    [0,2.5,-2.5,1.2,-1.2].forEach((ox, i) => {
-      const r = 1.6 + Math.random() * 1.2;
+  [[-12,28,-40],[9,25,-85],[-6,31,-135],[16,27,-175],[-22,29,-210],[14,26,-60],[-10,30,-110],[20,24,-160]].forEach(([cx,cy,cz]) => {
+    [0, 3.2, -3.2, 1.6, -1.6].forEach((ox, i) => {
+      const r = 2.6 + (i === 0 ? 1.4 : Math.random() * 1.6);
       const c = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 7), cloudMat);
-      c.position.set(cx + ox * 1.8, cy + (i % 2 ? -0.7 : 0), cz);
+      c.position.set(cx + ox * 1.9, cy + (i % 2 ? -1.0 : 0.6), cz);
       scene.add(c);
+      if (i === 0) outline(c, 1.08);
       envBuildings.push(c);
     });
   });
 
-  // Sol cartoon
-  const sunGeo = new THREE.CircleGeometry(5.5, 20);
-  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffee44, side: THREE.DoubleSide });
-  const sun2d  = new THREE.Mesh(sunGeo, sunMat);
-  sun2d.position.set(18, 35, -215);
-  scene.add(sun2d);
+  // Sol cartoon grande com halo e raios
+  const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(8, 22),
+    new THREE.MeshBasicMaterial({ color: 0xffee00, side: THREE.DoubleSide }));
+  sunDisc.position.set(22, 40, -215);
+  scene.add(sunDisc);
+  // Halo exterior
+  const sunHalo = new THREE.Mesh(new THREE.CircleGeometry(10.5, 22),
+    new THREE.MeshBasicMaterial({ color: 0xffdd00, side: THREE.DoubleSide, transparent: true, opacity: 0.45 }));
+  sunHalo.position.set(22, 40, -216);
+  scene.add(sunHalo);
+  // Raios do sol (8 raios em estrela)
+  for (let r = 0; r < 8; r++) {
+    const a = (r / 8) * Math.PI * 2;
+    const ray = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 0.3),
+      new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
+    ray.position.set(22 + Math.cos(a) * 14, 40 + Math.sin(a) * 14, -215);
+    ray.rotation.z = a;
+    scene.add(ray);
+  }
 }
 
 // ── Player ────────────────────────────────────────────────────────────────────
