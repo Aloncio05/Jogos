@@ -125,6 +125,8 @@ function newGame() {
   currentPieces = [randomPiece(), randomPiece(), randomPiece()];
 
   comboEl.textContent = '';
+  piecesRow.querySelectorAll('.bb-piece-slot').forEach(s => s.classList.remove('no-fit', 'shaking'));
+  gridEl.classList.remove('dying');
   updateScore();
   renderGrid();
   renderPieces();
@@ -447,24 +449,59 @@ function tryPlace(row, col) {
   }
 }
 
+function pieceFits(piece) {
+  if (!piece) return false;
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      if (canPlace(piece, r, c)) return true;
+    }
+  }
+  return false;
+}
+
 function afterPlace() {
   if (currentPieces.every(p => p === null)) {
     currentPieces = [randomPiece(), randomPiece(), randomPiece()];
   }
   renderPieces();
 
-  const anyFits = currentPieces.some(piece => {
-    if (!piece) return false;
-    for (let r = 0; r < GRID; r++) {
-      for (let c = 0; c < GRID; c++) {
-        if (canPlace(piece, r, c)) return true;
-      }
-    }
-    return false;
+  // Mark pieces that have no valid placement
+  const slots = piecesRow.querySelectorAll('.bb-piece-slot');
+  const fits = currentPieces.map(pieceFits);
+  slots.forEach((slot, i) => {
+    slot.classList.toggle('no-fit', currentPieces[i] !== null && !fits[i]);
   });
 
   animating = false;
-  if (!anyFits) setTimeout(showGameOver, 300);
+
+  const anyFits = fits.some((f, i) => currentPieces[i] !== null && f);
+  if (!anyFits) triggerGameOverSequence();
+}
+
+function triggerGameOverSequence() {
+  gameOver = true;
+
+  // Dim the grid
+  gridEl.classList.add('dying');
+
+  // Shake and redden all piece slots
+  const slots = piecesRow.querySelectorAll('.bb-piece-slot');
+  slots.forEach(slot => {
+    slot.classList.add('no-fit', 'shaking');
+    slot.addEventListener('animationend', () => slot.classList.remove('shaking'), { once: true });
+  });
+
+  // Show "SEM ESPAÇO..." warning overlay
+  const warning = document.createElement('div');
+  warning.className = 'bb-gameover-warning';
+  warning.innerHTML = '<span class="bb-gameover-warning-text">SEM ESPAÇO... 😰</span>';
+  document.body.appendChild(warning);
+
+  setTimeout(() => {
+    warning.remove();
+    gridEl.classList.remove('dying');
+    showGameOver();
+  }, 1600);
 }
 
 function updateScore() {
@@ -480,7 +517,6 @@ function updateScore() {
 }
 
 function showGameOver() {
-  gameOver = true;
   finalScEl.textContent = `Pontuação: ${score}`;
   finalHiEl.textContent = score >= hiScore ? '🏆 Novo recorde!' : `Recorde: ${hiScore}`;
   screenPlay.classList.remove('active');
