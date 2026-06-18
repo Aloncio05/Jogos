@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Duelo do Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="duelo.css">
+</head>
+<body class="game-page duelo-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel duelo-panel" aria-labelledby="duelo-title">
+
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Jogo 13</p>
+          <h2 id="duelo-title">Duelo do Aloncinho</h2>
+        </div>
+        <span class="badge-pc">🖥️ Só para PC</span>
+      </div>
+
+      <p class="status">
+        2 jogadores no mesmo teclado. <strong style="color:#38bdf8">Jogador 1</strong>: WASD + Espaço.
+        <strong style="color:#f87171">Jogador 2</strong>: Setas + Enter. Faça 3 kills por fase · 8 fases no total.
+      </p>
+
+      <!-- HUD -->
+      <div class="duelo-hud">
+        <div class="duelo-player-hud duelo-p1">
+          <span class="duelo-name">P1</span>
+          <div class="duelo-kills" id="duelo-kills-p1"></div>
+          <span class="duelo-wins" id="duelo-wins-p1">0 fases</span>
+        </div>
+        <div class="duelo-phase-info">
+          <span class="duelo-phase-label" id="duelo-phase-label">Fase 1 / 8</span>
+          <span class="duelo-phase-name" id="duelo-phase-name">Arena Aberta</span>
+        </div>
+        <div class="duelo-player-hud duelo-p2">
+          <span class="duelo-wins" id="duelo-wins-p2">0 fases</span>
+          <div class="duelo-kills" id="duelo-kills-p2"></div>
+          <span class="duelo-name">P2</span>
+        </div>
+      </div>
+
+      <!-- Canvas -->
+      <div class="duelo-canvas-wrap">
+        <canvas id="duelo-canvas" width="700" height="440" tabindex="0" aria-label="Arena de duelo 2 jogadores"></canvas>
+        <div id="duelo-overlay" class="duelo-overlay"></div>
+      </div>
+
+      <p class="duelo-hint">P1: WASD mover · Espaço atirar &nbsp;|&nbsp; P2: Setas mover · Enter atirar</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="duelo.js"></script>
+</body>
+</html>
