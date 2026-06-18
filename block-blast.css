@@ -1,0 +1,130 @@
+/* ===== Block Blast ===== */
+.bb-page { background: #0d0d1a; color: #fff; min-height: 100vh; }
+.bb-main { display: flex; align-items: stretch; min-height: calc(100vh - 56px); }
+
+/* --- Screens --- */
+.bb-screen { display: none; width: 100%; }
+.bb-screen.active { display: flex; flex-direction: column; align-items: center; }
+.bb-center {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 1; text-align: center; padding: 2rem 1rem; gap: 1rem;
+}
+
+/* --- HUD --- */
+.bb-hud {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; max-width: 380px; padding: 0.6rem 1rem 0.4rem;
+  box-sizing: border-box;
+}
+.bb-stat-group { min-width: 70px; }
+.bb-stat-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #555; margin: 0; }
+.bb-stat-val { font-size: 1.4rem; font-weight: 900; color: #fff; margin: 0; line-height: 1.1; }
+.bb-combo-badge {
+  font-size: 0.75rem; font-weight: 800; color: #fbbf24;
+  min-height: 1.2em; text-align: center; letter-spacing: 0.05em;
+  transition: opacity 0.3s;
+}
+
+/* --- Grid --- */
+.bb-grid-wrap {
+  display: flex; justify-content: center;
+  padding: 0 1rem; width: 100%; box-sizing: border-box;
+}
+#bb-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  background: #0a0a18;
+  border: 2px solid #1e1e3a;
+  border-radius: 10px;
+  padding: 4px;
+  width: min(calc(100vw - 32px), 360px, calc(100vh - 56px - 210px));
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  user-select: none;
+}
+.bb-cell {
+  border-radius: 4px;
+  background: #13132a;
+  cursor: pointer;
+  transition: background 0.08s, transform 0.08s;
+  aspect-ratio: 1;
+}
+.bb-cell.filled {
+  border-radius: 5px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.35), inset 0 2px 0 rgba(255,255,255,0.15);
+}
+.bb-cell.ghost { opacity: 0.55; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25); }
+.bb-cell.ghost-invalid { opacity: 0.22; filter: saturate(0.3); }
+.bb-cell.clearing {
+  animation: bb-clear 0.38s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes bb-clear {
+  0%   { transform: scale(1); filter: brightness(1); }
+  35%  { transform: scale(1.18); filter: brightness(2.5); }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* --- Pieces row --- */
+.bb-pieces-row {
+  display: flex; justify-content: center; align-items: center;
+  gap: 0.75rem; padding: 0.75rem 1rem;
+  width: 100%; max-width: 380px; box-sizing: border-box;
+}
+.bb-piece-slot {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  min-height: 90px; background: #13132a;
+  border: 2px solid #1e1e3a; border-radius: 10px;
+  cursor: pointer; transition: border-color 0.15s, transform 0.15s, background 0.15s;
+  padding: 6px; box-sizing: border-box;
+}
+.bb-piece-slot:hover:not(.used) { border-color: #333; }
+.bb-piece-slot.selected {
+  border-color: #a78bfa;
+  background: #1a1340;
+  transform: scale(1.04);
+  box-shadow: 0 0 12px #a78bfa44;
+}
+.bb-piece-slot.used { opacity: 0.2; cursor: default; }
+
+/* Mini piece grid inside slot */
+.bb-mini-grid {
+  display: grid;
+  gap: 2px;
+}
+.bb-mini-cell {
+  width: 16px; height: 16px;
+  border-radius: 3px;
+  background: transparent;
+}
+.bb-mini-cell.filled {
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.bb-hint {
+  font-size: 0.72rem; color: #444; text-align: center;
+  padding: 0 1rem 0.5rem; margin: 0;
+}
+
+/* --- Game Over --- */
+.bb-over-icon { font-size: 4rem; }
+.bb-over-title { font-size: 2rem; font-weight: 900; margin: 0; }
+.bb-over-score { font-size: 1.5rem; font-weight: 700; color: #a78bfa; margin: 0; }
+.bb-over-hi { font-size: 0.85rem; color: #666; margin: 0; }
+.bb-restart-btn {
+  background: #6c63ff; border: none; border-radius: 12px;
+  color: #fff; font-size: 1rem; font-weight: 700;
+  padding: 0.9rem 2.5rem; cursor: pointer;
+  transition: background 0.15s, transform 0.1s; margin-top: 0.5rem;
+}
+.bb-restart-btn:hover { background: #8b83ff; }
+.bb-restart-btn:active { transform: scale(0.97); }
+
+/* Score pop animation */
+.bb-score-pop { animation: bb-score-bump 0.25s ease-out; }
+@keyframes bb-score-bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); color: #fbbf24; }
+  100% { transform: scale(1); }
+}

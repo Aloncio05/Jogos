@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Block Blast — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="block-blast.css">
+</head>
+<body class="game-page bb-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="bb-main">
+
+    <!-- TELA: JOGANDO -->
+    <section id="bb-play" class="bb-screen active">
+      <div class="bb-hud">
+        <div class="bb-stat-group">
+          <p class="bb-stat-label">PONTOS</p>
+          <p id="bb-score" class="bb-stat-val">0</p>
+        </div>
+        <div class="bb-combo-badge" id="bb-combo" aria-live="polite"></div>
+        <div class="bb-stat-group" style="text-align:right">
+          <p class="bb-stat-label">RECORDE</p>
+          <p id="bb-hiscore" class="bb-stat-val">0</p>
+        </div>
+      </div>
+
+      <div class="bb-grid-wrap">
+        <div id="bb-grid" role="grid" aria-label="Grid do jogo"></div>
+      </div>
+
+      <div id="bb-pieces-row" class="bb-pieces-row" role="group" aria-label="Peças disponíveis">
+        <div class="bb-piece-slot" data-idx="0" role="button" tabindex="0" aria-label="Peça 1"></div>
+        <div class="bb-piece-slot" data-idx="1" role="button" tabindex="0" aria-label="Peça 2"></div>
+        <div class="bb-piece-slot" data-idx="2" role="button" tabindex="0" aria-label="Peça 3"></div>
+      </div>
+
+      <p class="bb-hint">Selecione uma peça e toque no grid para posicionar</p>
+    </section>
+
+    <!-- TELA: GAME OVER -->
+    <section id="bb-over" class="bb-screen">
+      <div class="bb-center">
+        <div class="bb-over-icon">💥</div>
+        <h2 class="bb-over-title">Sem espaço!</h2>
+        <p id="bb-final-score" class="bb-over-score"></p>
+        <p id="bb-final-hi"   class="bb-over-hi"></p>
+        <button id="bb-restart" class="bb-restart-btn">Jogar de novo</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="block-blast.js"></script>
+</body>
+</html>
