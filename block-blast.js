@@ -403,7 +403,7 @@ function tryPlace(row, col) {
     el.classList.remove('ghost', 'ghost-invalid');
   });
 
-  score += piece.cells.length;
+  score += piece.cells.length * 5;
   currentPieces[si] = null;
   selectedIdx = null;
   renderPieces();
@@ -426,7 +426,7 @@ function tryPlace(row, col) {
 
     toClear.forEach(i => cellEls[i].classList.add('clearing'));
 
-    const bonus = toClear.size + (lineCount > 1 ? lineCount * 15 : 0);
+    const bonus = toClear.size * 20 + lineCount * lineCount * 30;
     score += bonus;
 
     if (lineCount > 1) {
