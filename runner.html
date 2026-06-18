@@ -30,6 +30,18 @@
         direita, pular e abaixar. Visual atualizado com base no design inspirado em Subway Surfers.
       </p>
 
+      <style>
+        .runner-hud-sub .runner-hud-item { padding: 5px 10px; min-width: 72px; }
+        .runner-hud-sub .runner-hud-item strong { font-size: 0.95rem; }
+        .runner-hud-sub .runner-hud-item span   { font-size: 0.57rem; }
+        .runner-hud-sub { margin-top: -4px; margin-bottom: 4px; }
+        .ro-revive-timer { font-size:1.1rem; font-weight:800; color:#ffee00; margin:0.3rem 0 0.5rem; }
+        .ro-revive-btns  { display:flex; gap:0.6rem; justify-content:center; margin:0.4rem 0; flex-wrap:wrap; }
+        .ro-btn { border:none; padding:0.55rem 1.1rem; border-radius:12px; font-weight:800; font-size:0.95rem; cursor:pointer; }
+        .ro-btn--key  { background:#ffee00; color:#000; }
+        .ro-btn--coin { background:#ff8800; color:#fff; }
+        .ro-skip { cursor:pointer; color:#aaa !important; font-size:0.85rem !important; margin-top:0.2rem; }
+      </style>
       <div class="runner-hud">
         <div class="runner-hud-item">
           <span>🪙 PONTOS</span>
@@ -42,6 +54,20 @@
         <div class="runner-hud-item">
           <span>VEL</span>
           <strong id="runner-speed">1×</strong>
+        </div>
+      </div>
+      <div class="runner-hud runner-hud-sub">
+        <div class="runner-hud-item">
+          <span>💰 BANCO</span>
+          <strong id="runner-bank">0</strong>
+        </div>
+        <div class="runner-hud-item">
+          <span>📏 DIST</span>
+          <strong id="runner-dist">0m</strong>
+        </div>
+        <div class="runner-hud-item">
+          <span>🎯 MISS</span>
+          <strong id="runner-miss">0/3</strong>
         </div>
       </div>
 

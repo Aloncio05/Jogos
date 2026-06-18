@@ -17,11 +17,12 @@ const JUMP_V      = 14;
 const GROUND_Y    = 0;
 const CROUCH_S    = 0.5;
 const TILE_PERIOD = 8 * 24;
+const REVIVE_COST = 50;
 
 // ── State ────────────────────────────────────────────────────────────────────
 let three = {};
 let playerObj = {};
-let obstacles = [], coins = [];
+let obstacles = [], coins = [], keys = [];
 let envTiles = [], envBuildings = [];
 let gradMap;  // toon gradient texture
 
@@ -36,11 +37,22 @@ let crouching   = false;
 let wasOnGround = true;
 let laneLean    = 0;
 let animFrame   = 0;
-let spawnT = 0, coinT = 0, scoreT = 0, speedT = 0, powerUpT = 0;
+let spawnT = 0, coinT = 0, scoreT = 0, speedT = 0, powerUpT = 0, keyT = 0;
 
 // ── Power-ups ─────────────────────────────────────────────────────────────────
 let powerUps = [];
 let magnetActive = 0, shieldActive = 0, multiplierActive = 0, jetpackActive = 0;
+
+// ── Progressão ───────────────────────────────────────────────────────────────
+let coinBank       = parseInt(localStorage.getItem('runner-coins') || '0');
+let coinsThisRun   = 0;
+let distance       = 0;
+let hasKey         = false;
+let revivedThisRun = false;
+let jumpCount      = 0;
+let powerUpsUsed   = 0;
+let runTime        = 0;
+let missions       = [];
 
 // ── DOM ──────────────────────────────────────────────────────────────────────
 const canvas   = document.getElementById('runner-canvas');
@@ -49,6 +61,9 @@ const bestEl   = document.getElementById('runner-best');
 const speedEl  = document.getElementById('runner-speed');
 const overlay  = document.getElementById('runner-overlay');
 const powersEl = document.getElementById('runner-powers');
+const bankEl   = document.getElementById('runner-bank');
+const distEl   = document.getElementById('runner-dist');
+const missEl   = document.getElementById('runner-miss');
 
 bestEl.textContent = best;
 
@@ -85,6 +100,81 @@ function sfxSpeed() {
 }
 function sfxPower()     { _tone(500, 1100, 0.28, 'sine', 0.13); }
 function sfxShieldHit() { _tone(350, 80,  0.35, 'sawtooth', 0.14); }
+function sfxKey()       { _tone(900, 1400, 0.20, 'sine', 0.12); setTimeout(() => _tone(1600, 0, 0.14, 'sine', 0.09), 180); }
+
+// ── Banco de moedas ───────────────────────────────────────────────────────────
+function updateCoinBankHUD() {
+  if (bankEl) bankEl.textContent = coinBank + coinsThisRun;
+}
+
+// ── Missões diárias ───────────────────────────────────────────────────────────
+const MISSION_DEFS = [
+  { id: 'coins',    label: 'Colete {n} moedas',   targets: [15, 25, 40],    reward: 20 },
+  { id: 'jumps',    label: 'Pule {n} vezes',       targets: [5, 10, 15],     reward: 15 },
+  { id: 'powerups', label: 'Use {n} power-ups',    targets: [1, 2, 3],       reward: 15 },
+  { id: 'dist',     label: 'Corra {n}m',           targets: [200, 400, 700], reward: 25 },
+  { id: 'score',    label: 'Faça {n} pontos',      targets: [100, 250, 450], reward: 30 },
+];
+
+function missionSeed() {
+  return new Date().toDateString().split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7);
+}
+
+function generateDailyMissions() {
+  let s = missionSeed();
+  const pool = MISSION_DEFS.map((_, i) => i);
+  const result = [];
+  while (result.length < 3 && pool.length) {
+    s = ((s * 1664525) + 1013904223) | 0;
+    const idx = Math.abs(s) % pool.length;
+    const defIdx = pool.splice(idx, 1)[0];
+    const def    = MISSION_DEFS[defIdx];
+    s = ((s * 1664525) + 1013904223) | 0;
+    const level = Math.abs(s) % 3;
+    result.push({ id: def.id, label: def.label.replace('{n}', def.targets[level]),
+      target: def.targets[level], reward: def.reward, progress: 0, done: false });
+  }
+  return result;
+}
+
+function loadDailyMissions() {
+  const today = new Date().toDateString();
+  try {
+    const saved = JSON.parse(localStorage.getItem('runner-missions') || '{}');
+    if (saved.date === today && saved.list) { missions = saved.list; updateMissionHUD(); return; }
+  } catch(e) {}
+  missions = generateDailyMissions();
+  saveMissions();
+  updateMissionHUD();
+}
+
+function saveMissions() {
+  try { localStorage.setItem('runner-missions', JSON.stringify({ date: new Date().toDateString(), list: missions })); } catch(e) {}
+}
+
+function advanceMission(id, amount) {
+  let changed = false;
+  missions.forEach(m => {
+    if (m.id !== id || m.done) return;
+    m.progress = Math.min(m.target, m.progress + amount);
+    if (m.progress >= m.target) {
+      m.done = true;
+      coinBank += m.reward;
+      localStorage.setItem('runner-coins', coinBank);
+      updateCoinBankHUD();
+      showPowerNotif('✅ MISSÃO! +' + m.reward + '🪙', '#22c55e');
+      sfxPower();
+    }
+    changed = true;
+  });
+  if (changed) { saveMissions(); updateMissionHUD(); }
+}
+
+function updateMissionHUD() {
+  if (!missEl) return;
+  const done = missions.filter(m => m.done).length;
+  missEl.textContent = done + '/' + missions.length;
+}
 
 // ── HUD helpers ───────────────────────────────────────────────────────────────
 function coinPop(val) {
@@ -110,6 +200,7 @@ function updatePowerHUD() {
   if (shieldActive     > 0) html += `<span class="runner-power-chip" style="background:#22c55e">🛡️ ${Math.ceil(shieldActive)}s</span>`;
   if (multiplierActive > 0) html += `<span class="runner-power-chip" style="background:#a855f7">2× ${Math.ceil(multiplierActive)}s</span>`;
   if (jetpackActive    > 0) html += `<span class="runner-power-chip" style="background:#ff6600">🚀 ${Math.ceil(jetpackActive)}s</span>`;
+  if (hasKey)               html += `<span class="runner-power-chip" style="background:#ccaa00">🗝️ CHAVE</span>`;
   powersEl.innerHTML = html;
 }
 
@@ -777,6 +868,22 @@ function makeMultiplierMesh() {
   return g;
 }
 
+function makeKeyMesh() {
+  const g = new THREE.Group();
+  const head = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.09, 8, 14), toon(0xffee00));
+  head.position.y = 0.22;
+  g.add(head); outline(head, 1.12);
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.52, 0.09), toon(0xffee00));
+  shaft.position.y = -0.10;
+  g.add(shaft); outline(shaft, 1.14);
+  [0.10, -0.07].forEach(ty => {
+    const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.08, 0.09), toon(0xffcc00));
+    tooth.position.set(0.13, ty, 0);
+    g.add(tooth);
+  });
+  return g;
+}
+
 // ── Dificuldade ───────────────────────────────────────────────────────────────
 function getDiff() {
   return Math.min(5, Math.floor((speed - BASE_SPEED) / ((MAX_SPEED - BASE_SPEED) / 6)));
@@ -896,6 +1003,14 @@ function spawnCoin() {
   coins.push({ mesh: coin, lane: l, y });
 }
 
+function spawnKey() {
+  const l    = Math.floor(Math.random() * 3);
+  const mesh = makeKeyMesh();
+  mesh.position.set(LANE_X[l], 1.2, SPAWN_Z);
+  three.scene.add(mesh);
+  keys.push({ mesh, lane: l });
+}
+
 function spawnPowerUp() {
   const types = ['magnet', 'shield', 'multiplier', 'jetpack'];
   const type  = types[Math.floor(Math.random() * types.length)];
@@ -911,6 +1026,8 @@ function spawnPowerUp() {
 
 function activatePowerUp(type) {
   sfxPower();
+  powerUpsUsed++;
+  advanceMission('powerups', 1);
   if (type === 'magnet') {
     magnetActive = 10;
     flashScreen('rgba(59,130,246,0.28)', 350);
@@ -954,12 +1071,20 @@ function update(dt) {
     }
   }
 
+  // Distância e tempo de corrida
+  runTime += dt;
+  distance += speed * dt * 0.1;
+  if (distEl) distEl.textContent = Math.floor(distance) + 'm';
+  advanceMission('dist', speed * dt * 0.1);
+
   // Score (distância + multiplicador)
   scoreT += dt;
   if (scoreT > 0.08) {
     scoreT = 0;
-    score += multiplierActive > 0 ? 2 : 1;
+    const pts = multiplierActive > 0 ? 2 : 1;
+    score += pts;
     scoreEl.textContent = score;
+    advanceMission('score', pts);
     if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('runner-best', best); }
   }
 
@@ -1070,6 +1195,9 @@ function update(dt) {
   powerUpT += dt;
   if (powerUpT > Math.max(8, 15 - diff * 1.2)) { powerUpT = 0; spawnPowerUp(); }
 
+  keyT += dt;
+  if (!hasKey && keyT > Math.max(14, 22 - diff * 1.5)) { keyT = 0; spawnKey(); }
+
   // ── Bounding ──────────────────────────────────────────────────────────────
   const pX    = playerObj.group.position.x;
   const pHW   = 0.38;
@@ -1113,6 +1241,9 @@ function update(dt) {
         score += coinVal; scoreEl.textContent = score;
         if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('runner-best', best); }
         sfxCoin(); coinPop(coinVal);
+        coinsThisRun++;
+        advanceMission('coins', 1);
+        updateCoinBankHUD();
       }
     }
   }
@@ -1132,12 +1263,86 @@ function update(dt) {
     }
   }
 
+  // Move & collect keys
+  for (let i = keys.length - 1; i >= 0; i--) {
+    const k = keys[i];
+    k.mesh.position.z += speed * dt;
+    k.mesh.rotation.y += dt * 3;
+    k.mesh.position.y = 1.2 + Math.sin(animFrame * 0.14 + i * 2) * 0.18;
+    if (k.mesh.position.z > DESPAWN_Z) { three.scene.remove(k.mesh); keys.splice(i, 1); continue; }
+    if (k.mesh.position.z > -2.5 && k.mesh.position.z < 2.5) {
+      if (Math.abs(pX - LANE_X[k.lane]) < 1.6 && playerY < 2.8) {
+        three.scene.remove(k.mesh); keys.splice(i, 1);
+        hasKey = true;
+        sfxKey();
+        showPowerNotif('🗝️ CHAVE! (reviver grátis)', '#ffee00');
+        flashScreen('rgba(255,238,0,0.3)', 300);
+      }
+    }
+  }
+
   // Recycle tiles
   envTiles.forEach(t => { t.position.z += speed * dt; if (t.position.z > 14) t.position.z -= TILE_PERIOD; });
   envBuildings.forEach(b => { b.position.z += speed * dt; if (b.position.z > 14) b.position.z -= 14 * 18; });
 
   // Camera lean
   three.camera.position.x += (playerObj.group.position.x * 0.22 - three.camera.position.x) * Math.min(dt * 9, 1);
+}
+
+// ── Reviver ───────────────────────────────────────────────────────────────────
+function showReviveOverlay() {
+  if (!overlay || state !== 'dead') return;
+  overlay.hidden = false;
+  let countdown = 5;
+
+  function render() {
+    const keyBtn  = hasKey
+      ? `<button id="ro-key"  class="ro-btn ro-btn--key">🗝️ CHAVE GRÁTIS</button>` : '';
+    const coinBtn = coinBank >= REVIVE_COST
+      ? `<button id="ro-coin" class="ro-btn ro-btn--coin">🪙 ${REVIVE_COST} MOEDAS</button>` : '';
+    overlay.innerHTML =
+      `<p class="ro-label">GAME OVER</p>` +
+      `<p class="ro-score">${score}</p>` +
+      `<p class="ro-revive-timer">Reviver? ${countdown}s</p>` +
+      `<div class="ro-revive-btns">${keyBtn}${coinBtn}</div>` +
+      `<p class="ro-hint ro-skip" id="ro-skip">Pular →</p>`;
+    document.getElementById('ro-key')?.addEventListener('click',  () => { clearInterval(iv); revive(true);  });
+    document.getElementById('ro-coin')?.addEventListener('click', () => { clearInterval(iv); revive(false); });
+    document.getElementById('ro-skip')?.addEventListener('click', () => { clearInterval(iv); unlockScroll(); showOverlay(true); });
+  }
+
+  render();
+  const iv = setInterval(() => {
+    if (state !== 'dead') { clearInterval(iv); return; }
+    countdown--;
+    if (countdown <= 0) { clearInterval(iv); unlockScroll(); showOverlay(true); }
+    else render();
+  }, 1000);
+}
+
+function revive(usingKey) {
+  if (state !== 'dead') return;
+  if (usingKey) {
+    if (!hasKey) return;
+    hasKey = false;
+  } else {
+    if (coinBank < REVIVE_COST) return;
+    coinBank -= REVIVE_COST;
+    localStorage.setItem('runner-coins', coinBank);
+    updateCoinBankHUD();
+  }
+  revivedThisRun = true;
+  obstacles.forEach(o => three.scene.remove(o.mesh)); obstacles = [];
+  targetLane = 1;
+  playerY = GROUND_Y; playerVY = 0; crouching = false;
+  playerObj.group.position.set(LANE_X[1], 0, 0);
+  playerObj.group.rotation.set(0, Math.PI, 0);
+  playerObj.group.scale.set(1, 1, 1);
+  shieldActive = 3; // 3s de invencibilidade
+  state = 'playing';
+  hideOverlay();
+  flashScreen('rgba(255,220,0,0.45)', 500);
+  showPowerNotif('🔄 REANIMADO! (3s imune)', '#ff8800');
 }
 
 // ── Game loop ─────────────────────────────────────────────────────────────────
@@ -1166,9 +1371,14 @@ function begin() {
   score = 0; speed = BASE_SPEED; targetLane = 1;
   playerY = GROUND_Y; playerVY = 0; crouching = false;
   wasOnGround = true; laneLean = 0;
-  animFrame = 0; spawnT = 0; coinT = 0; scoreT = 0; speedT = 0;
+  animFrame = 0; spawnT = 0; coinT = 0; scoreT = 0; speedT = 0; keyT = 0;
   scoreEl.textContent = '0'; speedEl.textContent = '1.0×';
   magnetActive = 0; shieldActive = 0; multiplierActive = 0; jetpackActive = 0; powerUpT = 0;
+  coinsThisRun = 0; distance = 0; runTime = 0;
+  hasKey = false; revivedThisRun = false; jumpCount = 0; powerUpsUsed = 0;
+  keys.forEach(k => three.scene.remove(k.mesh)); keys = [];
+  if (distEl) distEl.textContent = '0m';
+  updateCoinBankHUD();
   powerUps.forEach(p => three.scene.remove(p.mesh)); powerUps = [];
   if (powersEl) powersEl.innerHTML = '';
   if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
@@ -1201,17 +1411,51 @@ function die() {
   sfxDie();
   flashScreen('rgba(255,30,0,0.45)', 400);
   camShake = 1.0;
-  unlockScroll();
-  setTimeout(() => { if (state === 'dead') showOverlay(true); }, 500);
+
+  // Bancar moedas da corrida
+  coinBank += coinsThisRun;
+  coinsThisRun = 0;
+  localStorage.setItem('runner-coins', coinBank);
+  updateCoinBankHUD();
+
+  // Missões baseadas em tempo/pontuação (ao fim da corrida)
+  advanceMission('score', 0); // já avançado em tempo real; apenas salva
+  saveMissions();
+
+  if (!revivedThisRun && (hasKey || coinBank >= REVIVE_COST)) {
+    setTimeout(() => { if (state === 'dead') showReviveOverlay(); }, 600);
+  } else {
+    unlockScroll();
+    setTimeout(() => { if (state === 'dead') showOverlay(true); }, 500);
+  }
 }
 
 // ── Overlay ───────────────────────────────────────────────────────────────────
 function showOverlay(dead) {
   if (!overlay) return;
   overlay.hidden = false;
-  overlay.innerHTML = dead
-    ? `<p class="ro-label">Game Over</p><p class="ro-score">${score}</p><p class="ro-sub">Recorde: ${best}</p><p class="ro-hint">Toque ou espaço para jogar de novo</p>`
-    : `<p class="ro-title">Corrida do<br>Aloncinho</p><p class="ro-controls">← → faixa &nbsp;·&nbsp; ↑ pular &nbsp;·&nbsp; ↓ agachar</p><p class="ro-hint">Toque ou pressione espaço para começar</p>`;
+  if (dead) {
+    const missHtml = missions.map(m =>
+      `<span style="display:inline-block;margin:1px 3px;font-size:0.72rem;color:${m.done?'#44ff88':'#aaa'}">${m.done?'✅':'○'} ${m.label} ${m.progress}/${m.target}</span>`
+    ).join('');
+    overlay.innerHTML =
+      `<p class="ro-label">Game Over</p>` +
+      `<p class="ro-score">${score}</p>` +
+      `<p class="ro-sub">Recorde: ${best} &nbsp;·&nbsp; 💰 Banco: ${coinBank}</p>` +
+      `<div style="margin:0.4rem 0 0.6rem;line-height:1.6;">${missHtml}</div>` +
+      `<p class="ro-hint">Toque ou espaço para jogar de novo</p>`;
+  } else {
+    const missHtml = missions.map(m =>
+      `<span style="display:inline-block;margin:1px 3px;font-size:0.70rem;color:${m.done?'#44ff88':'#ffee00'}">${m.done?'✅':'🎯'} ${m.label} ${m.progress}/${m.target}</span>`
+    ).join('');
+    overlay.innerHTML =
+      `<p class="ro-title">Corrida do<br>Aloncinho</p>` +
+      `<p style="color:#aaa;font-size:0.75rem;margin:0.2rem 0 0.4rem">← → faixa &nbsp;·&nbsp; ↑ pular &nbsp;·&nbsp; ↓ agachar</p>` +
+      `<p style="color:#ffee00;font-size:0.72rem;font-weight:700;margin:0.3rem 0 0.1rem">🎯 MISSÕES DE HOJE</p>` +
+      `<div style="margin-bottom:0.5rem;line-height:1.7">${missHtml}</div>` +
+      `<p style="color:#aaa;font-size:0.72rem;margin-bottom:0.4rem">💰 Banco: ${coinBank} moedas (reviver custa ${REVIVE_COST})</p>` +
+      `<p class="ro-hint">Toque ou pressione espaço para começar</p>`;
+  }
 }
 function hideOverlay() { if (overlay) overlay.hidden = true; }
 
@@ -1235,8 +1479,9 @@ function doJump() {
     playerVY = JUMP_V;
     crouching = false;
     sfxJump();
-    // Stretch no pulo
     playerObj.group.scale.set(0.78, 1.38, 0.78);
+    jumpCount++;
+    advanceMission('jumps', 1);
   }
 }
 function doCrouch()  { if (state === 'playing') crouching = true; }
@@ -1281,5 +1526,7 @@ overlay?.addEventListener('click', () => { if (state !== 'playing') begin(); });
 
 // ── Boot ───────────────────────────────────────────────────────────────────────
 initThree();
+loadDailyMissions();
+updateCoinBankHUD();
 showOverlay(false);
 gameLoop();
