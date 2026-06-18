@@ -87,10 +87,10 @@ function sfxPower()     { _tone(500, 1100, 0.28, 'sine', 0.13); }
 function sfxShieldHit() { _tone(350, 80,  0.35, 'sawtooth', 0.14); }
 
 // ── HUD helpers ───────────────────────────────────────────────────────────────
-function coinPop() {
+function coinPop(val) {
   const wrap = canvas.parentElement;
   const div  = document.createElement('div');
-  div.textContent = '+5';
+  div.textContent = (val > 5 ? '×2 ' : '') + '+' + val;
   Object.assign(div.style, {
     position:'absolute', left:'50%', top:'52%',
     transform:'translateX(-50%)', color:'#ffee00',
@@ -238,8 +238,8 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // Asfalto escuro (pista central)
-  const concMat = toon(0x444444);
+  // Asfalto escuro (pista central) — azul-escuro subway style
+  const concMat = toon(0x14143c);
   const concGeo = new THREE.BoxGeometry(7.8, 0.52, 24);
   for (let i = 0; i < 8; i++) {
     const m = new THREE.Mesh(concGeo, concMat);
@@ -249,19 +249,21 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // Divisórias tracejadas amarelas — x=-1.5 e x=1.5 (entre as 3 faixas)
-  // 5 traços por tile de 24u = espaçamento 4.8u cada
-  const dashGeo = new THREE.BoxGeometry(0.18, 0.06, 1.6);
-  const dashMat = toon(0xffee00);
-  [-1.5, 1.5].forEach(dx => {
-    for (let i = 0; i < 8; i++) {
-      for (let d = 0; d < 5; d++) {
-        const m = new THREE.Mesh(dashGeo, dashMat);
-        m.position.set(dx, 0.02, 10 - i * 24 - d * 4.8);
-        scene.add(m);
-        envTiles.push(m);
-      }
-    }
+  // Trilhos do metrô — dormentes + rails metálicos (subway surfers feel)
+  const tieMat  = toon(0x6b4a1a);  // madeira escura
+  const railMat = toon(0xaaaacc);  // metal prateado
+  for (let i = 0; i < 80; i++) {
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.07, 0.28), tieMat);
+    tie.position.set(0, 0.04, 10 - i * 2.4);
+    scene.add(tie);
+    envTiles.push(tie);
+  }
+  // Rails (segmentos de 192u = TILE_PERIOD, reciclam junto com os tiles)
+  [-1.7, -0.5, 0.5, 1.7].forEach(rx => {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 192), railMat);
+    rail.position.set(rx, 0.07, 10 - 96);  // cobre z = -182..10
+    scene.add(rail);
+    envTiles.push(rail);
   });
 
   // Bordas brancas sólidas (estáticas, 400u)
@@ -287,6 +289,20 @@ function buildEnvironment(scene) {
     scene.add(wall);
     outline(wall);
   });
+
+  // Grafites nas paredes (cor e vida ao cenário)
+  const grafCols = [0xff2299, 0x22ffcc, 0xff8800, 0x4488ff, 0xffee00, 0xcc44ff, 0xff3333, 0x00ee88];
+  for (let i = 0; i < 14; i++) {
+    [-1, 1].forEach(side => {
+      const col = grafCols[(i * 3 + side + 7) % grafCols.length];
+      const gw  = 1.4 + (i % 3) * 0.7;
+      const gh  = 0.35 + (i % 4) * 0.22;
+      const grf = new THREE.Mesh(new THREE.BoxGeometry(0.05, gh, gw), toon(col));
+      grf.position.set(side * 6.29, 0.45 + (i % 3) * 0.30, -i * 22 - 8);
+      scene.add(grf);
+      envBuildings.push(grf);
+    });
+  }
 
   // Postes de luz cartoon
   const poleMat = toon(0x888888);
@@ -622,18 +638,23 @@ function makeTrafficConeMesh() {
 
 function makeLowBarrierMesh() {
   const group = new THREE.Group();
-  // Barreira de concreto (tipo New Jersey)
-  const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.70, 0.55), toon(0xcccccc));
+  // Barreira laranja vivo (estilo canteiro de obras SS)
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.70, 0.55), toon(0xff6600));
   body.position.y = 0.35;
   body.castShadow = true;
   group.add(body); outline(body, 1.05);
 
-  // Listras laranjas de aviso
-  [0.55, -0.55].forEach(x => {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.72, 0.08), toon(0xff6600));
+  // Listras amarelas de aviso (contraste máximo)
+  [0.55, 0, -0.55].forEach(x => {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.72, 0.08), toon(0xffee00));
     s.position.set(x, 0.35, 0.28);
     group.add(s);
   });
+  // Luz de aviso no topo
+  const light = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6),
+    new THREE.MeshBasicMaterial({ color: 0xff2200 }));
+  light.position.set(0, 0.82, 0);
+  group.add(light); outline(light, 1.15);
   return group;
 }
 
@@ -677,11 +698,17 @@ function getDiff() {
 }
 
 function spawnLowBridge() {
-  // Viaduto baixo — player precisa abaixar
   const group = new THREE.Group();
-  const beam  = new THREE.Mesh(new THREE.BoxGeometry(14, 0.45, 0.80), toon(0x886644));
+  // Viga laranja-vivo — bem visível para o player abaixar
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(14, 0.45, 0.80), toon(0xff4400));
   beam.castShadow = true;
   group.add(beam); outline(beam, 1.03);
+  // Listras amarelas de aviso na face frontal
+  [-4.5, -1.5, 1.5, 4.5].forEach(bx => {
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.47, 0.06), toon(0xffee00));
+    stripe.position.set(bx, 0, 0.43);
+    group.add(stripe);
+  });
   const yBot = 1.40;
   group.position.set(0, yBot + 0.225, SPAWN_Z);
   three.scene.add(group);
@@ -767,16 +794,21 @@ function spawnObstacle() {
 }
 
 function spawnCoin() {
-  const l = Math.floor(Math.random() * 3);
-  const y = 0.7 + Math.random() * 1.0;
-  const mesh = new THREE.Mesh(
-    new THREE.TorusGeometry(0.28, 0.09, 8, 18),
-    toon(0xffcc00)
+  const l    = Math.floor(Math.random() * 3);
+  const y    = 0.7 + Math.random() * 1.0;
+  const coin = new THREE.Group();
+  // Anel externo
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.10, 8, 18), toon(0xffcc00));
+  coin.add(ring); outline(ring, 1.08);
+  // Disco dourado interno (face-on, gira como moeda real)
+  const face = new THREE.Mesh(
+    new THREE.CircleGeometry(0.26, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffdd44, side: THREE.DoubleSide })
   );
-  mesh.position.set(LANE_X[l], y, SPAWN_Z);
-  mesh.rotation.x = Math.PI / 2;
-  three.scene.add(mesh);
-  coins.push({ mesh, lane: l, y });
+  coin.add(face);
+  coin.position.set(LANE_X[l], y, SPAWN_Z);
+  three.scene.add(coin);
+  coins.push({ mesh: coin, lane: l, y });
 }
 
 function spawnPowerUp() {
@@ -969,7 +1001,7 @@ function update(dt) {
         const coinVal = multiplierActive > 0 ? 10 : 5;
         score += coinVal; scoreEl.textContent = score;
         if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('runner-best', best); }
-        sfxCoin(); coinPop();
+        sfxCoin(); coinPop(coinVal);
       }
     }
   }
