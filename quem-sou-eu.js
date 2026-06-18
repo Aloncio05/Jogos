@@ -80,7 +80,7 @@ CATEGORIES[0].words = CATEGORIES.slice(1).flatMap(c => c.words);
 // ===== State =====
 let players = [];
 let selectedCat = 'todos';
-let roundTime = 60;
+let roundTime = 120;
 let currentPlayerIdx = 0;
 let scores = [];
 let timerInterval = null;
