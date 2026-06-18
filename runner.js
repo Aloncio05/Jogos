@@ -150,11 +150,12 @@ let camShake = 0;
 // ── Toon helpers ─────────────────────────────────────────────────────────────
 function makeToonGrad() {
   const c = document.createElement('canvas');
-  c.width = 3; c.height = 1;
+  c.width = 4; c.height = 1;
   const x = c.getContext('2d');
-  // sombra clara (70%) → highlight (100%) — cores aparecem vivas mesmo na sombra
-  x.fillStyle = '#b4b4b4'; x.fillRect(0, 0, 1, 1);
-  x.fillStyle = '#ffffff'; x.fillRect(1, 0, 2, 1);
+  // Cel-shading duro: sombra escura → destaque pleno (estilo cartoon)
+  x.fillStyle = '#1e1e1e'; x.fillRect(0, 0, 1, 1);  // sombra profunda
+  x.fillStyle = '#777777'; x.fillRect(1, 0, 1, 1);  // meio-tom
+  x.fillStyle = '#ffffff'; x.fillRect(2, 0, 2, 1);  // luz total
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
   t.minFilter = THREE.NearestFilter;
@@ -166,16 +167,16 @@ function toon(color) {
 }
 
 // Adiciona contorno preto (backface trick — cel-shading outline)
-function outline(mesh, scale = 1.10) {
+function outline(mesh, scale = 1.18) {
   const o = new THREE.Mesh(
     mesh.geometry,
-    new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide })
+    new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide })
   );
   o.scale.setScalar(scale);
   mesh.add(o);
 }
 
-function outlineGroup(group, scale = 1.10) {
+function outlineGroup(group, scale = 1.18) {
   group.traverse(child => {
     if (child.isMesh && !child._isOutline) outline(child, scale);
   });
@@ -208,10 +209,10 @@ function initThree() {
 }
 
 function setupLights(scene) {
-  // Ambient alto = cores vivas em todas as faces
-  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+  // Ambient baixo = sombras visíveis → cel-shading funciona
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 
-  const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+  const sun = new THREE.DirectionalLight(0xfff8e0, 2.4);
   sun.position.set(8, 20, 14);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
@@ -426,30 +427,39 @@ function buildPlayer(scene) {
     return m;
   }
 
-  // Cabeça grande (proporção cartoon)
-  const head = add(new THREE.SphereGeometry(0.32, 16, 12), skin, 0, 1.80, 0);
-  outline(head);
+  // Cabeça GRANDE (proporção cartoon exagerada)
+  const head = add(new THREE.SphereGeometry(0.46, 16, 12), skin, 0, 1.95, 0);
+  outline(head, 1.16);
 
-  // Olhos grandes expressivos
-  add(new THREE.SphereGeometry(0.080, 8, 6), dark, -0.12, 1.88, -0.29);
-  add(new THREE.SphereGeometry(0.080, 8, 6), dark,  0.12, 1.88, -0.29);
+  // Olhos grandes expressivos (bem à frente)
+  add(new THREE.SphereGeometry(0.110, 8, 6), dark, -0.15, 2.04, -0.40);
+  add(new THREE.SphereGeometry(0.110, 8, 6), dark,  0.15, 2.04, -0.40);
+  // Pupila
+  add(new THREE.SphereGeometry(0.058, 6, 4), toon(0x111133), -0.15, 2.04, -0.44);
+  add(new THREE.SphereGeometry(0.058, 6, 4), toon(0x111133),  0.15, 2.04, -0.44);
   // Brilho nos olhos
-  add(new THREE.SphereGeometry(0.030, 6, 4), toon(0xffffff), -0.10, 1.91, -0.31);
-  add(new THREE.SphereGeometry(0.030, 6, 4), toon(0xffffff),  0.14, 1.91, -0.31);
+  add(new THREE.SphereGeometry(0.038, 6, 4), toon(0xffffff), -0.12, 2.08, -0.46);
+  add(new THREE.SphereGeometry(0.038, 6, 4), toon(0xffffff),  0.18, 2.08, -0.46);
+  // Sobrancelhas (expressão cartoon)
+  add(new THREE.BoxGeometry(0.22, 0.06, 0.06), dark, -0.15, 2.18, -0.41);
+  add(new THREE.BoxGeometry(0.22, 0.06, 0.06), dark,  0.15, 2.18, -0.41);
+  // Bochechas (rosadas, fofas)
+  add(new THREE.SphereGeometry(0.09, 8, 6), toon(0xffaaaa), -0.33, 1.95, -0.34);
+  add(new THREE.SphereGeometry(0.09, 8, 6), toon(0xffaaaa),  0.33, 1.95, -0.34);
 
   // Boné
-  const cap = add(new THREE.CylinderGeometry(0.33, 0.31, 0.16, 14), capM, 0, 2.14, 0);
-  outline(cap);
-  add(new THREE.BoxGeometry(0.70, 0.08, 0.34), capM, 0, 2.03, -0.25);
+  const cap = add(new THREE.CylinderGeometry(0.48, 0.45, 0.18, 14), capM, 0, 2.47, 0);
+  outline(cap, 1.14);
+  add(new THREE.BoxGeometry(0.90, 0.10, 0.42), capM, 0, 2.33, -0.34);
 
-  // Torso
-  const torso = add(new THREE.BoxGeometry(0.64, 0.82, 0.42), hoodie, 0, 1.10, 0);
-  outline(torso, 1.06);
+  // Torso chonky
+  const torso = add(new THREE.BoxGeometry(0.76, 0.85, 0.50), hoodie, 0, 1.10, 0);
+  outline(torso, 1.12);
 
-  // Braços (cilindros)
-  const armGeo = new THREE.CylinderGeometry(0.11, 0.10, 0.58, 10);
-  const armL = add(armGeo, hoodie, -0.48, 1.10, 0);
-  const armR = add(armGeo, hoodie,  0.48, 1.10, 0);
+  // Braços (cilindros mais grossos, largura do torso maior)
+  const armGeo = new THREE.CylinderGeometry(0.13, 0.12, 0.60, 10);
+  const armL = add(armGeo, hoodie, -0.56, 1.10, 0);
+  const armR = add(armGeo, hoodie,  0.56, 1.10, 0);
   outline(armL); outline(armR);
 
   // Pernas (cilindros mais grossos)
@@ -970,8 +980,8 @@ function update(dt) {
     playerObj.meshes.armR.rotation.x =  leg * 0.65;
     const bob = Math.abs(Math.sin(t)) * 0.05;
     playerObj.meshes.torso.position.y = 1.10 + bob;
-    playerObj.meshes.head.position.y  = 1.80 + bob;
-    playerObj.meshes.cap.position.y   = 2.14 + bob;
+    playerObj.meshes.head.position.y  = 1.95 + bob;
+    playerObj.meshes.cap.position.y   = 2.47 + bob;
   } else if (!onGround) {
     // Abre as pernas no ar
     playerObj.meshes.legL.rotation.x = -0.55;
