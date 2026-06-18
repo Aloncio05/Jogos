@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quem Sou Eu? — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="quem-sou-eu.css">
+</head>
+<body class="game-page qse-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="qse-main">
+
+    <!-- TELA: SETUP -->
+    <section id="qse-setup" class="qse-screen active">
+      <div class="qse-setup-card">
+        <p class="eyebrow">Jogo 11</p>
+        <h2>Quem Sou Eu?</h2>
+        <p class="qse-intro">
+          Segure o celular na testa. Todos veem a carta menos você!
+          Faça perguntas de <strong>sim ou não</strong> para descobrir quem você é.
+        </p>
+
+        <label class="qse-label">Jogadores</label>
+        <div id="qse-players-list" class="qse-players-list"></div>
+        <div class="qse-player-add">
+          <input id="qse-player-input" class="qse-input" type="text" placeholder="Nome do jogador" maxlength="20">
+          <button id="qse-add-btn" class="qse-add-btn" aria-label="Adicionar jogador">+</button>
+        </div>
+
+        <label class="qse-label">Categoria</label>
+        <div id="qse-cats" class="qse-cats"></div>
+
+        <label class="qse-label">Tempo por rodada</label>
+        <div class="qse-timer-opts">
+          <button class="qse-timer-opt" data-t="45">45s</button>
+          <button class="qse-timer-opt active" data-t="60">60s</button>
+          <button class="qse-timer-opt" data-t="90">90s</button>
+        </div>
+
+        <button id="qse-start-btn" class="qse-start-btn" disabled>Começar Jogo</button>
+      </div>
+    </section>
+
+    <!-- TELA: PREPARAR -->
+    <section id="qse-prepare" class="qse-screen">
+      <div class="qse-center">
+        <p class="qse-prepare-turn" id="qse-prepare-who"></p>
+        <p class="qse-prepare-sub">Segure o celular na <strong>testa</strong><br>com a tela virada para fora</p>
+        <div class="qse-forehead-icon">📱</div>
+        <p class="qse-prepare-hint">Todos podem ver — menos você!</p>
+        <button id="qse-ready-btn" class="qse-ready-btn">Estou pronto!</button>
+      </div>
+    </section>
+
+    <!-- TELA: CONTAGEM REGRESSIVA -->
+    <section id="qse-countdown" class="qse-screen">
+      <div class="qse-center">
+        <div id="qse-count-num" class="qse-count-num">3</div>
+      </div>
+    </section>
+
+    <!-- TELA: JOGANDO -->
+    <section id="qse-play" class="qse-screen">
+      <div class="qse-play-header">
+        <span id="qse-play-player" class="qse-play-player"></span>
+        <div id="qse-timer-ring" class="qse-timer-ring">
+          <svg viewBox="0 0 80 80">
+            <circle class="qse-ring-bg" cx="40" cy="40" r="34"/>
+            <circle id="qse-ring-progress" class="qse-ring-progress" cx="40" cy="40" r="34"/>
+          </svg>
+          <span id="qse-timer-val" class="qse-timer-val">60</span>
+        </div>
+        <span id="qse-play-score" class="qse-play-score">0 ✓</span>
+      </div>
+
+      <div class="qse-card-area">
+        <div id="qse-category-label" class="qse-category-label"></div>
+        <div id="qse-card" class="qse-card">
+          <p id="qse-card-text" class="qse-card-text"></p>
+        </div>
+        <div id="qse-cards-left" class="qse-cards-left"></div>
+      </div>
+
+      <div class="qse-action-btns">
+        <button id="qse-pass-btn" class="qse-action-btn qse-pass">
+          <span class="qse-btn-icon">✗</span>
+          <span>PASSEI</span>
+        </button>
+        <button id="qse-got-btn" class="qse-action-btn qse-got">
+          <span class="qse-btn-icon">✓</span>
+          <span>ACERTEI!</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- TELA: FIM DE RODADA -->
+    <section id="qse-roundend" class="qse-screen">
+      <div class="qse-center">
+        <p class="qse-roundend-title" id="qse-roundend-title"></p>
+        <div id="qse-roundend-score" class="qse-roundend-score"></div>
+        <button id="qse-next-btn" class="qse-ready-btn" style="margin-top:2rem"></button>
+      </div>
+    </section>
+
+    <!-- TELA: RESULTADO FINAL -->
+    <section id="qse-final" class="qse-screen">
+      <div class="qse-center">
+        <div class="qse-trophy">🏆</div>
+        <h2 class="qse-final-title">Fim de jogo!</h2>
+        <div id="qse-final-scores" class="qse-final-scores"></div>
+        <button id="qse-restart-btn" class="qse-start-btn" style="margin-top:2rem">Jogar de novo</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="quem-sou-eu.js"></script>
+</body>
+</html>
