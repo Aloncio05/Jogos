@@ -475,16 +475,24 @@ function buildPlayer(scene) {
 
   // Bolha de escudo (visível só quando shieldActive > 0)
   const shieldBubble = new THREE.Mesh(
-    new THREE.SphereGeometry(1.35, 16, 12),
-    new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.22, side: THREE.FrontSide })
+    new THREE.SphereGeometry(1.38, 18, 14),
+    new THREE.MeshBasicMaterial({ color: 0x22ff88, transparent: true, opacity: 0.42, side: THREE.DoubleSide })
   );
   shieldBubble.visible = false;
   group.add(shieldBubble);
 
+  // Anel de força (equador do escudo) — gira diferente da bolha
+  const shieldRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.42, 0.08, 8, 32),
+    new THREE.MeshBasicMaterial({ color: 0x44ffaa, transparent: true, opacity: 0.90 })
+  );
+  shieldRing.visible = false;
+  group.add(shieldRing);
+
   group.position.set(LANE_X[1], 0, 0);
   group.rotation.y = Math.PI;
   scene.add(group);
-  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap }, shadowMesh, shieldBubble };
+  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap }, shadowMesh, shieldBubble, shieldRing };
 }
 
 // ── Obstacles ─────────────────────────────────────────────────────────────────
@@ -674,11 +682,28 @@ function makeMagnetMesh() {
 
 function makeShieldMesh() {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.44), toon(0x22c55e));
-  g.add(body); outline(body, 1.10);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 6, 14), toon(0x86efac));
-  ring.rotation.x = Math.PI / 2;
-  g.add(ring);
+  // Topo do escudo (semicírculo)
+  const top = new THREE.Mesh(
+    new THREE.SphereGeometry(0.44, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    toon(0x22c55e)
+  );
+  g.add(top); outline(top, 1.08);
+  // Corpo principal do escudo (cilindro achatado)
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.30, 0.52, 12), toon(0x22c55e));
+  body.position.y = -0.26;
+  g.add(body); outline(body, 1.08);
+  // Ponta inferior
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.36, 10), toon(0x22c55e));
+  tip.position.y = -0.68;
+  tip.rotation.x = Math.PI;
+  g.add(tip); outline(tip, 1.10);
+  // Cruz no centro
+  const barV = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.60, 0.10), toon(0x86efac));
+  barV.position.y = -0.20;
+  g.add(barV);
+  const barH = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.09, 0.10), toon(0x86efac));
+  barH.position.y = -0.10;
+  g.add(barH);
   return g;
 }
 
@@ -877,13 +902,21 @@ function update(dt) {
   if (multiplierActive > 0) multiplierActive = Math.max(0, multiplierActive - dt);
   updatePowerHUD();
 
-  // Escudo: bolha visual
+  // Escudo: bolha + anel visual
   if (playerObj.shieldBubble) {
-    playerObj.shieldBubble.visible = shieldActive > 0;
-    if (shieldActive > 0) {
-      playerObj.shieldBubble.rotation.y += dt * 1.8;
-      const p = 1 + Math.sin(animFrame * 0.18) * 0.05;
+    const on = shieldActive > 0;
+    playerObj.shieldBubble.visible = on;
+    playerObj.shieldRing.visible   = on;
+    if (on) {
+      playerObj.shieldBubble.rotation.y += dt * 2.2;
+      // Pulso dramático: escala 0.93 ↔ 1.08
+      const p = 1 + Math.sin(animFrame * 0.28) * 0.08;
       playerObj.shieldBubble.scale.setScalar(p);
+      // Opacidade pulsante
+      playerObj.shieldBubble.material.opacity = 0.30 + Math.sin(animFrame * 0.28) * 0.18;
+      // Anel orbita em ângulo diferente
+      playerObj.shieldRing.rotation.y += dt * 3.5;
+      playerObj.shieldRing.rotation.z  = Math.sin(animFrame * 0.08) * 0.55;
     }
   }
 
@@ -1061,6 +1094,7 @@ function begin() {
   powerUps.forEach(p => three.scene.remove(p.mesh)); powerUps = [];
   if (powersEl) powersEl.innerHTML = '';
   if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
+  if (playerObj.shieldRing)   playerObj.shieldRing.visible   = false;
   playerObj.group.position.set(LANE_X[1], 0, 0);
   playerObj.group.rotation.set(0, Math.PI, 0);
   playerObj.group.scale.set(1, 1, 1);
@@ -1080,6 +1114,7 @@ function die() {
     sfxShieldHit();
     flashScreen('rgba(34,197,94,0.55)', 300);
     if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
+    if (playerObj.shieldRing)   playerObj.shieldRing.visible   = false;
     return;
   }
   state = 'dead';
