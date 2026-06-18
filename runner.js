@@ -50,7 +50,7 @@ let coinsThisRun   = 0;
 let distance       = 0;
 let coinStreak = 0, coinStreakT = 0;
 let hasKey         = false;
-let revivedThisRun = false;
+let reviveCount = 0;
 let jumpCount      = 0;
 let powerUpsUsed   = 0;
 let runTime        = 0;
@@ -657,7 +657,7 @@ function buildPlayer(scene) {
   group.add(jpBack);
 
   group.position.set(LANE_X[1], 0, 0);
-  group.rotation.y = Math.PI;
+  group.rotation.y = 0;
   scene.add(group);
   playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap },
                 shadowMesh, shieldBubble, shieldRing, jpBack, jpFlameL, jpFlameR };
@@ -1029,7 +1029,9 @@ function spawnObstacle() {
 
 function spawnCoin() {
   const l    = Math.floor(Math.random() * 3);
-  const y    = 0.7 + Math.random() * 1.0;
+  const y    = jetpackActive > 0
+    ? playerY + 0.3 + Math.random() * 1.2
+    : 0.7 + Math.random() * 1.0;
   const coin = new THREE.Group();
   // Anel externo
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.10, 8, 18), toon(0xffcc00));
@@ -1324,6 +1326,10 @@ function update(dt) {
       c.mesh.position.x += (pX - c.mesh.position.x) * Math.min(dt * 7, 1);
       c.mesh.position.y += (playerY + 1.0 - c.mesh.position.y) * Math.min(dt * 4, 1);
     }
+    // Jetpack: moedas sobem para a altitude do player
+    if (jetpackActive > 0 && magnetActive <= 0) {
+      c.mesh.position.y += (playerY + 0.8 - c.mesh.position.y) * Math.min(dt * 3.5, 1);
+    }
 
     const collectR = magnetActive > 0 ? 3.0 : 1.5;
     if (c.mesh.position.z > -3.5 && c.mesh.position.z < 2.5) {
@@ -1394,10 +1400,11 @@ function showReviveOverlay() {
   let countdown = 5;
 
   function render() {
+    const cost    = REVIVE_COST * (reviveCount + 1);
     const keyBtn  = hasKey
       ? `<button id="ro-key"  class="ro-btn ro-btn--key">🗝️ CHAVE GRÁTIS</button>` : '';
-    const coinBtn = coinBank >= REVIVE_COST
-      ? `<button id="ro-coin" class="ro-btn ro-btn--coin">🪙 ${REVIVE_COST} MOEDAS</button>` : '';
+    const coinBtn = coinBank >= cost
+      ? `<button id="ro-coin" class="ro-btn ro-btn--coin">🪙 ${cost} MOEDAS</button>` : '';
     overlay.innerHTML =
       `<p class="ro-label">GAME OVER</p>` +
       `<p class="ro-score">${score}</p>` +
@@ -1424,17 +1431,18 @@ function revive(usingKey) {
     if (!hasKey) return;
     hasKey = false;
   } else {
-    if (coinBank < REVIVE_COST) return;
-    coinBank -= REVIVE_COST;
+    const cost = REVIVE_COST * (reviveCount + 1);
+    if (coinBank < cost) return;
+    coinBank -= cost;
     localStorage.setItem('runner-coins', coinBank);
     updateCoinBankHUD();
   }
-  revivedThisRun = true;
+  reviveCount++;
   obstacles.forEach(o => three.scene.remove(o.mesh)); obstacles = [];
   targetLane = 1;
   playerY = GROUND_Y; playerVY = 0; crouching = false;
   playerObj.group.position.set(LANE_X[1], 0, 0);
-  playerObj.group.rotation.set(0, Math.PI, 0);
+  playerObj.group.rotation.set(0, 0, 0);
   playerObj.group.scale.set(1, 1, 1);
   shieldActive = 3; // 3s de invencibilidade
   state = 'playing';
@@ -1474,7 +1482,7 @@ function begin() {
   magnetActive = 0; shieldActive = 0; multiplierActive = 0; jetpackActive = 0; invincibleT = 0; powerUpT = 0;
   playerObj.group.visible = true;
   coinsThisRun = 0; distance = 0; runTime = 0;
-  hasKey = false; revivedThisRun = false; jumpCount = 0; powerUpsUsed = 0;
+  hasKey = false; reviveCount = 0; jumpCount = 0; powerUpsUsed = 0;
   coinStreak = 0; coinStreakT = 0;
   playerObj.group.rotation.x = 0;
   keys.forEach(k => three.scene.remove(k.mesh)); keys = [];
@@ -1485,7 +1493,7 @@ function begin() {
   if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
   if (playerObj.shieldRing)   playerObj.shieldRing.visible   = false;
   playerObj.group.position.set(LANE_X[1], 0, 0);
-  playerObj.group.rotation.set(0, Math.PI, 0);
+  playerObj.group.rotation.set(0, 0, 0);
   playerObj.group.scale.set(1, 1, 1);
   obstacles.forEach(o => three.scene.remove(o.mesh));
   coins.forEach(c => three.scene.remove(c.mesh));
@@ -1533,7 +1541,7 @@ function die() {
   advanceMission('score', 0); // já avançado em tempo real; apenas salva
   saveMissions();
 
-  if (!revivedThisRun && (hasKey || coinBank >= REVIVE_COST)) {
+  if (hasKey || coinBank >= REVIVE_COST * (reviveCount + 1)) {
     setTimeout(() => { if (state === 'dead') showReviveOverlay(); }, 600);
   } else {
     unlockScroll();

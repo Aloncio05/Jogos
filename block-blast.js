@@ -460,9 +460,7 @@ function pieceFits(piece) {
 }
 
 function afterPlace() {
-  if (currentPieces.every(p => p === null)) {
-    currentPieces = [randomPiece(), randomPiece(), randomPiece()];
-  }
+  currentPieces = currentPieces.map(p => p === null ? randomPiece() : p);
   renderPieces();
 
   // Mark pieces that have no valid placement
