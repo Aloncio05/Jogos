@@ -40,7 +40,7 @@ let spawnT = 0, coinT = 0, scoreT = 0, speedT = 0, powerUpT = 0;
 
 // ── Power-ups ─────────────────────────────────────────────────────────────────
 let powerUps = [];
-let magnetActive = 0, shieldActive = 0, multiplierActive = 0;
+let magnetActive = 0, shieldActive = 0, multiplierActive = 0, jetpackActive = 0;
 
 // ── DOM ──────────────────────────────────────────────────────────────────────
 const canvas   = document.getElementById('runner-canvas');
@@ -109,6 +109,7 @@ function updatePowerHUD() {
   if (magnetActive     > 0) html += `<span class="runner-power-chip" style="background:#3b82f6">🧲 ${Math.ceil(magnetActive)}s</span>`;
   if (shieldActive     > 0) html += `<span class="runner-power-chip" style="background:#22c55e">🛡️ ${Math.ceil(shieldActive)}s</span>`;
   if (multiplierActive > 0) html += `<span class="runner-power-chip" style="background:#a855f7">2× ${Math.ceil(multiplierActive)}s</span>`;
+  if (jetpackActive    > 0) html += `<span class="runner-power-chip" style="background:#ff6600">🚀 ${Math.ceil(jetpackActive)}s</span>`;
   powersEl.innerHTML = html;
 }
 
@@ -227,75 +228,65 @@ function setupLights(scene) {
 // ── Environment ───────────────────────────────────────────────────────────────
 function buildEnvironment(scene) {
 
-  // Grama cartoon — alternância verde/amarelo-limão bem saturada
-  const grassCols = [toon(0x44ee11), toon(0x88ee00), toon(0x22dd44), toon(0x66ff22)];
-  const tileGeo   = new THREE.BoxGeometry(14, 0.5, 24);
+  // ── Rua com 3 faixas cartoon ────────────────────────────────────────────────
+  // Base da rua (azul-roxo escuro saturado, 2 tons alternados)
+  const roadMats = [toon(0x1a1060), toon(0x14094e)];
+  const tileGeo  = new THREE.BoxGeometry(10.2, 0.50, 24);
   for (let i = 0; i < 8; i++) {
-    const m = new THREE.Mesh(tileGeo, grassCols[i % grassCols.length]);
+    const m = new THREE.Mesh(tileGeo, roadMats[i % 2]);
     m.position.set(0, -0.25, -i * 24 + 12);
     m.receiveShadow = true;
     scene.add(m);
     envTiles.push(m);
   }
-  // Flores/estrelas coloridas na grama
-  const flowerCols = [0xff2255, 0xffee00, 0xff8800, 0xcc44ff, 0xff4499];
-  for (let i = 0; i < 30; i++) {
-    const fc = flowerCols[i % flowerCols.length];
-    const stem  = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.30, 6), toon(0x33aa22));
-    const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.20, 8, 6), toon(fc));
-    const fx = (i % 2 === 0 ? -1 : 1) * (4.5 + (i % 5) * 0.6);
-    const fz = -i * 6.4;
-    stem.position.set(fx, 0.15, fz);
-    bloom.position.set(fx, 0.42, fz);
-    scene.add(stem); scene.add(bloom);
-    outline(bloom, 1.20);
-    envTiles.push(stem); envTiles.push(bloom);
-  }
 
-  // Asfalto escuro (pista central) — azul-escuro subway style
-  const concMat = toon(0x14143c);
-  const concGeo = new THREE.BoxGeometry(7.8, 0.52, 24);
-  for (let i = 0; i < 8; i++) {
-    const m = new THREE.Mesh(concGeo, concMat);
-    m.position.set(0, -0.24, -i * 24 + 12);
-    m.receiveShadow = true;
-    scene.add(m);
-    envTiles.push(m);
-  }
-
-  // Trilhos do metrô — dormentes + rails metálicos (subway surfers feel)
-  const tieMat  = toon(0x6b4a1a);  // madeira escura
-  const railMat = toon(0xaaaacc);  // metal prateado
-  for (let i = 0; i < 80; i++) {
-    const tie = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.07, 0.28), tieMat);
-    tie.position.set(0, 0.04, 10 - i * 2.4);
-    scene.add(tie);
-    envTiles.push(tie);
-  }
-  // Rails — 2 segmentos de 192u por trilho, desfasados 96u (sem lacunas)
-  [-1.7, -0.5, 0.5, 1.7].forEach(rx => {
-    [-86, 10].forEach(rz => {
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 192), railMat);
-      rail.position.set(rx, 0.07, rz);
-      scene.add(rail);
-      envTiles.push(rail);
-    });
+  // Calçadas laranja cartoon
+  const sidewalkMat = toon(0xff7733);
+  [-1, 1].forEach(side => {
+    const sw = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.62, 400), sidewalkMat);
+    sw.position.set(side * 7.3, -0.19, -195);
+    scene.add(sw); outline(sw, 1.05);
+    // Guia/meio-fio branco
+    const curb = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.38, 400), toon(0xffffff));
+    curb.position.set(side * 5.3, 0.06, -195);
+    scene.add(curb); outline(curb, 1.12);
   });
 
-  // Bordas brancas sólidas (estáticas, 400u)
-  [-3.75, 3.75].forEach(x => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.06, 400), toon(0xffffff));
+  // Linhas de faixa
+  // Tracejados brancos entre as 3 faixas (x = -1.5 e x = 1.5)
+  const dashGeo = new THREE.BoxGeometry(0.22, 0.06, 2.2);
+  const dashMat = toon(0xffffff);
+  [-1.5, 1.5].forEach(dx => {
+    for (let i = 0; i < 8; i++) {
+      for (let d = 0; d < 5; d++) {
+        const m = new THREE.Mesh(dashGeo, dashMat);
+        m.position.set(dx, 0.02, 10 - i * 24 - d * 4.8);
+        scene.add(m); envTiles.push(m);
+      }
+    }
+  });
+  // Bordas sólidas brancas das faixas externas
+  [-4.8, 4.8].forEach(x => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 400), toon(0xffffff));
     m.position.set(x, 0.02, -195);
     scene.add(m);
   });
 
-  // Calçada lateral (cor cartoon laranja/vermelho — like SS)
-  const sidewalkMat = toon(0xff8844);
-  [-1, 1].forEach(side => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.55, 400), sidewalkMat);
-    m.position.set(side * 5.3, -0.22, -195);
-    scene.add(m);
-  });
+  // Bollards coloridos na calçada (decoração cartoon)
+  const bollardCols = [0xff4444, 0xffee00, 0xff8800, 0x44aaff, 0xcc44ff];
+  for (let i = 0; i < 18; i++) {
+    [-1, 1].forEach(side => {
+      const bc  = bollardCols[i % bollardCols.length];
+      const bx  = side * 5.8;
+      const bz  = -i * 12 - 3;
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.80, 8), toon(bc));
+      pole.position.set(bx, 0.40, bz);
+      scene.add(pole); envBuildings.push(pole); outline(pole, 1.14);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), toon(0xffffff));
+      cap.position.set(bx, 0.90, bz);
+      scene.add(cap); envBuildings.push(cap); outline(cap, 1.16);
+    });
+  }
 
   // Muros brancos cartoon com contorno grosso
   const wallMat = toon(0xffffff);
@@ -515,19 +506,21 @@ function buildPlayer(scene) {
   shadowMesh.position.y = 0.01;
   group.add(shadowMesh);
 
-  // Bolha de escudo (visível só quando shieldActive > 0)
+  // Bolha de escudo — centrada no meio do corpo, cobre todo o personagem
   const shieldBubble = new THREE.Mesh(
-    new THREE.SphereGeometry(1.38, 18, 14),
-    new THREE.MeshBasicMaterial({ color: 0x22ff88, transparent: true, opacity: 0.42, side: THREE.DoubleSide })
+    new THREE.SphereGeometry(1.75, 18, 14),
+    new THREE.MeshBasicMaterial({ color: 0x22ff88, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
   );
+  shieldBubble.position.y = 1.3;
   shieldBubble.visible = false;
   group.add(shieldBubble);
 
-  // Anel de força (equador do escudo) — gira diferente da bolha
+  // Anel de força — mesma altura do centro
   const shieldRing = new THREE.Mesh(
-    new THREE.TorusGeometry(1.42, 0.08, 8, 32),
-    new THREE.MeshBasicMaterial({ color: 0x44ffaa, transparent: true, opacity: 0.90 })
+    new THREE.TorusGeometry(1.80, 0.09, 8, 32),
+    new THREE.MeshBasicMaterial({ color: 0x44ffaa, transparent: true, opacity: 0.92 })
   );
+  shieldRing.position.y = 1.3;
   shieldRing.visible = false;
   group.add(shieldRing);
 
@@ -749,6 +742,31 @@ function makeShieldMesh() {
   return g;
 }
 
+function makeJetpackMesh() {
+  const g = new THREE.Group();
+  // Corpo principal (tanque vermelho-laranja)
+  const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.80, 10), toon(0xff4400));
+  g.add(tank); outline(tank, 1.10);
+  // Dois propulsores (cinza metálico)
+  [-0.28, 0.28].forEach(ox => {
+    const noz = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.40, 8), toon(0xaaaaaa));
+    noz.position.set(ox, -0.45, 0);
+    g.add(noz); outline(noz, 1.10);
+    // Chama saindo dos propulsores
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.35, 8), toon(0xffee00));
+    flame.position.set(ox, -0.72, 0);
+    flame.rotation.x = Math.PI;
+    g.add(flame); outline(flame, 1.12);
+  });
+  // Asas laterais
+  [-1, 1].forEach(side => {
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.10, 0.38), toon(0xff6600));
+    wing.position.set(side * 0.38, 0.10, 0);
+    g.add(wing); outline(wing, 1.08);
+  });
+  return g;
+}
+
 function makeMultiplierMesh() {
   const g = new THREE.Group();
   const star = new THREE.Mesh(new THREE.IcosahedronGeometry(0.44), toon(0xa855f7));
@@ -879,10 +897,13 @@ function spawnCoin() {
 }
 
 function spawnPowerUp() {
-  const types = ['magnet', 'shield', 'multiplier'];
+  const types = ['magnet', 'shield', 'multiplier', 'jetpack'];
   const type  = types[Math.floor(Math.random() * types.length)];
   const l     = Math.floor(Math.random() * 3);
-  const mesh  = type === 'magnet' ? makeMagnetMesh() : type === 'shield' ? makeShieldMesh() : makeMultiplierMesh();
+  const mesh  = type === 'magnet' ? makeMagnetMesh()
+              : type === 'shield' ? makeShieldMesh()
+              : type === 'jetpack' ? makeJetpackMesh()
+              : makeMultiplierMesh();
   mesh.position.set(LANE_X[l], 1.3, SPAWN_Z);
   three.scene.add(mesh);
   powerUps.push({ mesh, lane: l, type });
@@ -898,10 +919,14 @@ function activatePowerUp(type) {
     shieldActive = 10;
     flashScreen('rgba(34,197,94,0.28)', 350);
     showPowerNotif('🛡️ ESCUDO ATIVO!', '#22c55e');
-  } else {
+  } else if (type === 'multiplier') {
     multiplierActive = 10;
     flashScreen('rgba(168,85,247,0.28)', 350);
     showPowerNotif('2× PONTUAÇÃO!', '#a855f7');
+  } else {
+    jetpackActive = 9;
+    flashScreen('rgba(255,120,0,0.30)', 350);
+    showPowerNotif('🚀 JETPACK!', '#ff6600');
   }
 }
 
@@ -942,6 +967,7 @@ function update(dt) {
   if (magnetActive     > 0) magnetActive     = Math.max(0, magnetActive     - dt);
   if (shieldActive     > 0) shieldActive     = Math.max(0, shieldActive     - dt);
   if (multiplierActive > 0) multiplierActive = Math.max(0, multiplierActive - dt);
+  if (jetpackActive    > 0) jetpackActive    = Math.max(0, jetpackActive    - dt);
   updatePowerHUD();
 
   // Escudo: bolha + anel visual
@@ -966,10 +992,20 @@ function update(dt) {
   const tX = LANE_X[targetLane];
   playerObj.group.position.x += (tX - playerObj.group.position.x) * Math.min(dt * 14, 1);
 
+  // ── Jetpack: flutua em altitude, ignora gravidade normal ─────────────────
+  if (jetpackActive > 0) {
+    const flyY = jetpackActive > 1.5 ? 4.2 : GROUND_Y;
+    playerY  += (flyY - playerY) * Math.min(dt * 4.0, 1);
+    playerVY  = 0;
+    crouching = false;
+  }
+
   // ── Física do pulo (gravidade variável) ───────────────────────────────────
   const rising = playerVY > 0;
-  playerVY += (rising ? GRAV_UP : GRAV_DOWN) * dt;
-  playerY  += playerVY * dt;
+  if (jetpackActive <= 0) {
+    playerVY += (rising ? GRAV_UP : GRAV_DOWN) * dt;
+    playerY  += playerVY * dt;
+  }
 
   const onGround = playerY <= GROUND_Y + 0.01;
 
@@ -1048,7 +1084,7 @@ function update(dt) {
     if (o.mesh.position.z > -2.5 && o.mesh.position.z < 2.5) {
       let hit = false;
       if (o.lane === -1) {
-        if (pYTop > o.yBot + 0.08) hit = true;
+        if (pYTop > o.yBot + 0.08 && pYBot < o.yTop + 0.5) hit = true;
       } else {
         if (Math.abs(pX - LANE_X[o.lane]) < pHW + o.w / 2 && pYBot < o.yTop && pYTop > o.yBot + 0.08) hit = true;
       }
@@ -1132,7 +1168,7 @@ function begin() {
   wasOnGround = true; laneLean = 0;
   animFrame = 0; spawnT = 0; coinT = 0; scoreT = 0; speedT = 0;
   scoreEl.textContent = '0'; speedEl.textContent = '1.0×';
-  magnetActive = 0; shieldActive = 0; multiplierActive = 0; powerUpT = 0;
+  magnetActive = 0; shieldActive = 0; multiplierActive = 0; jetpackActive = 0; powerUpT = 0;
   powerUps.forEach(p => three.scene.remove(p.mesh)); powerUps = [];
   if (powersEl) powersEl.innerHTML = '';
   if (playerObj.shieldBubble) playerObj.shieldBubble.visible = false;
