@@ -47,6 +47,7 @@ let magnetActive = 0, shieldActive = 0, multiplierActive = 0, jetpackActive = 0;
 let coinBank       = parseInt(localStorage.getItem('runner-coins') || '0');
 let coinsThisRun   = 0;
 let distance       = 0;
+let coinStreak = 0, coinStreakT = 0;
 let hasKey         = false;
 let revivedThisRun = false;
 let jumpCount      = 0;
@@ -101,6 +102,7 @@ function sfxSpeed() {
 function sfxPower()     { _tone(500, 1100, 0.28, 'sine', 0.13); }
 function sfxShieldHit() { _tone(350, 80,  0.35, 'sawtooth', 0.14); }
 function sfxKey()       { _tone(900, 1400, 0.20, 'sine', 0.12); setTimeout(() => _tone(1600, 0, 0.14, 'sine', 0.09), 180); }
+function sfxJetThrust() { _tone(140, 90, 0.16, 'sawtooth', 0.055); _tone(220, 170, 0.14, 'square', 0.03); }
 
 // ── Banco de moedas ───────────────────────────────────────────────────────────
 function updateCoinBankHUD() {
@@ -615,10 +617,49 @@ function buildPlayer(scene) {
   shieldRing.visible = false;
   group.add(shieldRing);
 
+  // ── Mochila Jetpack (visível nas costas quando ativo) ─────────────────────
+  const jpBack = new THREE.Group();
+  // Dois tanques cilíndricos (laranja-vivo)
+  [-0.16, 0.16].forEach((ox, i) => {
+    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.115, 0.62, 9), toon(0xff4400));
+    tank.position.set(ox, 0, 0);
+    jpBack.add(tank); outline(tank, 1.10);
+    // Detalhe de faixa no tanque
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.09, 9), toon(0xffee00));
+    band.position.set(ox, 0.14 * (i === 0 ? 1 : -1), 0);
+    jpBack.add(band);
+  });
+  // Alça / conector central
+  const jpBar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.10, 0.09), toon(0x888888));
+  jpBack.add(jpBar);
+  // Propulsores (abaixo dos tanques)
+  const jpNozL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.28, 8), toon(0x777777));
+  jpNozL.position.set(-0.16, -0.46, 0);
+  jpBack.add(jpNozL); outline(jpNozL, 1.08);
+  const jpNozR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.28, 8), toon(0x777777));
+  jpNozR.position.set(0.16, -0.46, 0);
+  jpBack.add(jpNozR); outline(jpNozR, 1.08);
+  // Chamas (MeshBasicMaterial = sem sombra, sempre brilhante)
+  const jpFlameL = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.46, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffee00 }));
+  jpFlameL.position.set(-0.16, -0.73, 0);
+  jpFlameL.rotation.x = Math.PI;
+  jpBack.add(jpFlameL);
+  const jpFlameR = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.46, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffee00 }));
+  jpFlameR.position.set(0.16, -0.73, 0);
+  jpFlameR.rotation.x = Math.PI;
+  jpBack.add(jpFlameR);
+  // Posição: local +Z = costas do personagem (câmera vê frente)
+  jpBack.position.set(0, 1.12, 0.30);
+  jpBack.visible = false;
+  group.add(jpBack);
+
   group.position.set(LANE_X[1], 0, 0);
   group.rotation.y = Math.PI;
   scene.add(group);
-  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap }, shadowMesh, shieldBubble, shieldRing };
+  playerObj = { group, meshes: { head, torso, armL, armR, legL, legR, cap },
+                shadowMesh, shieldBubble, shieldRing, jpBack, jpFlameL, jpFlameR };
 }
 
 // ── Obstacles ─────────────────────────────────────────────────────────────────
@@ -1176,12 +1217,54 @@ function update(dt) {
     playerObj.meshes.head.position.y  = 1.95 + bob;
     playerObj.meshes.cap.position.y   = 2.47 + bob;
   } else if (!onGround) {
-    // Abre as pernas no ar
-    playerObj.meshes.legL.rotation.x = -0.55;
-    playerObj.meshes.legR.rotation.x =  0.55;
-    playerObj.meshes.armL.rotation.x = -1.0;
-    playerObj.meshes.armR.rotation.x =  1.0;
+    if (jetpackActive > 0) {
+      // Pose de voo: braços abertos estilo Superman, pernas levemente dobradas para trás
+      playerObj.meshes.armL.rotation.x = -0.80;
+      playerObj.meshes.armR.rotation.x = -0.80;
+      playerObj.meshes.armL.rotation.z =  0.55;
+      playerObj.meshes.armR.rotation.z = -0.55;
+      playerObj.meshes.legL.rotation.x =  0.30;
+      playerObj.meshes.legR.rotation.x =  0.30;
+    } else {
+      // Pulo normal: abre as pernas
+      playerObj.meshes.legL.rotation.x = -0.55;
+      playerObj.meshes.legR.rotation.x =  0.55;
+      playerObj.meshes.armL.rotation.x = -1.0;
+      playerObj.meshes.armR.rotation.x =  1.0;
+    }
   }
+
+  // ── Mochila Jetpack — visual e animação ────────────────────────────────────
+  if (playerObj.jpBack) {
+    const jpOn = jetpackActive > 0;
+    playerObj.jpBack.visible = jpOn;
+    if (jpOn) {
+      // Inclinar o grupo para frente durante voo (nariz para cima)
+      playerObj.group.rotation.x = -0.14;
+      // Chamas: flicker rápido com escala e cor variável
+      const fScale = 0.65 + Math.sin(animFrame * 0.72) * 0.40 + (animFrame % 3 === 0 ? 0.15 : 0);
+      playerObj.jpFlameL.scale.y = Math.max(0.25, fScale);
+      playerObj.jpFlameR.scale.y = Math.max(0.25, fScale);
+      const fCols = [0xffee00, 0xff8800, 0xff6600, 0xffdd00, 0xff4400];
+      playerObj.jpFlameL.material.color.setHex(fCols[animFrame % fCols.length]);
+      playerObj.jpFlameR.material.color.setHex(fCols[(animFrame + 2) % fCols.length]);
+      // Som de propulsão intermitente a cada ~0.25s
+      if (animFrame % 16 === 0) sfxJetThrust();
+    } else {
+      // Suavizar volta da inclinação
+      playerObj.group.rotation.x += (0 - playerObj.group.rotation.x) * Math.min(dt * 10, 1);
+      // Suavizar rotação dos braços de volta
+      playerObj.meshes.armL.rotation.z += (0 - playerObj.meshes.armL.rotation.z) * Math.min(dt * 8, 1);
+      playerObj.meshes.armR.rotation.z += (0 - playerObj.meshes.armR.rotation.z) * Math.min(dt * 8, 1);
+    }
+  }
+
+  // ── Efeito de velocidade (vinheta CSS) ────────────────────────────────────
+  const vfxEl = document.getElementById('runner-vfx');
+  if (vfxEl) vfxEl.style.opacity = Math.max(0, (speed - 44) / (MAX_SPEED - 44) * 0.72).toFixed(2);
+
+  // Decay do streak de moedas
+  if (coinStreakT > 0) { coinStreakT -= dt; if (coinStreakT <= 0) { coinStreakT = 0; coinStreak = 0; } }
 
   // ── Spawn ─────────────────────────────────────────────────────────────────
   spawnT += dt;
@@ -1244,6 +1327,12 @@ function update(dt) {
         coinsThisRun++;
         advanceMission('coins', 1);
         updateCoinBankHUD();
+        // Streak de moedas
+        coinStreak++;
+        coinStreakT = 0.55;
+        if (coinStreak === 5)  showPowerNotif('🔥 COMBO x5!',  '#ffcc00');
+        else if (coinStreak === 10) showPowerNotif('🔥🔥 x10!', '#ff8800');
+        else if (coinStreak === 20) showPowerNotif('💥 x20!',    '#ff4400');
       }
     }
   }
@@ -1376,6 +1465,8 @@ function begin() {
   magnetActive = 0; shieldActive = 0; multiplierActive = 0; jetpackActive = 0; powerUpT = 0;
   coinsThisRun = 0; distance = 0; runTime = 0;
   hasKey = false; revivedThisRun = false; jumpCount = 0; powerUpsUsed = 0;
+  coinStreak = 0; coinStreakT = 0;
+  playerObj.group.rotation.x = 0;
   keys.forEach(k => three.scene.remove(k.mesh)); keys = [];
   if (distEl) distEl.textContent = '0m';
   updateCoinBankHUD();
@@ -1407,7 +1498,9 @@ function die() {
   }
   state = 'dead';
   playerObj.group.rotation.z = 0.6;
+  playerObj.group.rotation.x = 0;
   playerObj.group.scale.set(1.3, 0.5, 1.3);
+  if (playerObj.jpBack) playerObj.jpBack.visible = false;
   sfxDie();
   flashScreen('rgba(255,30,0,0.45)', 400);
   camShake = 1.0;
