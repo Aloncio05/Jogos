@@ -329,7 +329,7 @@ function setupLights(scene) {
 function buildEnvironment(scene) {
 
   // ── Chão: terra marrom (corte urbano a céu aberto, estilo Subway Surfers) ─────
-  const groundMats = [toon(0x7a5230), toon(0x6b4828)];
+  const groundMats = [toon(0xc8a06a), toon(0xb28550)];
   const tileGeo  = new THREE.BoxGeometry(10.2, 0.50, 24);
   for (let i = 0; i < 10; i++) {
     const m = new THREE.Mesh(tileGeo, groundMats[i % 2]);
@@ -378,29 +378,29 @@ function buildEnvironment(scene) {
   // ── Paredes do corte ferroviário a céu aberto ─────────────────────────────────
   // Parede de contenção vertical (concreto teal) + talude de terra acima
   [-1, 1].forEach(side => {
-    // Parede de concreto — baixa, estilo corte urbano
-    const cwall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.5, 400), toon(0x2a7a8a));
+    // Parede de concreto — baixa, estilo corte urbano (bege/areia quente)
+    const cwall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.5, 400), toon(0xd4b87a));
     cwall.position.set(side * 5.85, 1.75, -195);
     scene.add(cwall); outline(cwall, 1.03);
 
     // Calha de drenagem na base da parede
-    const drain = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.18, 400), toon(0x1a5060));
+    const drain = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.18, 400), toon(0xb89858));
     drain.position.set(side * 5.58, 0.09, -195);
     scene.add(drain);
 
-    // Borda superior da parede (capstone)
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 400), toon(0x3a9aaa));
+    // Borda superior da parede (capstone mais clara)
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 400), toon(0xe8d090));
     cap.position.set(side * 5.85, 3.59, -195);
     scene.add(cap);
 
-    // Talude de terra/grama acima da parede
-    const bank = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 400), toon(0x5a8a3a));
+    // Talude de grama vivo acima da parede
+    const bank = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 400), toon(0x5ec832));
     bank.position.set(side * 6.95, 4.5, -195);
     bank.rotation.z = side * -0.25;
     scene.add(bank);
 
-    // Faixa de terra nua (mais escura, abaixo da grama)
-    const dirt = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 400), toon(0x7a5230));
+    // Faixa de terra nua abaixo da grama
+    const dirt = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 400), toon(0xa06840));
     dirt.position.set(side * 6.8, 3.6, -195);
     dirt.rotation.z = side * -0.25;
     scene.add(dirt);
@@ -471,7 +471,7 @@ function buildEnvironment(scene) {
   }
 
   // ── Tufos de grama no talude ──────────────────────────────────────────────────
-  const grassMat = toon(0x66bb44);
+  const grassMat = toon(0x72e038);
   for (let i = 0; i < 24; i++) {
     [-1, 1].forEach(side => {
       const gx = side * (6.4 + (i % 4) * 0.45);
@@ -1596,7 +1596,7 @@ function showOverlay(dead) {
       `<p class="ro-score">${score}</p>` +
       `<p class="ro-sub">Recorde: ${best} &nbsp;·&nbsp; 💰 Banco: ${coinBank}</p>` +
       `<div style="margin:0.4rem 0 0.6rem;line-height:1.6;">${missHtml}</div>` +
-      `<p class="ro-hint">Toque ou espaço para jogar de novo</p>`;
+      `<p class="ro-hint">Pressione espaço para jogar de novo</p>`;
   } else {
     const missHtml = missions.map(m =>
       `<span style="display:inline-block;margin:1px 3px;font-size:0.70rem;color:${m.done?'#44ff88':'#ffee00'}">${m.done?'✅':'🎯'} ${m.label} ${m.progress}/${m.target}</span>`
@@ -1607,7 +1607,7 @@ function showOverlay(dead) {
       `<p style="color:#ffee00;font-size:0.72rem;font-weight:700;margin:0.3rem 0 0.1rem">🎯 MISSÕES DE HOJE</p>` +
       `<div style="margin-bottom:0.5rem;line-height:1.7">${missHtml}</div>` +
       `<p style="color:#aaa;font-size:0.72rem;margin-bottom:0.4rem">💰 Banco: ${coinBank} moedas (reviver custa ${REVIVE_COST})</p>` +
-      `<p class="ro-hint">Toque ou pressione espaço para começar</p>`;
+      `<p class="ro-hint">Pressione espaço para começar</p>`;
   }
 }
 function hideOverlay() { if (overlay) overlay.hidden = true; }
@@ -1624,10 +1624,10 @@ function unlockScroll() {
 }
 
 // ── Input ──────────────────────────────────────────────────────────────────────
-function moveLeft()  { if (state !== 'playing') { begin(); return; } if (targetLane > 0) targetLane--; }
-function moveRight() { if (state !== 'playing') { begin(); return; } if (targetLane < 2) targetLane++; }
+function moveLeft()  { if (state !== 'playing') return; if (targetLane > 0) targetLane--; }
+function moveRight() { if (state !== 'playing') return; if (targetLane < 2) targetLane++; }
 function doJump() {
-  if (state !== 'playing') { begin(); return; }
+  if (state !== 'playing') return;
   if (playerY <= 0.02) {
     playerVY = JUMP_V;
     crouching = false;
@@ -1645,7 +1645,10 @@ document.addEventListener('keydown', e => {
   switch (e.key) {
     case 'ArrowLeft':  moveLeft();  break;
     case 'ArrowRight': moveRight(); break;
-    case 'ArrowUp': case ' ': doJump(); break;
+    case 'ArrowUp': doJump(); break;
+    case ' ':
+      if (state !== 'playing') begin(); else doJump();
+      break;
     case 'ArrowDown': doCrouch(); break;
   }
 });
@@ -1666,7 +1669,7 @@ canvas.addEventListener('touchend', e => {
   e.preventDefault();
   const dx = e.changedTouches[0].clientX - tx0;
   const dy = e.changedTouches[0].clientY - ty0;
-  if (state !== 'playing') { begin(); return; }
+  if (state !== 'playing') return;
   if (Math.abs(dx) > Math.abs(dy)) {
     if (dx < -25) moveLeft(); else if (dx > 25) moveRight();
   } else {
@@ -1674,8 +1677,6 @@ canvas.addEventListener('touchend', e => {
   }
 }, { passive: false });
 
-canvas.addEventListener('click', () => { if (state !== 'playing') begin(); });
-overlay?.addEventListener('click', () => { if (state !== 'playing') begin(); });
 
 // ── Boot ───────────────────────────────────────────────────────────────────────
 initThree();
