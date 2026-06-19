@@ -282,12 +282,12 @@ function initThree() {
   gradMap = makeToonGrad();
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0d0820); // túnel escuro NYC
-  scene.fog = new THREE.Fog(0x1a0a35, 55, 160);
+  scene.background = new THREE.Color(0x6ecfff); // céu azul aberto cartoon
+  scene.fog = new THREE.Fog(0xaaddff, 100, 240);
 
-  const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 260);
-  camera.position.set(0, 5.5, 11);
-  camera.lookAt(0, 1.5, -30);
+  const camera = new THREE.PerspectiveCamera(62, W / H, 0.1, 280);
+  camera.position.set(0, 3.8, 9.5);
+  camera.lookAt(0, 1.2, -22);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(W, H);
@@ -304,35 +304,35 @@ function initThree() {
 }
 
 function setupLights(scene) {
-  // Luz ambiente fraca — túnel escuro, iluminação artificial
-  scene.add(new THREE.AmbientLight(0x8899cc, 0.38));
+  // Ambiente forte e quente — céu aberto, dia ensolarado cartoon
+  scene.add(new THREE.AmbientLight(0xfff0cc, 0.75));
 
-  // Luz principal de cima — simula luminárias de metrô (amarelo-quente)
-  const topLight = new THREE.DirectionalLight(0xffe8a0, 1.6);
-  topLight.position.set(0, 18, 8);
-  topLight.castShadow = true;
-  topLight.shadow.mapSize.set(1024, 1024);
-  topLight.shadow.camera.left   = -18;
-  topLight.shadow.camera.right  =  18;
-  topLight.shadow.camera.top    =  18;
-  topLight.shadow.camera.bottom =  -4;
-  topLight.shadow.camera.far    =  70;
-  scene.add(topLight);
+  // Sol principal (diagonal, sombras suaves)
+  const sun = new THREE.DirectionalLight(0xfffae0, 2.2);
+  sun.position.set(10, 22, 12);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left   = -22;
+  sun.shadow.camera.right  =  22;
+  sun.shadow.camera.top    =  22;
+  sun.shadow.camera.bottom =  -6;
+  sun.shadow.camera.far    =  80;
+  scene.add(sun);
 
-  // Luz de preenchimento lateral (azul-roxo frio para contraste de túnel)
-  const fillLight = new THREE.DirectionalLight(0x4455ff, 0.55);
-  fillLight.position.set(-10, 5, 5);
-  scene.add(fillLight);
+  // Luz de preenchimento (azul-céu suave, atenua sombras duras)
+  const sky = new THREE.DirectionalLight(0x88ccff, 0.55);
+  sky.position.set(-8, 8, 4);
+  scene.add(sky);
 }
 
 // ── Environment ───────────────────────────────────────────────────────────────
 function buildEnvironment(scene) {
 
-  // ── Plataforma de metrô — concreto escuro ────────────────────────────────────
-  const platMats = [toon(0x23203a), toon(0x1e1b33)];
+  // ── Chão: terra marrom (corte urbano a céu aberto, estilo Subway Surfers) ─────
+  const groundMats = [toon(0x7a5230), toon(0x6b4828)];
   const tileGeo  = new THREE.BoxGeometry(10.2, 0.50, 24);
   for (let i = 0; i < 10; i++) {
-    const m = new THREE.Mesh(tileGeo, platMats[i % 2]);
+    const m = new THREE.Mesh(tileGeo, groundMats[i % 2]);
     m.position.set(0, -0.25, -i * 24 + 12);
     m.receiveShadow = true;
     scene.add(m);
@@ -375,135 +375,112 @@ function buildEnvironment(scene) {
     scene.add(sl); envTiles.push(sl);
   }
 
-  // ── Paredes laterais do túnel ────────────────────────────────────────────────
+  // ── Paredes do corte ferroviário a céu aberto ─────────────────────────────────
+  // Parede de contenção vertical (concreto teal) + talude de terra acima
   [-1, 1].forEach(side => {
-    // Parede principal de concreto
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 7, 400), toon(0x2e2848));
-    wall.position.set(side * 6.05, 3.5, -195);
-    scene.add(wall); outline(wall, 1.03);
+    // Parede de concreto — baixa, estilo corte urbano
+    const cwall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.5, 400), toon(0x2a7a8a));
+    cwall.position.set(side * 5.85, 1.75, -195);
+    scene.add(cwall); outline(cwall, 1.03);
 
-    // Faixa de azulejo horizontal (típica de metrô NY)
-    const strip1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 400), toon(0x4455aa));
-    strip1.position.set(side * 5.77, 1.4, -195);
-    scene.add(strip1);
+    // Calha de drenagem na base da parede
+    const drain = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.18, 400), toon(0x1a5060));
+    drain.position.set(side * 5.58, 0.09, -195);
+    scene.add(drain);
 
-    const strip2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 400), toon(0xcc3366));
-    strip2.position.set(side * 5.77, 1.9, -195);
-    scene.add(strip2);
+    // Borda superior da parede (capstone)
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 400), toon(0x3a9aaa));
+    cap.position.set(side * 5.85, 3.59, -195);
+    scene.add(cap);
 
-    const strip3 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 400), toon(0xffee00));
-    strip3.position.set(side * 5.77, 2.15, -195);
-    scene.add(strip3);
+    // Talude de terra/grama acima da parede
+    const bank = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 400), toon(0x5a8a3a));
+    bank.position.set(side * 6.95, 4.5, -195);
+    bank.rotation.z = side * -0.25;
+    scene.add(bank);
+
+    // Faixa de terra nua (mais escura, abaixo da grama)
+    const dirt = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 400), toon(0x7a5230));
+    dirt.position.set(side * 6.8, 3.6, -195);
+    dirt.rotation.z = side * -0.25;
+    scene.add(dirt);
   });
 
-  // ── Grafites NYC nas paredes ──────────────────────────────────────────────────
+  // ── Grafites nas paredes de contenção ─────────────────────────────────────────
   const grafPalette = [0xff2299, 0x22ffcc, 0xff8800, 0x4488ff, 0xffee00, 0xcc44ff, 0xff3333, 0x00ee88, 0xff6600, 0x00ccff];
-
-  // Grafites geométricos genéricos
-  for (let i = 0; i < 22; i++) {
+  for (let i = 0; i < 18; i++) {
     [-1, 1].forEach(side => {
       const col = grafPalette[(i * 3 + side + 5) % grafPalette.length];
       const gw  = 0.9 + (i % 3) * 0.7;
-      const gh  = 0.28 + (i % 5) * 0.18;
+      const gh  = 0.25 + (i % 5) * 0.16;
       const grf = new THREE.Mesh(new THREE.BoxGeometry(0.06, gh, gw), toon(col));
-      grf.position.set(side * 5.76, 0.55 + (i % 4) * 0.48, -i * 17 - 5);
+      grf.position.set(side * 5.58, 0.6 + (i % 4) * 0.52, -i * 17 - 5);
       scene.add(grf); envBuildings.push(grf);
     });
   }
 
-  // "NYC" em blocos azul+amarelo (parede esquerda, 3 posições ao longo do percurso)
-  [[-12], [-85], [-155]].forEach(([gz]) => {
-    // N
-    const nMat = toon(0x2255ff);
-    [[0,0,0.06,1.2,0.22],[0.55,0,0.06,1.2,0.22],[-0.1,0.38,0.06,0.38,0.55]].forEach(([x,y,d,h,w]) => {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(d, h, w), nMat);
-      m.position.set(-5.76, 0.65 + y, gz + x * 0 + 0); // proxy simplificado
-      scene.add(m); envBuildings.push(m);
-    });
-    // Raio amarelo (lightning bolt) — dois retângulos inclinados
-    const lMat = toon(0xffee00);
-    const bolt1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.65), lMat);
-    bolt1.rotation.y = 0.35;
-    bolt1.position.set(-5.76, 1.15, gz - 2.5);
-    scene.add(bolt1); envBuildings.push(bolt1);
-    const bolt2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.65), lMat);
-    bolt2.rotation.y = -0.35;
-    bolt2.position.set(-5.76, 0.60, gz - 2.0);
-    scene.add(bolt2); envBuildings.push(bolt2);
-  });
-
-  // Silhueta de corredor (parede direita) — forma verde-limão simplificada
-  [[-30], [-100], [-170]].forEach(([gz]) => {
-    const sMat = toon(0x88ff22);
-    // Cabeça
-    const h = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), sMat);
-    h.position.set(5.76, 2.2, gz); scene.add(h); envBuildings.push(h);
-    // Torso
-    const t = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.38), sMat);
-    t.position.set(5.76, 1.65, gz); scene.add(t); envBuildings.push(t);
-    // Perna dianteira
-    const pl = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.14), sMat);
-    pl.rotation.z = 0.3;
-    pl.position.set(5.76, 1.1, gz + 0.18); scene.add(pl); envBuildings.push(pl);
-    // Perna traseira
-    const pr2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.14), sMat);
-    pr2.rotation.z = -0.3;
-    pr2.position.set(5.76, 1.1, gz - 0.18); scene.add(pr2); envBuildings.push(pr2);
-  });
-
-  // ── Arcos do teto (estrutura de túnel) ──────────────────────────────────────
-  const archMat  = toon(0x2a2244);
-  const archMat2 = toon(0x352855);
-  for (let i = 0; i < 20; i++) {
-    const az = -i * 13 - 2;
-    // Pilares laterais
-    [-1, 1].forEach(side => {
-      const col2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 4.0, 0.45), i % 2 === 0 ? archMat : archMat2);
-      col2.position.set(side * 5.5, 2.0, az);
-      scene.add(col2); outline(col2, 1.05); envBuildings.push(col2);
-    });
-    // Viga superior
-    const beam = new THREE.Mesh(new THREE.BoxGeometry(11.5, 0.48, 0.45), i % 2 === 0 ? archMat2 : archMat);
-    beam.position.set(0, 4.25, az);
-    scene.add(beam); outline(beam, 1.03); envBuildings.push(beam);
-  }
-
-  // Teto plano do túnel
-  const ceil = new THREE.Mesh(new THREE.BoxGeometry(11.5, 0.38, 400), toon(0x1a1530));
-  ceil.position.set(0, 4.60, -195);
-  scene.add(ceil);
-
-  // ── Luminárias no teto ────────────────────────────────────────────────────────
-  for (let i = 0; i < 16; i++) {
-    const lz = -i * 16 - 3;
-    const lamp = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.16, 0.28),
-      new THREE.MeshBasicMaterial({ color: 0xffffc8 }));
-    lamp.position.set(0, 4.48, lz);
-    scene.add(lamp); envBuildings.push(lamp);
-
-    const glow = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 0.20),
-      new THREE.MeshBasicMaterial({ color: 0xffff88, transparent: true, opacity: 0.55 }));
-    glow.position.set(0, 4.38, lz);
-    scene.add(glow); envBuildings.push(glow);
-  }
-
-  // Lanternas nas paredes laterais
+  // ── Edifícios coloridos acima do talude ───────────────────────────────────────
+  const buildColors = [
+    0xe74c3c, 0x3498db, 0xf39c12, 0x27ae60,
+    0x9b59b6, 0xe67e22, 0x1abc9c, 0xc0392b,
+    0x2980b9, 0xd35400, 0x16a085, 0x8e44ad
+  ];
   for (let i = 0; i < 14; i++) {
-    const lz = -i * 18 - 5;
     [-1, 1].forEach(side => {
-      const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.30, 0.14),
-        new THREE.MeshBasicMaterial({ color: 0xffdd88 }));
-      lantern.position.set(side * 5.72, 2.9, lz);
-      scene.add(lantern); envBuildings.push(lantern);
+      const bxOff = side * (9.0 + (i % 3) * 1.4);
+      const bzOff = -i * 20 - 6;
+      const bh = 4.0 + (i % 5) * 2.2;
+      const bw = 1.8 + (i % 4) * 0.9;
+      const bd = 2.0 + (i % 3) * 0.8;
+      const bCol = buildColors[(i * 2 + (side > 0 ? 6 : 0)) % buildColors.length];
+
+      // Corpo do edifício
+      const bld = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), toon(bCol));
+      bld.position.set(bxOff, 5.5 + bh * 0.5, bzOff);
+      scene.add(bld); outline(bld, 1.04); envBuildings.push(bld);
+
+      // Topo/cobertura
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.3, 0.28, bd + 0.3), toon(0xdddddd));
+      roof.position.set(bxOff, 5.5 + bh + 0.14, bzOff);
+      scene.add(roof); envBuildings.push(roof);
+
+      // Janelas (painéis escuros ou amarelados)
+      const wRows = Math.min(4, Math.floor(bh / 1.6));
+      for (let wr = 0; wr < wRows; wr++) {
+        const wMat = new THREE.MeshBasicMaterial({ color: wr % 2 === 0 ? 0xfffde0 : 0x223344 });
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.5), wMat);
+        win.position.set(bxOff - bw * 0.5 * side * 0.01, 6.2 + wr * 1.45, bzOff + 0.55);
+        scene.add(win); envBuildings.push(win);
+      }
     });
   }
 
-  // Placeholder para blocos antigos (mantido para evitar erros de referência)
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), toon(0xffffff));
-  cap.position.set(0, -999, 0); // escondido
-  scene.add(cap); envBuildings.push(cap);
-  const bx  = 0;
-  const bz  = 0;
+  // ── Postes de sinalização laterais ────────────────────────────────────────────
+  for (let i = 0; i < 10; i++) {
+    [-1, 1].forEach(side => {
+      const pz = -i * 28 - 8;
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.12, 4.2, 0.12), toon(0x445566));
+      pole.position.set(side * 5.5, 2.1, pz);
+      scene.add(pole); envBuildings.push(pole);
+
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.36),
+        new THREE.MeshBasicMaterial({ color: 0xffeeaa }));
+      lamp.position.set(side * 5.5, 4.3, pz);
+      scene.add(lamp); envBuildings.push(lamp);
+    });
+  }
+
+  // ── Tufos de grama no talude ──────────────────────────────────────────────────
+  const grassMat = toon(0x66bb44);
+  for (let i = 0; i < 24; i++) {
+    [-1, 1].forEach(side => {
+      const gx = side * (6.4 + (i % 4) * 0.45);
+      const gz2 = -i * 15 - 4;
+      const tuft = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.18), grassMat);
+      tuft.position.set(gx, 3.9 + (i % 3) * 0.12, gz2);
+      scene.add(tuft); envBuildings.push(tuft);
+    });
+  }
 }
 
 
