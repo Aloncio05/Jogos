@@ -160,6 +160,13 @@ h2 {
   padding: 54px 0 20px;
 }
 
+.section-kids {
+  background: rgba(251,191,36,0.04);
+  border-top: 1px solid rgba(251,191,36,0.15);
+  padding-top: 36px;
+}
+.section-kids .eyebrow { color: #fbbf24; }
+
 .cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

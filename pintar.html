@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pintura Kids — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="pintar.css">
+</head>
+<body class="game-page pintar-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel pintar-panel" aria-labelledby="pintar-title">
+
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Área Kids</p>
+          <h2 id="pintar-title">Pintura do Aloncinho</h2>
+        </div>
+        <span class="badge-kids">🎨 Kids</span>
+      </div>
+
+      <p class="status">Escolha uma figura, selecione uma cor e clique para pintar!</p>
+
+      <!-- Seletor de figuras -->
+      <div class="pintar-selector" id="pintar-selector" role="group" aria-label="Escolha a figura"></div>
+
+      <!-- Canvas -->
+      <div class="pintar-canvas-wrap">
+        <canvas id="pintar-canvas" width="500" height="400" aria-label="Área de pintura"></canvas>
+      </div>
+
+      <!-- Paleta de cores -->
+      <div class="pintar-palette" id="pintar-palette" role="group" aria-label="Paleta de cores"></div>
+
+      <!-- Ferramentas -->
+      <div class="pintar-tools">
+        <button class="pintar-tool-btn" id="pintar-clear">🧹 Apagar tudo</button>
+        <button class="pintar-tool-btn" id="pintar-save">💾 Salvar imagem</button>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="pintar.js"></script>
+</body>
+</html>
