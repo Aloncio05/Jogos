@@ -328,9 +328,9 @@ function setupLights(scene) {
 // ── Environment ───────────────────────────────────────────────────────────────
 function buildEnvironment(scene) {
 
-  // ── Chão: terra marrom (corte urbano a céu aberto, estilo Subway Surfers) ─────
-  const groundMats = [toon(0xc8a06a), toon(0xb28550)];
-  const tileGeo  = new THREE.BoxGeometry(10.2, 0.50, 24);
+  // ── Chão: concreto cinza escuro (plataforma de metrô) ─────────────────────────
+  const groundMats = [toon(0x4a4858), toon(0x3e3c50)];
+  const tileGeo = new THREE.BoxGeometry(10.2, 0.50, 24);
   for (let i = 0; i < 10; i++) {
     const m = new THREE.Mesh(tileGeo, groundMats[i % 2]);
     m.position.set(0, -0.25, -i * 24 + 12);
@@ -339,16 +339,16 @@ function buildEnvironment(scene) {
     envTiles.push(m);
   }
 
-  // Borda amarela de segurança (linha tátil dos trilhos)
+  // Borda amarela de segurança
   [-4.75, 4.75].forEach(x => {
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 400), toon(0xffee00));
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 400), toon(0xffdd00));
     edge.position.set(x, 0.02, -195);
     scene.add(edge);
   });
 
   // Linhas de faixa brancas tracejadas
   const dashGeo = new THREE.BoxGeometry(0.18, 0.06, 1.8);
-  const dashMat = toon(0xddddff);
+  const dashMat = toon(0xffffff);
   [-1.5, 1.5].forEach(dx => {
     for (let i = 0; i < 10; i++) {
       for (let d = 0; d < 5; d++) {
@@ -359,15 +359,14 @@ function buildEnvironment(scene) {
     }
   });
 
-  // Trilhos de aço (dois trilhos, um de cada lado)
-  const railMat = toon(0x8899aa);
+  // Trilhos de aço
   [-3.1, 3.1].forEach(rx => {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 400), railMat);
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 400), toon(0xaabbcc));
     rail.position.set(rx, -0.17, -195);
     scene.add(rail); outline(rail, 1.20);
   });
 
-  // Dormentes (traços de madeira escura entre os trilhos)
+  // Dormentes de madeira escura
   const sleeperMat = toon(0x3a2a18);
   for (let i = 0; i < 35; i++) {
     const sl = new THREE.Mesh(new THREE.BoxGeometry(7.8, 0.10, 0.25), sleeperMat);
@@ -375,109 +374,113 @@ function buildEnvironment(scene) {
     scene.add(sl); envTiles.push(sl);
   }
 
-  // ── Paredes do corte ferroviário a céu aberto ─────────────────────────────────
-  // Parede de contenção vertical (concreto teal) + talude de terra acima
+  // ── Paredes do corte a céu aberto — teal vibrante ──────────────────────────────
   [-1, 1].forEach(side => {
-    // Parede de concreto — baixa, estilo corte urbano (bege/areia quente)
-    const cwall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.5, 400), toon(0xd4b87a));
-    cwall.position.set(side * 5.85, 1.75, -195);
+    // Parede principal (teal saturado)
+    const cwall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 4.0, 400), toon(0x11aacc));
+    cwall.position.set(side * 5.85, 2.0, -195);
     scene.add(cwall); outline(cwall, 1.03);
 
-    // Calha de drenagem na base da parede
-    const drain = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.18, 400), toon(0xb89858));
-    drain.position.set(side * 5.58, 0.09, -195);
-    scene.add(drain);
+    // Faixa escura na base
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.55, 400), toon(0x0a7a99));
+    base.position.set(side * 5.85, 0.28, -195);
+    scene.add(base);
 
-    // Borda superior da parede (capstone mais clara)
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 400), toon(0xe8d090));
-    cap.position.set(side * 5.85, 3.59, -195);
+    // Capstone branco/claro no topo
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.22, 400), toon(0xeef8ff));
+    cap.position.set(side * 5.85, 4.11, -195);
     scene.add(cap);
 
-    // Talude de grama vivo acima da parede
-    const bank = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 400), toon(0x5ec832));
-    bank.position.set(side * 6.95, 4.5, -195);
-    bank.rotation.z = side * -0.25;
+    // Talude de grama vívida
+    const bank = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.2, 400), toon(0x44dd22));
+    bank.position.set(side * 7.2, 5.1, -195);
+    bank.rotation.z = side * -0.22;
     scene.add(bank);
 
-    // Faixa de terra nua abaixo da grama
-    const dirt = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 400), toon(0xa06840));
-    dirt.position.set(side * 6.8, 3.6, -195);
-    dirt.rotation.z = side * -0.25;
+    // Terra/solo abaixo da grama
+    const dirt = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.4, 400), toon(0x7a4a28));
+    dirt.position.set(side * 7.0, 4.0, -195);
+    dirt.rotation.z = side * -0.22;
     scene.add(dirt);
   });
 
-  // ── Grafites nas paredes de contenção ─────────────────────────────────────────
-  const grafPalette = [0xff2299, 0x22ffcc, 0xff8800, 0x4488ff, 0xffee00, 0xcc44ff, 0xff3333, 0x00ee88, 0xff6600, 0x00ccff];
-  for (let i = 0; i < 18; i++) {
+  // ── Grafites nas paredes (neons sobre teal) ────────────────────────────────────
+  const grafPalette = [0xff2299, 0x00ffee, 0xff8800, 0xffee00, 0xcc44ff, 0xff3333, 0x00ee88, 0xff6600];
+  for (let i = 0; i < 20; i++) {
     [-1, 1].forEach(side => {
-      const col = grafPalette[(i * 3 + side + 5) % grafPalette.length];
-      const gw  = 0.9 + (i % 3) * 0.7;
-      const gh  = 0.25 + (i % 5) * 0.16;
+      const col = grafPalette[(i * 3 + (side > 0 ? 4 : 0)) % grafPalette.length];
+      const gw  = 1.0 + (i % 3) * 0.8;
+      const gh  = 0.30 + (i % 5) * 0.18;
       const grf = new THREE.Mesh(new THREE.BoxGeometry(0.06, gh, gw), toon(col));
-      grf.position.set(side * 5.58, 0.6 + (i % 4) * 0.52, -i * 17 - 5);
+      grf.position.set(side * 5.58, 0.65 + (i % 4) * 0.55, -i * 16 - 5);
       scene.add(grf); envBuildings.push(grf);
     });
   }
 
-  // ── Edifícios coloridos acima do talude ───────────────────────────────────────
+  // ── Edifícios coloridos e grandes acima do talude ─────────────────────────────
   const buildColors = [
-    0xe74c3c, 0x3498db, 0xf39c12, 0x27ae60,
-    0x9b59b6, 0xe67e22, 0x1abc9c, 0xc0392b,
-    0x2980b9, 0xd35400, 0x16a085, 0x8e44ad
+    0xff4400, 0x0088ff, 0xffcc00, 0xff0066,
+    0x44cc00, 0x8800ff, 0xff6600, 0x00aaff,
+    0xee2200, 0x00cc88, 0xdd00aa, 0x55ee00
   ];
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 16; i++) {
     [-1, 1].forEach(side => {
-      const bxOff = side * (9.0 + (i % 3) * 1.4);
-      const bzOff = -i * 20 - 6;
-      const bh = 4.0 + (i % 5) * 2.2;
-      const bw = 1.8 + (i % 4) * 0.9;
-      const bd = 2.0 + (i % 3) * 0.8;
-      const bCol = buildColors[(i * 2 + (side > 0 ? 6 : 0)) % buildColors.length];
+      const bxOff = side * (8.5 + (i % 3) * 1.5);
+      const bzOff = -i * 18 - 5;
+      const bh = 5.0 + (i % 5) * 2.5;
+      const bw = 2.2 + (i % 4) * 1.0;
+      const bd = 2.5 + (i % 3) * 1.0;
+      const bCol = buildColors[(i * 2 + (side > 0 ? 7 : 0)) % buildColors.length];
 
-      // Corpo do edifício
+      // Corpo principal
       const bld = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), toon(bCol));
-      bld.position.set(bxOff, 5.5 + bh * 0.5, bzOff);
-      scene.add(bld); outline(bld, 1.04); envBuildings.push(bld);
+      bld.position.set(bxOff, 6.5 + bh * 0.5, bzOff);
+      scene.add(bld); outline(bld, 1.05); envBuildings.push(bld);
 
-      // Topo/cobertura
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.3, 0.28, bd + 0.3), toon(0xdddddd));
-      roof.position.set(bxOff, 5.5 + bh + 0.14, bzOff);
+      // Topo com cor diferente
+      const roofCol = buildColors[(i * 3 + 3) % buildColors.length];
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.4, 0.35, bd + 0.4), toon(roofCol));
+      roof.position.set(bxOff, 6.5 + bh + 0.18, bzOff);
       scene.add(roof); envBuildings.push(roof);
 
-      // Janelas (painéis escuros ou amarelados)
-      const wRows = Math.min(4, Math.floor(bh / 1.6));
+      // Janelas (MeshBasicMaterial para brilhar)
+      const wRows = Math.min(5, Math.floor(bh / 1.5));
       for (let wr = 0; wr < wRows; wr++) {
-        const wMat = new THREE.MeshBasicMaterial({ color: wr % 2 === 0 ? 0xfffde0 : 0x223344 });
-        const win = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.5), wMat);
-        win.position.set(bxOff - bw * 0.5 * side * 0.01, 6.2 + wr * 1.45, bzOff + 0.55);
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.55),
+          new THREE.MeshBasicMaterial({ color: 0xfffce0 }));
+        win.position.set(bxOff - bw * 0.45 * side * 0.05, 7.2 + wr * 1.4, bzOff + 0.6);
         scene.add(win); envBuildings.push(win);
+        // Janela escura ao lado
+        const win2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.55),
+          new THREE.MeshBasicMaterial({ color: 0x112233 }));
+        win2.position.set(bxOff - bw * 0.45 * side * 0.05, 7.2 + wr * 1.4, bzOff - 0.6);
+        scene.add(win2); envBuildings.push(win2);
       }
     });
   }
 
-  // ── Postes de sinalização laterais ────────────────────────────────────────────
+  // ── Postes de luz laterais ────────────────────────────────────────────────────
   for (let i = 0; i < 10; i++) {
     [-1, 1].forEach(side => {
       const pz = -i * 28 - 8;
-      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.12, 4.2, 0.12), toon(0x445566));
-      pole.position.set(side * 5.5, 2.1, pz);
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.13, 4.5, 0.13), toon(0x334455));
+      pole.position.set(side * 5.6, 2.25, pz);
       scene.add(pole); envBuildings.push(pole);
-
-      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.36),
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.22, 0.4),
         new THREE.MeshBasicMaterial({ color: 0xffeeaa }));
-      lamp.position.set(side * 5.5, 4.3, pz);
+      lamp.position.set(side * 5.6, 4.6, pz);
       scene.add(lamp); envBuildings.push(lamp);
     });
   }
 
   // ── Tufos de grama no talude ──────────────────────────────────────────────────
-  const grassMat = toon(0x72e038);
-  for (let i = 0; i < 24; i++) {
+  const grassMat = toon(0x55ff22);
+  for (let i = 0; i < 28; i++) {
     [-1, 1].forEach(side => {
-      const gx = side * (6.4 + (i % 4) * 0.45);
-      const gz2 = -i * 15 - 4;
-      const tuft = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.18), grassMat);
-      tuft.position.set(gx, 3.9 + (i % 3) * 0.12, gz2);
+      const gx = side * (6.5 + (i % 5) * 0.4);
+      const gz2 = -i * 13 - 4;
+      const tuft = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.32, 0.20), grassMat);
+      tuft.position.set(gx, 4.1 + (i % 3) * 0.14, gz2);
       scene.add(tuft); envBuildings.push(tuft);
     });
   }
