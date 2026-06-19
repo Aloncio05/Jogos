@@ -1,0 +1,77 @@
+/* ── Simon do Aloncinho ── */
+
+.simon-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.simon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 320px;
+  margin: 1rem auto;
+}
+
+.simon-pad {
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 140px;
+  min-height: 140px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: filter 0.1s, box-shadow 0.1s;
+  filter: brightness(0.45);
+  box-shadow: none;
+}
+
+#pad-red    { background: #ee2222; }
+#pad-blue   { background: #2244ee; }
+#pad-green  { background: #22bb22; }
+#pad-yellow { background: #ddcc00; }
+
+.simon-pad.active {
+  filter: brightness(1.25);
+  box-shadow: 0 0 32px 8px currentColor;
+}
+
+#pad-red.active    { box-shadow: 0 0 36px 10px #ee2222; }
+#pad-blue.active   { box-shadow: 0 0 36px 10px #2244ee; }
+#pad-green.active  { box-shadow: 0 0 36px 10px #22bb22; }
+#pad-yellow.active { box-shadow: 0 0 36px 10px #ddcc00; }
+
+.simon-pad:disabled { cursor: not-allowed; }
+
+.simon-start-btn {
+  display: block;
+  margin: 0.75rem auto 0;
+}
+
+/* Overlay */
+.simon-overlay {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: rgba(0,0,0,0.6);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.simon-overlay.hidden { display: none; }
+
+.simon-over-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  color: #fff;
+}
+
+.simon-over-msg {
+  font-size: 1.1rem;
+  color: #ffd700;
+  margin: 0 0 1rem;
+}

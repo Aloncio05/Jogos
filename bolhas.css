@@ -1,0 +1,87 @@
+/* ── Bolhas do Aloncinho ── */
+
+.bolhas-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.bolhas-arena {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: #0a0a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: default;
+  border: 2px solid rgba(255,255,255,0.08);
+}
+
+/* Bubble base */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  cursor: pointer;
+  animation: bubbleRise linear forwards;
+  transform-origin: center;
+}
+
+.bubble::after {
+  content: '';
+  position: absolute;
+  top: 18%;
+  left: 22%;
+  width: 30%;
+  height: 22%;
+  background: rgba(255,255,255,0.55);
+  border-radius: 50%;
+  transform: rotate(-35deg);
+}
+
+@keyframes bubbleRise {
+  from { bottom: -100px; opacity: 1; }
+  to   { bottom: 110%; opacity: 0.85; }
+}
+
+@keyframes bubblePop {
+  0%   { transform: scale(1);   opacity: 1; }
+  60%  { transform: scale(1.5); opacity: 0.6; }
+  100% { transform: scale(0);   opacity: 0; }
+}
+
+.bubble.popping {
+  animation: bubblePop 0.25s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Overlay */
+.bolhas-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(0,0,0,0.78);
+  border-radius: 10px;
+  z-index: 10;
+}
+
+.bolhas-overlay.hidden { display: none; }
+
+.bolhas-over-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.bolhas-over-score {
+  font-size: 1.25rem;
+  color: #ffd700;
+  margin: 0;
+}

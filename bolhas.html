@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bolhas do Aloncinho — Jogos do Aloncinho</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="bolhas.css">
+</head>
+<body class="game-page">
+  <header>
+    <nav class="topbar game-topbar" aria-label="Navegação">
+      <a href="index.html" class="back-link">← Início</a>
+      <strong class="brand">Jogos do Aloncinho</strong>
+    </nav>
+  </header>
+
+  <main class="game-page-main">
+    <section class="game-panel" aria-labelledby="bolhas-title">
+
+      <div class="game-header">
+        <div>
+          <p class="eyebrow">Área Kids</p>
+          <h2 id="bolhas-title">Bolhas do Aloncinho</h2>
+        </div>
+        <span class="badge-kids">🎨 Kids</span>
+      </div>
+
+      <div class="bolhas-hud">
+        <span id="bolhas-score">Pontos: 0</span>
+        <span id="bolhas-lives">❤️❤️❤️❤️❤️</span>
+      </div>
+
+      <div id="bolhas-arena" class="bolhas-arena" aria-label="Área de jogo">
+        <div id="bolhas-overlay" class="bolhas-overlay hidden">
+          <p class="bolhas-over-title">Fim de jogo!</p>
+          <p id="bolhas-final-score" class="bolhas-over-score"></p>
+          <button id="bolhas-restart" class="primary-button">Jogar de novo</button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Jogos do Aloncinho. Projeto estático para portfólio, GitHub e Vercel.</p>
+  </footer>
+
+  <script src="bolhas.js"></script>
+</body>
+</html>

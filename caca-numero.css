@@ -1,0 +1,92 @@
+/* ── Caça-Número do Aloncinho ── */
+
+.caca-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.caca-arena {
+  position: relative;
+  width: 560px;
+  max-width: 100%;
+  height: 380px;
+  background: #0d1117;
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.08);
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.num-circle {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s, background 0.25s;
+  border: 3px solid rgba(255,255,255,0.25);
+}
+
+.num-circle:hover { transform: scale(1.1); }
+
+.num-circle.found {
+  background: #22bb22 !important;
+  border-color: #55ee55;
+  cursor: default;
+  pointer-events: none;
+}
+
+@keyframes numShake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-8px); }
+  40%     { transform: translateX(8px); }
+  60%     { transform: translateX(-5px); }
+  80%     { transform: translateX(5px); }
+}
+
+.num-circle.shake {
+  animation: numShake 0.35s ease;
+}
+
+/* Overlay */
+.caca-overlay {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: rgba(0,0,0,0.6);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.caca-overlay.hidden { display: none; }
+
+.caca-over-title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  color: #fff;
+}
+
+.caca-over-time {
+  font-size: 1.2rem;
+  color: #ffd700;
+  margin: 0 0 0.25rem;
+}
+
+.caca-over-best {
+  font-size: 1rem;
+  color: #aaa;
+  margin: 0 0 1rem;
+}
